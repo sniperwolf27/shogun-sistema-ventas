@@ -7,7 +7,7 @@ from flask import Flask, jsonify, send_from_directory, redirect
 from flask_cors import CORS
 from datetime import datetime
 
-from models.database_manager import DatabaseManager
+from backend.models.database_manager import DatabaseManager
 from routes.auth import auth_bp
 from routes.pedidos import pedidos_bp
 from routes.productos import productos_bp
