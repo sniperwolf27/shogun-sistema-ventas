@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Pedido - Shogun</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #2F5496;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #5B9BD5;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-right: 10px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .top-links {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .top-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 20px;
+        }
+
+        .top-links a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-links">
+            <a href="/backoffice">📊 Ir al Backoffice</a>
+        </div>
+
+        <h1>📦 Nuevo Pedido</h1>
+        <p class="subtitle">Captura rápida de pedidos</p>
+
+        <div id="alertSuccess" class="alert alert-success"></div>
+        <div id="alertError" class="alert alert-danger"></div>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Guardando pedido...</p>
+        </div>
+
+        <form id="formPedido">
+            <!-- Información del Producto -->
+            <div class="form-section">
+                <h2>👕 Información del Producto</h2>
+                
+                <div class="form-group">
+                    <label>Producto <span class="required">*</span></label>
+                    <select id="producto" name="producto" required>
+                        <option value="">Seleccionar producto...</option>
+                        <option value="TS-NEG-ST|T-shirt Negro">T-shirt Negro</option>
+                        <option value="TS-BL-OS|T-shirt Blanco Oversize">T-shirt Blanco Oversize</option>
+                        <option value="HD-NEG-ST|Hoodie Negro">Hoodie Negro</option>
+                    </select>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Talla <span class="required">*</span></label>
+                        <select id="talla" name="talla" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="XS">XS</option>
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="XXL">XXL</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Personalización</label>
+                        <select id="personalizacion" name="personalizacion">
+                            <option value="ninguna">Ninguna</option>
+                            <option value="BORD-FRNT">Bordado Frontal (+RD$150)</option>
+                            <option value="BORD-DBL">Bordado Doble (+RD$250)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Detalles de Personalización</label>
+                    <textarea id="detalles" name="detalles" placeholder="Ej: Logo empresa en el frente"></textarea>
+                </div>
+            </div>
+
+            <!-- Información del Cliente -->
+            <div class="form-section">
+                <h2>👤 Información del Cliente</h2>
+
+                <div class="form-group">
+                    <label>Nombre Completo <span class="required">*</span></label>
+                    <input type="text" id="cliente" name="cliente" required placeholder="Juan Pérez">
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Teléfono <span class="required">*</span></label>
+                        <input type="tel" id="telefono" name="telefono" required placeholder="809-555-0000">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" name="email" placeholder="juan@email.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Dirección de Envío <span class="required">*</span></label>
+                    <textarea id="direccion" name="direccion" required placeholder="Calle, número, sector, ciudad"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Canal de Venta <span class="required">*</span></label>
+                    <select id="canal" name="canal" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Referido">Referido</option>
+                        <option value="Tienda">Tienda Física</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Información de Pago -->
+            <div class="form-section">
+                <h2>💳 Información de Pago</h2>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Método de Pago <span class="required">*</span></label>
+                        <select id="banco" name="banco" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Popular">Banco Popular</option>
+                            <option value="Banreservas">Banreservas</option>
+                            <option value="BHD">BHD León</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Estado del Pago <span class="required">*</span></label>
+                        <select id="estatusPago" name="estatusPago" required>
+                            <option value="Recibido">Recibido</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Parcial">Parcial</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Costo de Envío (RD$)</label>
+                    <input type="number" id="costoEnvio" name="costoEnvio" value="200" min="0">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                💾 Guardar Pedido
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        document.getElementById('formPedido').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const producto = document.getElementById('producto').value.split('|');
+            const formData = {
+                producto_sku: producto[0],
+                producto_nombre: producto[1],
+                talla: document.getElementById('talla').value,
+                personalizacion_tipo: document.getElementById('personalizacion').value,
+                personalizacion_detalles: document.getElementById('detalles').value,
+                nombre_cliente: document.getElementById('cliente').value,
+                telefono: document.getElementById('telefono').value,
+                email: document.getElementById('email').value,
+                direccion: document.getElementById('direccion').value,
+                canal: document.getElementById('canal').value,
+                banco: document.getElementById('banco').value,
+                estatus_pago: document.getElementById('estatusPago').value,
+                costo_envio: document.getElementById('costoEnvio').value,
+                tiempo_estimado: '7 días'
+            };
+
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('alertSuccess').style.display = 'none';
+            document.getElementById('alertError').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/pedidos`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                // Ocultar loading
+                document.getElementById('loading').style.display = 'none';
+
+                if (result.success) {
+                    // Mostrar éxito
+                    document.getElementById('alertSuccess').innerHTML = `
+                        ✅ <strong>Pedido ${result.pedido_id} creado exitosamente!</strong><br>
+                        Entrega estimada: ${result.fecha_entrega}<br>
+                        Total: RD$${result.total.toLocaleString()}
+                    `;
+                    document.getElementById('alertSuccess').style.display = 'block';
+
+                    // Limpiar formulario
+                    document.getElementById('formPedido').reset();
+
+                    // Scroll al inicio
+                    window.scrollTo(0, 0);
+                } else {
+                    throw new Error(result.error || 'Error desconocido');
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('alertError').innerHTML = `
+                    ❌ <strong>Error al guardar:</strong> ${error.message}
+                `;
+                document.getElementById('alertError').style.display = 'block';
+                window.scrollTo(0, 0);
+            }
+        });
+    </script>
+</body>
+</html>

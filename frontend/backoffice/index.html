@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backoffice - Shogun</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/modals.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .top-bar { background:white; padding:20px; margin:-20px -20px 20px -20px; box-shadow:0 2px 8px rgba(0,0,0,.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; }
+        .top-bar-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .user-info { display:flex; align-items:center; gap:8px; padding:8px 16px; background:#f8f9fa; border-radius:8px; font-size:.9em; }
+        .user-info strong { color:#2F5496; }
+        .nav-tabs { display:flex; gap:8px; border-bottom:2px solid #e0e0e0; flex-wrap:wrap; }
+        .tab-btn { padding:12px 20px; border:none; background:none; cursor:pointer; font-size:.95em; font-weight:600; color:#666; border-bottom:3px solid transparent; transition:all .2s; }
+        .tab-btn:hover { color:#2F5496; }
+        .tab-btn.active { color:#2F5496; border-bottom-color:#2F5496; }
+        .tab-content { display:none; animation:fadeIn .3s; }
+        .tab-content.active { display:block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .section-header { margin-bottom:20px; padding-bottom:15px; border-bottom:2px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+        .row-alert { background:#fff3cd !important; }
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin:20px 0; }
+        .stat-card { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+        .stat-card .label { color:#666; font-size:.85em; margin-bottom:8px; }
+        .stat-card .value { font-size:1.8em; font-weight:700; }
+        .filters { margin:20px 0; display:flex; gap:12px; flex-wrap:wrap; }
+        .filters input, .filters select { padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:.95em; }
+        .filters input { flex:1; min-width:200px; }
+        .filters select { min-width:180px; }
+        .dashboard-filters { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+        .dashboard-filters input { padding:8px 12px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:.9em; }
+        .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
+        .chart-card { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+        .chart-card h3 { font-size:1em; color:#555; margin-bottom:12px; }
+        .param-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+        .param-card { background:white; border-radius:10px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,.06); border-left:4px solid #2F5496; position:relative; }
+        .param-card.inactive { opacity:.6; border-left-color:#999; }
+        .param-card .param-name { font-weight:700; font-size:1.05em; margin-bottom:4px; }
+        .param-card .param-meta { font-size:.85em; color:#666; }
+        .param-card .param-actions { margin-top:12px; display:flex; gap:8px; }
+        .param-tabs { display:flex; gap:8px; margin-bottom:20px; }
+        .param-tab { padding:8px 16px; border:2px solid #e0e0e0; border-radius:6px; background:white; cursor:pointer; font-weight:600; font-size:.9em; color:#666; }
+        .param-tab.active { border-color:#2F5496; color:#2F5496; background:#f0f4ff; }
+        .pendiente-card { background:white; padding:16px; margin-bottom:12px; border-radius:10px; border-left:4px solid #dc3545; box-shadow:0 2px 6px rgba(0,0,0,.06); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+        .hidden { display:none !important; }
+        @media(max-width:768px) {
+            .top-bar { flex-direction:column; align-items:stretch; }
+            .charts-row { grid-template-columns:1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div>
+            <h1>🪡 Backoffice Shogun</h1>
+            <p style="color:#666;margin-top:4px;">Sistema de Gestión de Pedidos</p>
+        </div>
+        <div class="top-bar-actions">
+            <div class="user-info" id="userInfo"><i class="fas fa-user-circle"></i> <span>...</span></div>
+            <a href="/formulario" class="btn btn-primary admin-only hidden" id="btnNuevoPedido"><i class="fas fa-plus"></i> Nuevo Pedido</a>
+            <button class="btn btn-danger" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="nav-tabs" style="margin:20px 0;">
+        <button class="tab-btn active" data-tab="pedidos"><i class="fas fa-shopping-cart"></i> Pedidos</button>
+        <button class="tab-btn" data-tab="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+        <button class="tab-btn" data-tab="pendientes"><i class="fas fa-exclamation-triangle"></i> Pendientes</button>
+        <button class="tab-btn admin-only hidden" data-tab="parametrizacion"><i class="fas fa-cog"></i> Parametrización</button>
+    </div>
+
+    <!-- ===== PEDIDOS ===== -->
+    <div id="pedidos-section" class="tab-content active">
+        <div class="section-header"><h2>📦 Gestión de Pedidos</h2></div>
+        <div class="filters">
+            <input type="text" id="searchPedidos" placeholder="🔍 Buscar por ID, cliente, producto...">
+            <select id="filterEstado">
+                <option value="">Todos los estados</option>
+                <option value="En Producción">En Producción</option>
+                <option value="Listo para Envío">Listo para Envío</option>
+                <option value="En Camino">En Camino</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Bloqueado - Sin Dirección">Bloqueado</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+            <select id="filterCanal">
+                <option value="">Todos los canales</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Referido">Referido</option>
+                <option value="Tienda">Tienda</option>
+            </select>
+        </div>
+        <div class="table-container">
+            <table id="tabla-pedidos">
+                <thead><tr><th>ID</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="dashboard-section" class="tab-content">
+        <div class="section-header"><h2>📊 Dashboard</h2></div>
+        <div class="dashboard-filters">
+            <label style="font-size:.9em;color:#666;align-self:center;">Filtrar:</label>
+            <input type="date" id="dashDesde">
+            <input type="date" id="dashHasta">
+            <button class="btn btn-primary" onclick="cargarDashboard()" style="padding:8px 16px;"><i class="fas fa-filter"></i> Aplicar</button>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="label">Total Pedidos</div><div class="value" style="color:#2F5496;" id="stat-total">0</div></div>
+            <div class="stat-card"><div class="label">Ventas Totales</div><div class="value" style="color:#28a745;" id="stat-ventas">RD$0</div></div>
+            <div class="stat-card"><div class="label">Ganancia Neta</div><div class="value" style="color:#007bff;" id="stat-ganancia">RD$0</div></div>
+            <div class="stat-card"><div class="label">Pendientes</div><div class="value" style="color:#ffc107;" id="stat-pendientes">0</div></div>
+            <div class="stat-card"><div class="label">Entregados</div><div class="value" style="color:#28a745;" id="stat-entregados">0</div></div>
+            <div class="stat-card"><div class="label">Margen Promedio</div><div class="value" style="color:#6f42c1;" id="stat-margen">0%</div></div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Ventas por Canal</h3><canvas id="chartCanales"></canvas></div>
+            <div class="chart-card"><h3>Estado de Pedidos</h3><canvas id="chartEstados"></canvas></div>
+        </div>
+    </div>
+
+    <!-- ===== PENDIENTES ===== -->
+    <div id="pendientes-section" class="tab-content">
+        <div class="section-header"><h2>⚠️ Pedidos Pendientes</h2></div>
+        <div id="lista-pendientes"></div>
+    </div>
+
+    <!-- ===== PARAMETRIZACIÓN ===== -->
+    <div id="parametrizacion-section" class="tab-content">
+        <div class="section-header">
+            <h2>⚙️ Parametrización</h2>
+            <button class="btn btn-primary" id="btnAddParam"><i class="fas fa-plus"></i> Agregar</button>
+        </div>
+        <div class="param-tabs">
+            <button class="param-tab active" data-param="productos">Productos</button>
+            <button class="param-tab" data-param="personalizaciones">Personalizaciones</button>
+        </div>
+        <div id="param-content"></div>
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/modals.js"></script>
+<script src="/js/pedidos.js"></script>
+
+<script>
+// ===================== INIT =====================
+
+const user = Auth.getUser();
+if (user) {
+    document.getElementById('userInfo').innerHTML = `<i class="fas fa-user-circle"></i> <span><strong>${user.nombre || user.email}</strong> (${user.rol})</span>`;
+    if (user.rol === 'admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    }
+}
+
+// ===================== TABS =====================
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(tab + '-section').classList.add('active');
+
+        if (tab === 'pedidos') cargarPedidos();
+        else if (tab === 'dashboard') cargarDashboard();
+        else if (tab === 'pendientes') cargarPendientes();
+        else if (tab === 'parametrizacion') cargarParametrizacion();
+    });
+});
+
+// ===================== DASHBOARD =====================
+
+let chartCanalesInstance = null;
+let chartEstadosInstance = null;
+
+async function cargarDashboard() {
+    try {
+        const desde = document.getElementById('dashDesde').value || undefined;
+        const hasta = document.getElementById('dashHasta').value || undefined;
+
+        const [stats, canales, estados] = await Promise.all([
+            api.getEstadisticas(desde, hasta),
+            api.getVentasPorCanal(desde, hasta),
+            api.getVentasPorEstado()
+        ]);
+
+        document.getElementById('stat-total').textContent = stats.total_pedidos;
+        document.getElementById('stat-ventas').textContent = formatearMoneda(stats.ventas_totales);
+        document.getElementById('stat-ganancia').textContent = formatearMoneda(stats.ganancia_neta);
+        document.getElementById('stat-pendientes').textContent = stats.pedidos_pendientes;
+        document.getElementById('stat-entregados').textContent = stats.pedidos_entregados || 0;
+        document.getElementById('stat-margen').textContent = (stats.margen_promedio || 0).toFixed(1) + '%';
+
+        // Chart canales
+        if (chartCanalesInstance) chartCanalesInstance.destroy();
+        const ctxC = document.getElementById('chartCanales').getContext('2d');
+        chartCanalesInstance = new Chart(ctxC, {
+            type: 'doughnut',
+            data: {
+                labels: canales.map(c => c.canal),
+                datasets: [{ data: canales.map(c => c.ventas), backgroundColor: ['#667eea','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // Chart estados
+        if (chartEstadosInstance) chartEstadosInstance.destroy();
+        const ctxE = document.getElementById('chartEstados').getContext('2d');
+        chartEstadosInstance = new Chart(ctxE, {
+            type: 'bar',
+            data: {
+                labels: estados.map(e => e.estado),
+                datasets: [{ label: 'Pedidos', data: estados.map(e => e.total), backgroundColor: '#2F5496' }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    } catch (error) {
+        console.error('Error dashboard:', error);
+    }
+}
+
+// ===================== PENDIENTES =====================
+
+async function cargarPendientes() {
+    try {
+        const pendientes = await api.getPedidosPendientes();
+        const container = document.getElementById('lista-pendientes');
+
+        if (!pendientes || !pendientes.length) {
+            container.innerHTML = '<div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-check-circle" style="font-size:3em;color:#28a745;display:block;margin-bottom:16px;"></i><h3>¡Todo al día!</h3><p>No hay pedidos pendientes</p></div>';
+            return;
+        }
+
+        container.innerHTML = pendientes.map(p => `
+            <div class="pendiente-card">
+                <div>
+                    <strong style="color:#2F5496;">${p.id}</strong> — ${p.cliente}<br>
+                    <span style="font-size:.9em;color:#666;">${p.producto} · ${formatearMoneda(p.precio_total)}</span><br>
+                    <span style="color:#dc3545;font-size:.85em;font-weight:600;">${p.motivo_pendiente}</span>
+                </div>
+                <button class="btn btn-primary" onclick="editarPedido('${p.id}')"><i class="fas fa-edit"></i> Resolver</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error pendientes:', error);
+    }
+}
+
+// ===================== PARAMETRIZACIÓN =====================
+
+let paramActiveTab = 'productos';
+
+document.querySelectorAll('.param-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        paramActiveTab = tab.dataset.param;
+        document.querySelectorAll('.param-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        cargarParametrizacion();
+    });
+});
+
+document.getElementById('btnAddParam').addEventListener('click', () => {
+    if (paramActiveTab === 'productos') abrirFormProducto();
+    else abrirFormPersonalizacion();
+});
+
+async function cargarParametrizacion() {
+    const container = document.getElementById('param-content');
+    container.innerHTML = '<p style="text-align:center;padding:30px;color:#999;">Cargando...</p>';
+
+    try {
+        if (paramActiveTab === 'productos') {
+            const items = await api.getProductos(true);
+            container.innerHTML = '<div class="param-grid">' + items.map(p => `
+                <div class="param-card ${p.activo ? '' : 'inactive'}">
+                    <div class="param-name">${p.nombre}</div>
+                    <div class="param-meta">
+                        SKU: ${p.sku} · ${p.categoria}<br>
+                        Precio: ${formatearMoneda(p.precio_base)} · Costo: ${formatearMoneda(p.costo_total)}<br>
+                        Margen: ${(p.margen_porcentaje || 0).toFixed(0)}% · ${p.tiempo_produccion_dias} días
+                    </div>
+                    <div class="param-actions">
+                        <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormProducto('${p.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn ${p.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="toggleProductoUI('${p.id}', ${!p.activo})">
+                            <i class="fas ${p.activo ? 'fa-ban' : 'fa-check'}"></i> ${p.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                    </div>
+                </div>
+            `).join('') + '</div>';
+        } else {
+            const items = await api.getPersonalizaciones(true);
+            container.innerHTML = '<div class="param-grid">' + items.map(p => `
+                <div class="param-card ${p.activo ? '' : 'inactive'}" style="border-left-color:#6f42c1;">
+                    <div class="param-name">${p.tipo}</div>
+                    <div class="param-meta">
+                        Código: ${p.codigo}<br>
+                        Precio: ${formatearMoneda(p.precio)} · +${p.tiempo_adicional_dias} días<br>
+                        ${p.descripcion || ''}
+                    </div>
+                    <div class="param-actions">
+                        <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormPersonalizacion('${p.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn ${p.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="togglePersonalizacionUI('${p.id}', ${!p.activo})">
+                            <i class="fas ${p.activo ? 'fa-ban' : 'fa-check'}"></i> ${p.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                    </div>
+                </div>
+            `).join('') + '</div>';
+        }
+    } catch (error) {
+        container.innerHTML = '<p style="color:#dc3545;text-align:center;padding:20px;">Error al cargar datos</p>';
+    }
+}
+
+async function toggleProductoUI(id, activo) {
+    await api.toggleProducto(id, activo);
+    showNotification(activo ? 'Producto activado' : 'Producto desactivado', 'success');
+    cargarParametrizacion();
+}
+
+async function togglePersonalizacionUI(id, activo) {
+    await api.togglePersonalizacion(id, activo);
+    showNotification(activo ? 'Personalización activada' : 'Personalización desactivada', 'success');
+    cargarParametrizacion();
+}
+
+// ===================== PARAM MODALS =====================
+
+async function abrirFormProducto(id) {
+    let data = { sku: '', nombre: '', categoria: 'Camisetas', precio_base: '', costo_material: '', costo_mano_obra: '', tiempo_produccion_dias: 7 };
+    let title = 'Nuevo Producto';
+
+    if (id) {
+        const items = await api.getProductos(true);
+        const found = items.find(p => p.id === id);
+        if (found) { data = found; title = 'Editar Producto'; }
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+    <div class="modal-content" style="max-width:560px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-tshirt"></i> ${title}</h2>
+            <button class="modal-close" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="formProductoParam">
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">SKU</label><input name="sku" class="form-control" value="${data.sku}" ${id ? 'readonly style="background:#f5f5f5"' : ''} required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Categoría</label><select name="categoria" class="form-control"><option ${data.categoria==='Camisetas'?'selected':''}>Camisetas</option><option ${data.categoria==='Hoodies'?'selected':''}>Hoodies</option><option ${data.categoria==='Abrigos'?'selected':''}>Abrigos</option><option ${data.categoria==='Otros'?'selected':''}>Otros</option></select></div>
+                </div>
+                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Nombre</label><input name="nombre" class="form-control" value="${data.nombre}" required></div>
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Precio</label><input name="precio_base" type="number" class="form-control" value="${data.precio_base}" required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Costo Material</label><input name="costo_material" type="number" class="form-control" value="${data.costo_material}" required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Mano de Obra</label><input name="costo_mano_obra" type="number" class="form-control" value="${data.costo_mano_obra}" required></div>
+                </div>
+                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Producción</label><input name="tiempo_produccion_dias" type="number" class="form-control" value="${data.tiempo_produccion_dias}" required></div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-secondary" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''">Cancelar</button>
+            <button class="btn-modal btn-success" id="btnSaveProducto"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+    let ov = document.querySelector('.modal-overlay');
+    if (!ov) { ov = document.createElement('div'); ov.className='modal-overlay'; document.body.appendChild(ov); }
+    ov.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('btnSaveProducto').onclick = async () => {
+        const fd = new FormData(document.getElementById('formProductoParam'));
+        const obj = Object.fromEntries(fd.entries());
+        obj.precio_base = parseFloat(obj.precio_base);
+        obj.costo_material = parseFloat(obj.costo_material);
+        obj.costo_mano_obra = parseFloat(obj.costo_mano_obra);
+        obj.tiempo_produccion_dias = parseInt(obj.tiempo_produccion_dias);
+
+        try {
+            if (id) await api.updateProducto(id, obj);
+            else await api.createProducto(obj);
+            modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
+            showNotification(id ? 'Producto actualizado' : 'Producto creado', 'success');
+            cargarParametrizacion();
+        } catch (e) { showNotification(e.message, 'error'); }
+    };
+}
+
+async function abrirFormPersonalizacion(id) {
+    let data = { codigo: '', tipo: '', descripcion: '', precio: '', tiempo_adicional_dias: 0 };
+    let title = 'Nueva Personalización';
+
+    if (id) {
+        const items = await api.getPersonalizaciones(true);
+        const found = items.find(p => p.id === id);
+        if (found) { data = found; title = 'Editar Personalización'; }
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+    <div class="modal-content" style="max-width:500px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-palette"></i> ${title}</h2>
+            <button class="modal-close" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="formPersParam">
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Código</label><input name="codigo" class="form-control" value="${data.codigo}" ${id ? 'readonly style="background:#f5f5f5"' : ''} required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Tipo</label><input name="tipo" class="form-control" value="${data.tipo}" required></div>
+                </div>
+                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Descripción</label><textarea name="descripcion" class="form-control" rows="2">${data.descripcion||''}</textarea></div>
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Precio (RD$)</label><input name="precio" type="number" class="form-control" value="${data.precio}" required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Adicionales</label><input name="tiempo_adicional_dias" type="number" class="form-control" value="${data.tiempo_adicional_dias}"></div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-secondary" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''">Cancelar</button>
+            <button class="btn-modal btn-success" id="btnSavePers"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+    let ov = document.querySelector('.modal-overlay');
+    if (!ov) { ov = document.createElement('div'); ov.className='modal-overlay'; document.body.appendChild(ov); }
+    ov.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('btnSavePers').onclick = async () => {
+        const fd = new FormData(document.getElementById('formPersParam'));
+        const obj = Object.fromEntries(fd.entries());
+        obj.precio = parseFloat(obj.precio);
+        obj.tiempo_adicional_dias = parseInt(obj.tiempo_adicional_dias || 0);
+
+        try {
+            if (id) await api.updatePersonalizacion(id, obj);
+            else await api.createPersonalizacion(obj);
+            modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
+            showNotification(id ? 'Personalización actualizada' : 'Personalización creada', 'success');
+            cargarParametrizacion();
+        } catch (e) { showNotification(e.message, 'error'); }
+    };
+}
+
+// ===================== BOOT =====================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarPedidos();
+    await cargarDashboard();
+});
+</script>
+</body>
+</html>
