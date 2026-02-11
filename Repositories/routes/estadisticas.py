@@ -1,11 +1,8 @@
-"""
-Routes - Estadísticas
-"""
-
-from flask import Blueprint, request, jsonify
-from models.database_manager import EstadisticasRepository
-from utils.auth_decorators import require_auth
+"""Routes - Estadisticas"""
 import traceback
+from flask import Blueprint, request, jsonify
+from app.models.database import EstadisticasRepository
+from app.auth.decorators import require_auth
 
 estadisticas_bp = Blueprint('estadisticas', __name__)
 
@@ -14,9 +11,7 @@ estadisticas_bp = Blueprint('estadisticas', __name__)
 @require_auth
 def obtener_estadisticas(user):
     try:
-        fecha_desde = request.args.get('desde')
-        fecha_hasta = request.args.get('hasta')
-        stats = EstadisticasRepository.get_generales(fecha_desde, fecha_hasta)
+        stats = EstadisticasRepository.get_generales(request.args.get('desde'), request.args.get('hasta'))
         return jsonify(stats), 200
     except Exception as e:
         traceback.print_exc()
@@ -27,9 +22,7 @@ def obtener_estadisticas(user):
 @require_auth
 def ventas_por_canal(user):
     try:
-        fecha_desde = request.args.get('desde')
-        fecha_hasta = request.args.get('hasta')
-        data = EstadisticasRepository.get_ventas_por_canal(fecha_desde, fecha_hasta)
+        data = EstadisticasRepository.get_ventas_por_canal(request.args.get('desde'), request.args.get('hasta'))
         return jsonify(data), 200
     except Exception as e:
         traceback.print_exc()
@@ -40,8 +33,7 @@ def ventas_por_canal(user):
 @require_auth
 def ventas_por_estado(user):
     try:
-        data = EstadisticasRepository.get_ventas_por_estado()
-        return jsonify(data), 200
+        return jsonify(EstadisticasRepository.get_ventas_por_estado()), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500

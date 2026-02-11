@@ -1,35 +1,24 @@
-"""
-Routes - Productos y Personalizaciones (Parametrización)
-"""
-
+"""Routes - Productos y Personalizaciones"""
 from flask import Blueprint, request, jsonify
-from models.database_manager import ProductosRepository, PersonalizacionesRepository
-from utils.auth_decorators import require_auth, admin_only
+from app.models.database import ProductosRepository, PersonalizacionesRepository
+from app.auth.decorators import admin_only
+from app.auth.supabase_helper import SupabaseHelper
 
 productos_bp = Blueprint('productos', __name__)
 
 
-# --- Productos ---
-
 @productos_bp.route('/productos', methods=['GET'])
 def obtener_productos():
     try:
-        # Only admins can see inactive products
         include_inactive = False
-        user = None
         try:
-            from utils.supabase_helper import SupabaseHelper
             user = SupabaseHelper.get_current_user()
             if user and user.get('rol') == 'admin' and request.args.get('all') == 'true':
                 include_inactive = True
-        except:
+        except Exception:
             pass
-
-        productos = ProductosRepository.get_all(include_inactive=include_inactive)
-        return jsonify(productos), 200
+        return jsonify(ProductosRepository.get_all(include_inactive=include_inactive)), 200
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -41,9 +30,7 @@ def crear_producto(user):
         for campo in ['sku', 'nombre', 'categoria', 'precio_base', 'costo_material', 'costo_mano_obra']:
             if not data.get(campo) and data.get(campo) != 0:
                 return jsonify({'success': False, 'error': f'Campo requerido: {campo}'}), 400
-
-        resultado = ProductosRepository.create(data)
-        return jsonify({'success': True, 'producto': resultado}), 201
+        return jsonify({'success': True, 'producto': ProductosRepository.create(data)}), 201
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -52,8 +39,7 @@ def crear_producto(user):
 @admin_only
 def actualizar_producto(user, product_id):
     try:
-        data = request.json
-        resultado = ProductosRepository.update(product_id, data)
+        resultado = ProductosRepository.update(product_id, request.json)
         if not resultado:
             return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
         return jsonify({'success': True, 'producto': resultado}), 200
@@ -65,8 +51,7 @@ def actualizar_producto(user, product_id):
 @admin_only
 def toggle_producto(user, product_id):
     try:
-        data = request.json
-        activo = data.get('activo', False)
+        activo = request.json.get('activo', False)
         ok = ProductosRepository.toggle_active(product_id, activo)
         if not ok:
             return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
@@ -82,18 +67,13 @@ def obtener_personalizaciones():
     try:
         include_inactive = False
         try:
-            from utils.supabase_helper import SupabaseHelper
             user = SupabaseHelper.get_current_user()
             if user and user.get('rol') == 'admin' and request.args.get('all') == 'true':
                 include_inactive = True
-        except:
+        except Exception:
             pass
-
-        items = PersonalizacionesRepository.get_all(include_inactive=include_inactive)
-        return jsonify(items), 200
+        return jsonify(PersonalizacionesRepository.get_all(include_inactive=include_inactive)), 200
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -105,9 +85,7 @@ def crear_personalizacion(user):
         for campo in ['codigo', 'tipo', 'precio']:
             if not data.get(campo) and data.get(campo) != 0:
                 return jsonify({'success': False, 'error': f'Campo requerido: {campo}'}), 400
-
-        resultado = PersonalizacionesRepository.create(data)
-        return jsonify({'success': True, 'personalizacion': resultado}), 201
+        return jsonify({'success': True, 'personalizacion': PersonalizacionesRepository.create(data)}), 201
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -116,10 +94,9 @@ def crear_personalizacion(user):
 @admin_only
 def actualizar_personalizacion(user, pid):
     try:
-        data = request.json
-        resultado = PersonalizacionesRepository.update(pid, data)
+        resultado = PersonalizacionesRepository.update(pid, request.json)
         if not resultado:
-            return jsonify({'success': False, 'error': 'Personalización no encontrada'}), 404
+            return jsonify({'success': False, 'error': 'Personalizacion no encontrada'}), 404
         return jsonify({'success': True, 'personalizacion': resultado}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -129,11 +106,10 @@ def actualizar_personalizacion(user, pid):
 @admin_only
 def toggle_personalizacion(user, pid):
     try:
-        data = request.json
-        activo = data.get('activo', False)
+        activo = request.json.get('activo', False)
         ok = PersonalizacionesRepository.toggle_active(pid, activo)
         if not ok:
-            return jsonify({'success': False, 'error': 'Personalización no encontrada'}), 404
+            return jsonify({'success': False, 'error': 'Personalizacion no encontrada'}), 404
         return jsonify({'success': True}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

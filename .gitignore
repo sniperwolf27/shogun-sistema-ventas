@@ -1,69 +1,9 @@
-# ==============================
-# Python
-# ==============================
 __pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-*.pyd
-
-# Entornos virtuales
-venv/
-env/
-ENV/
-.venv/
-
-# ==============================
-# Variables de entorno
-# ==============================
+*.pyc
 .env
-.env.*
 *.env
-
-# ==============================
-# Flask
-# ==============================
-instance/
-.webassets-cache
-
-# Archivos SQLite (si usaste local)
-*.sqlite3
-*.db
-
-# ==============================
-# Logs
-# ==============================
+venv/
+.venv/
 *.log
-logs/
-
-# ==============================
-# VSCode / IDE
-# ==============================
-.vscode/
-.idea/
-
-# ==============================
-# OS Files
-# ==============================
+backups/
 .DS_Store
-Thumbs.db
-
-# ==============================
-# Node (si tienes frontend)
-# ==============================
-node_modules/
-dist/
-build/
-
-# ==============================
-# Testing / coverage
-# ==============================
-.coverage
-htmlcov/
-.pytest_cache/
-
-# ==============================
-# Secrets
-# ==============================
-config.py
-secrets.json

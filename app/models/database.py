@@ -1,5 +1,5 @@
 """
-Database Manager - PostgreSQL
+Database Manager + Repositories - PostgreSQL
 """
 
 import psycopg2
@@ -60,13 +60,11 @@ class ProductosRepository:
         if not row:
             return None
         p = dict(row)
-        # UUID → string
         if p.get('id'):
             p['id'] = str(p['id'])
         for f in ['precio_base', 'costo_material', 'costo_mano_obra', 'costo_total', 'margen_dinero', 'margen_porcentaje']:
             if p.get(f) is not None:
                 p[f] = float(p[f])
-        # datetime → string
         for f in ['created_at', 'updated_at']:
             if p.get(f) and hasattr(p[f], 'isoformat'):
                 p[f] = p[f].isoformat()
@@ -91,16 +89,14 @@ class ProductosRepository:
         query = "SELECT * FROM productos WHERE sku = %s AND activo = true"
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, (sku,))
-            row = cursor.fetchone()
-            return ProductosRepository._format(row)
+            return ProductosRepository._format(cursor.fetchone())
 
     @staticmethod
     def get_by_id(product_id):
         query = "SELECT * FROM productos WHERE id = %s"
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, (product_id,))
-            row = cursor.fetchone()
-            return ProductosRepository._format(row)
+            return ProductosRepository._format(cursor.fetchone())
 
     @staticmethod
     def create(data):
@@ -422,12 +418,12 @@ class PedidosRepository:
                    precio_total, estado_produccion::text as estatus_produccion, dias_retraso,
                    fecha_compromiso, direccion_envio as direccion,
                    CASE
-                       WHEN estado_produccion = 'Bloqueado - Sin Dirección' THEN 'Sin dirección de envío'
-                       WHEN dias_retraso > 0 THEN dias_retraso || ' días de retraso'
-                       ELSE 'Revisión pendiente'
+                       WHEN estado_produccion = 'Bloqueado - Sin Direccion' THEN 'Sin direccion de envio'
+                       WHEN dias_retraso > 0 THEN dias_retraso || ' dias de retraso'
+                       ELSE 'Revision pendiente'
                    END AS motivo_pendiente
             FROM pedidos
-            WHERE estado_produccion = 'Bloqueado - Sin Dirección'
+            WHERE estado_produccion = 'Bloqueado - Sin Direccion'
                OR (estado_produccion NOT IN ('Entregado', 'Cancelado') AND dias_retraso > 0)
             ORDER BY dias_retraso DESC NULLS LAST, fecha_compromiso ASC
         """
@@ -485,14 +481,12 @@ class EstadisticasRepository:
     def get_generales(fecha_desde=None, fecha_hasta=None):
         conditions = []
         params = {}
-
         if fecha_desde:
             conditions.append("fecha_pago >= %(desde)s")
             params['desde'] = fecha_desde
         if fecha_hasta:
             conditions.append("fecha_pago <= %(hasta)s")
             params['hasta'] = fecha_hasta
-
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
         query = f"""
@@ -503,23 +497,17 @@ class EstadisticasRepository:
                 COALESCE(AVG(CASE WHEN precio_total > 0 THEN ganancia / precio_total * 100 END), 0) AS margen_promedio,
                 COUNT(*) FILTER (WHERE estado_produccion NOT IN ('Entregado', 'Cancelado')) AS pedidos_pendientes,
                 COUNT(*) FILTER (WHERE estado_produccion = 'Entregado') AS pedidos_entregados
-            FROM pedidos
-            {where}
+            FROM pedidos {where}
         """
-        try:
-            with DatabaseManager.get_cursor() as cursor:
-                cursor.execute(query, params)
-                row = cursor.fetchone()
-                if row:
-                    stats = dict(row)
-                    for f in ['ventas_totales', 'ganancia_neta', 'margen_promedio']:
-                        if stats.get(f) is not None:
-                            stats[f] = round(float(stats[f]), 2)
-                    return stats
-        except Exception as e:
-            print(f"[EstadisticasRepository] Error en get_generales: {e}")
-            raise
-
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, params)
+            row = cursor.fetchone()
+            if row:
+                stats = dict(row)
+                for f in ['ventas_totales', 'ganancia_neta', 'margen_promedio']:
+                    if stats.get(f) is not None:
+                        stats[f] = round(float(stats[f]), 2)
+                return stats
         return {'total_pedidos': 0, 'ventas_totales': 0, 'ganancia_neta': 0,
                 'margen_promedio': 0, 'pedidos_pendientes': 0, 'pedidos_entregados': 0}
 
@@ -533,7 +521,6 @@ class EstadisticasRepository:
         if fecha_hasta:
             conditions.append("fecha_pago <= %(hasta)s")
             params['hasta'] = fecha_hasta
-
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
         query = f"""
@@ -541,13 +528,9 @@ class EstadisticasRepository:
             FROM pedidos {where}
             GROUP BY canal ORDER BY ventas DESC
         """
-        try:
-            with DatabaseManager.get_cursor() as cursor:
-                cursor.execute(query, params)
-                return [{'canal': r['canal'], 'total': r['total'], 'ventas': round(float(r['ventas']), 2)} for r in cursor.fetchall()]
-        except Exception as e:
-            print(f"[EstadisticasRepository] Error en get_ventas_por_canal: {e}")
-            raise
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, params)
+            return [{'canal': r['canal'], 'total': r['total'], 'ventas': round(float(r['ventas']), 2)} for r in cursor.fetchall()]
 
     @staticmethod
     def get_ventas_por_estado():
@@ -555,10 +538,6 @@ class EstadisticasRepository:
             SELECT estado_produccion::text as estado, COUNT(*) as total
             FROM pedidos GROUP BY estado_produccion
         """
-        try:
-            with DatabaseManager.get_cursor() as cursor:
-                cursor.execute(query)
-                return [{'estado': r['estado'], 'total': r['total']} for r in cursor.fetchall()]
-        except Exception as e:
-            print(f"[EstadisticasRepository] Error en get_ventas_por_estado: {e}")
-            raise
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query)
+            return [{'estado': r['estado'], 'total': r['total']} for r in cursor.fetchall()]
