@@ -15,13 +15,26 @@ class DatabaseManager:
     @classmethod
     def initialize(cls, database_url):
         if cls._pool is None:
-            cls._pool = psycopg2.pool.ThreadedConnectionPool(minconn=1, maxconn=20, dsn=database_url)
+            try:
+                cls._pool = psycopg2.pool.ThreadedConnectionPool(minconn=1, maxconn=20, dsn=database_url)
+                print("[DB] Connection pool initialized")
+            except Exception as e:
+                print(f"[DB] WARNING: Could not connect to database: {e}")
+                print("[DB] App will retry on first request")
+                cls._pending_url = database_url
+
+    @classmethod
+    def _ensure_pool(cls):
+        """Lazy retry if initial connection failed"""
+        if cls._pool is None and hasattr(cls, '_pending_url'):
+            cls._pool = psycopg2.pool.ThreadedConnectionPool(minconn=1, maxconn=20, dsn=cls._pending_url)
 
     @classmethod
     @contextmanager
     def get_connection(cls):
+        cls._ensure_pool()
         if cls._pool is None:
-            raise Exception("Database pool not initialized")
+            raise Exception("Database not available")
         conn = cls._pool.getconn()
         try:
             yield conn
