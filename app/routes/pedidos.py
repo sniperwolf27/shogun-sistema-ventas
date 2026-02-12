@@ -48,11 +48,16 @@ def crear_pedido(user):
 def actualizar_pedido(user, pedido_id):
     try:
         data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
         actualizado = PedidosRepository.update(pedido_id, data)
         if not actualizado:
             return jsonify({'success': False, 'error': 'Pedido no encontrado'}), 404
         return jsonify({'success': True, 'updated_by': user['email']}), 200
     except Exception as e:
+        print(f"[PUT /pedidos/{pedido_id}] ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

@@ -38,6 +38,17 @@ const api = {
     createProducto(data) { return this.request('/productos', { method: 'POST', body: JSON.stringify(data) }); },
     updateProducto(id, data) { return this.request('/productos/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
     toggleProducto(id, activo) { return this.request('/productos/' + id + '/toggle', { method: 'PATCH', body: JSON.stringify({ activo }) }); },
+    validarSku(sku, excludeId) {
+        let url = '/productos/validar-sku?sku=' + encodeURIComponent(sku);
+        if (excludeId) url += '&exclude=' + encodeURIComponent(excludeId);
+        return this.request(url);
+    },
+
+    // --- Categorías ---
+    getCategorias(all) { return this.request('/categorias' + (all ? '?all=true' : '')); },
+    createCategoria(data) { return this.request('/categorias', { method: 'POST', body: JSON.stringify(data) }); },
+    updateCategoria(id, data) { return this.request('/categorias/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
+    toggleCategoria(id, activo) { return this.request('/categorias/' + id + '/toggle', { method: 'PATCH', body: JSON.stringify({ activo }) }); },
 
     // --- Personalizaciones ---
     getPersonalizaciones(all) { return this.request('/personalizaciones' + (all ? '?all=true' : '')); },
@@ -69,5 +80,27 @@ const api = {
         }
         return this.request('/estadisticas/canales' + params);
     },
-    getVentasPorEstado() { return this.request('/estadisticas/estados'); }
+    getVentasPorEstado() { return this.request('/estadisticas/estados'); },
+
+    // --- Comentarios ---
+    getComentarios(pedidoId) { return this.request('/pedidos/' + pedidoId + '/comentarios'); },
+    crearComentario(pedidoId, texto) { return this.request('/pedidos/' + pedidoId + '/comentarios', { method: 'POST', body: JSON.stringify({ texto }) }); },
+    eliminarComentario(id) { return this.request('/comentarios/' + id, { method: 'DELETE' }); },
+
+    // --- Adjuntos ---
+    getAdjuntos(pedidoId) { return this.request('/pedidos/' + pedidoId + '/adjuntos'); },
+    async subirAdjunto(pedidoId, file) {
+        const token = Auth.getToken();
+        const fd = new FormData();
+        fd.append('archivo', file);
+        const response = await fetch(API_BASE + '/pedidos/' + pedidoId + '/adjuntos', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd
+        });
+        if (response.status === 401) { Auth.clearSession(); window.location.href = '/login'; return null; }
+        return response.json();
+    },
+    getAdjuntoUrl(id) { return this.request('/adjuntos/' + id + '/download'); },
+    eliminarAdjunto(id) { return this.request('/adjuntos/' + id, { method: 'DELETE' }); }
 };

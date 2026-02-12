@@ -41,7 +41,7 @@ function crearFilaPedido(pedido, isAdmin) {
         <tr class="${alerta}">
             <td><strong>${pedido.id}</strong></td>
             <td>${pedido.cliente || ''}</td>
-            <td>${pedido.producto || ''}<br><small style="color:#666;">Talla: ${pedido.talla || ''}</small></td>
+            <td>${pedido.producto || ''}${pedido.color ? ' · ' + pedido.color : ''}<br><small style="color:#666;">Talla: ${pedido.talla || ''}</small></td>
             <td><strong>${formatearMoneda(pedido.precio_total)}</strong></td>
             <td>${getEstadoBadge(pedido.estatus_produccion)}</td>
             <td class="actions">

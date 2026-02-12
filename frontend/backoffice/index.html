@@ -144,6 +144,7 @@
         <div class="param-tabs">
             <button class="param-tab active" data-param="productos">Productos</button>
             <button class="param-tab" data-param="personalizaciones">Personalizaciones</button>
+            <button class="param-tab" data-param="categorias">Categorías</button>
         </div>
         <div id="param-content"></div>
     </div>
@@ -249,16 +250,54 @@ async function cargarPendientes() {
             return;
         }
 
-        container.innerHTML = pendientes.map(p => `
-            <div class="pendiente-card">
-                <div>
-                    <strong style="color:#2F5496;">${p.id}</strong> — ${p.cliente}<br>
-                    <span style="font-size:.9em;color:#666;">${p.producto} · ${formatearMoneda(p.precio_total)}</span><br>
-                    <span style="color:#dc3545;font-size:.85em;font-weight:600;">${p.motivo_pendiente}</span>
-                </div>
-                <button class="btn btn-primary" onclick="editarPedido('${p.id}')"><i class="fas fa-edit"></i> Resolver</button>
-            </div>
-        `).join('');
+        // Group by category
+        const groups = { bloqueado: [], retraso: [], personalizacion: [], informacion: [] };
+        pendientes.forEach(p => {
+            const cat = p.categoria_pendiente || 'informacion';
+            if (groups[cat]) groups[cat].push(p);
+            else groups.informacion.push(p);
+        });
+
+        const categoryConfig = {
+            bloqueado: { icon: 'fa-ban', color: '#dc3545', title: 'Bloqueados' },
+            retraso: { icon: 'fa-clock', color: '#fd7e14', title: 'Con Retraso' },
+            personalizacion: { icon: 'fa-palette', color: '#6f42c1', title: 'Falta Personalización' },
+            informacion: { icon: 'fa-info-circle', color: '#17a2b8', title: 'Información Incompleta' }
+        };
+
+        let html = '';
+        for (const [cat, items] of Object.entries(groups)) {
+            if (!items.length) continue;
+            const cfg = categoryConfig[cat];
+            html += `<div style="margin-bottom:24px;">
+                <h3 style="font-size:1.05em;color:${cfg.color};margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <i class="fas ${cfg.icon}"></i> ${cfg.title} (${items.length})
+                </h3>`;
+            html += items.map(p => {
+                const motivos = (p.motivos || []).map(m => {
+                    const labels = {
+                        sin_direccion: '<span style="color:#dc3545;">Sin dirección</span>',
+                        retraso: `<span style="color:#fd7e14;">${p.dias_retraso} días retraso</span>`,
+                        sin_detalles_personalizacion: '<span style="color:#6f42c1;">Sin detalles personalización</span>',
+                        sin_email: '<span style="color:#17a2b8;">Sin email</span>',
+                        direccion_pendiente: '<span style="color:#dc3545;">Dirección pendiente</span>'
+                    };
+                    return labels[m] || m;
+                }).join(' · ');
+
+                return `<div class="pendiente-card" style="border-left-color:${cfg.color};">
+                    <div style="flex:1;">
+                        <strong style="color:#2F5496;">${p.id}</strong> — ${p.cliente}<br>
+                        <span style="font-size:.9em;color:#666;">${p.producto} · ${formatearMoneda(p.precio_total)}</span><br>
+                        <div style="font-size:.85em;margin-top:4px;">${motivos}</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="editarPedido('${p.id}')"><i class="fas fa-edit"></i> Resolver</button>
+                </div>`;
+            }).join('');
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
     } catch (error) {
         console.error('Error pendientes:', error);
     }
@@ -279,7 +318,8 @@ document.querySelectorAll('.param-tab').forEach(tab => {
 
 document.getElementById('btnAddParam').addEventListener('click', () => {
     if (paramActiveTab === 'productos') abrirFormProducto();
-    else abrirFormPersonalizacion();
+    else if (paramActiveTab === 'personalizaciones') abrirFormPersonalizacion();
+    else abrirFormCategoria();
 });
 
 async function cargarParametrizacion() {
@@ -294,8 +334,7 @@ async function cargarParametrizacion() {
                     <div class="param-name">${p.nombre}</div>
                     <div class="param-meta">
                         SKU: ${p.sku} · ${p.categoria}<br>
-                        Precio: ${formatearMoneda(p.precio_base)} · Costo: ${formatearMoneda(p.costo_total)}<br>
-                        Margen: ${(p.margen_porcentaje || 0).toFixed(0)}% · ${p.tiempo_produccion_dias} días
+                        Costo prenda: ${formatearMoneda(p.costo_material)} · ${p.tiempo_produccion_dias} días
                     </div>
                     <div class="param-actions">
                         <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormProducto('${p.id}')"><i class="fas fa-edit"></i></button>
@@ -305,20 +344,43 @@ async function cargarParametrizacion() {
                     </div>
                 </div>
             `).join('') + '</div>';
-        } else {
+
+        } else if (paramActiveTab === 'personalizaciones') {
             const items = await api.getPersonalizaciones(true);
-            container.innerHTML = '<div class="param-grid">' + items.map(p => `
+            container.innerHTML = '<div class="param-grid">' + items.map(p => {
+                const esPuntadas = p.metodo_calculo === 'puntadas';
+                const precioInfo = esPuntadas
+                    ? `RD$${(p.costo_por_mil_puntadas||0).toLocaleString()}/1K puntadas`
+                    : `Precio: ${formatearMoneda(p.precio)}`;
+                return `
                 <div class="param-card ${p.activo ? '' : 'inactive'}" style="border-left-color:#6f42c1;">
                     <div class="param-name">${p.tipo}</div>
                     <div class="param-meta">
                         Código: ${p.codigo}<br>
-                        Precio: ${formatearMoneda(p.precio)} · +${p.tiempo_adicional_dias} días<br>
+                        ${precioInfo} · +${p.tiempo_adicional_dias} días<br>
+                        Método: <strong>${esPuntadas ? 'Por puntadas' : 'Precio fijo'}</strong><br>
                         ${p.descripcion || ''}
                     </div>
                     <div class="param-actions">
                         <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormPersonalizacion('${p.id}')"><i class="fas fa-edit"></i></button>
                         <button class="btn ${p.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="togglePersonalizacionUI('${p.id}', ${!p.activo})">
                             <i class="fas ${p.activo ? 'fa-ban' : 'fa-check'}"></i> ${p.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                    </div>
+                </div>`;
+            }).join('') + '</div>';
+
+        } else {
+            // Categorías
+            const items = await api.getCategorias(true);
+            container.innerHTML = '<div class="param-grid">' + items.map(c => `
+                <div class="param-card ${c.activo ? '' : 'inactive'}" style="border-left-color:#28a745;">
+                    <div class="param-name">${c.nombre}</div>
+                    <div class="param-meta">${c.descripcion || 'Sin descripción'}</div>
+                    <div class="param-actions">
+                        <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormCategoria('${c.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn ${c.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="toggleCategoriaUI('${c.id}', ${!c.activo})">
+                            <i class="fas ${c.activo ? 'fa-ban' : 'fa-check'}"></i> ${c.activo ? 'Desactivar' : 'Activar'}
                         </button>
                     </div>
                 </div>
@@ -328,6 +390,7 @@ async function cargarParametrizacion() {
         container.innerHTML = '<p style="color:#dc3545;text-align:center;padding:20px;">Error al cargar datos</p>';
     }
 }
+
 
 async function toggleProductoUI(id, activo) {
     await api.toggleProducto(id, activo);
@@ -341,10 +404,16 @@ async function togglePersonalizacionUI(id, activo) {
     cargarParametrizacion();
 }
 
+async function toggleCategoriaUI(id, activo) {
+    await api.toggleCategoria(id, activo);
+    showNotification(activo ? 'Categoría activada' : 'Categoría desactivada', 'success');
+    cargarParametrizacion();
+}
+
 // ===================== PARAM MODALS =====================
 
 async function abrirFormProducto(id) {
-    let data = { sku: '', nombre: '', categoria: 'Camisetas', precio_base: '', costo_material: '', costo_mano_obra: '', tiempo_produccion_dias: 7 };
+    let data = { sku: '', nombre: '', categoria: 'Camisetas', costo_material: '', tiempo_produccion_dias: 7 };
     let title = 'Nuevo Producto';
 
     if (id) {
@@ -353,31 +422,40 @@ async function abrirFormProducto(id) {
         if (found) { data = found; title = 'Editar Producto'; }
     }
 
+    // Load categories dynamically
+    let categorias = [];
+    try { categorias = await api.getCategorias(); } catch(e) { categorias = [{nombre:'Camisetas'},{nombre:'Hoodies'},{nombre:'Abrigos'},{nombre:'Otros'}]; }
+    const catOptions = categorias.map(c => `<option ${data.categoria===c.nombre?'selected':''}>${c.nombre}</option>`).join('');
+    const closeModal = `this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''`;
+
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.innerHTML = `
     <div class="modal-content" style="max-width:560px;">
         <div class="modal-header">
             <h2 class="modal-title"><i class="fas fa-tshirt"></i> ${title}</h2>
-            <button class="modal-close" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''"><i class="fas fa-times"></i></button>
+            <button class="modal-close" onclick="${closeModal}"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
+            <div id="prodFormError" style="display:none;padding:10px;background:#f8d7da;color:#721c24;border-radius:6px;margin-bottom:14px;font-size:.9em;"></div>
             <form id="formProductoParam">
                 <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">SKU</label><input name="sku" class="form-control" value="${data.sku}" ${id ? 'readonly style="background:#f5f5f5"' : ''} required></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Categoría</label><select name="categoria" class="form-control"><option ${data.categoria==='Camisetas'?'selected':''}>Camisetas</option><option ${data.categoria==='Hoodies'?'selected':''}>Hoodies</option><option ${data.categoria==='Abrigos'?'selected':''}>Abrigos</option><option ${data.categoria==='Otros'?'selected':''}>Otros</option></select></div>
+                    <div>
+                        <label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">SKU</label>
+                        <input name="sku" class="form-control" value="${data.sku}" required>
+                        <div id="skuFeedback" style="font-size:.75em;margin-top:4px;"></div>
+                    </div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Categoría</label><select name="categoria" class="form-control">${catOptions}</select></div>
                 </div>
                 <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Nombre</label><input name="nombre" class="form-control" value="${data.nombre}" required></div>
-                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Precio</label><input name="precio_base" type="number" class="form-control" value="${data.precio_base}" required></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Costo Material</label><input name="costo_material" type="number" class="form-control" value="${data.costo_material}" required></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Mano de Obra</label><input name="costo_mano_obra" type="number" class="form-control" value="${data.costo_mano_obra}" required></div>
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Costo Prenda (RD$)</label><input name="costo_material" type="number" class="form-control" value="${data.costo_material}" required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Producción</label><input name="tiempo_produccion_dias" type="number" class="form-control" value="${data.tiempo_produccion_dias}" required></div>
                 </div>
-                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Producción</label><input name="tiempo_produccion_dias" type="number" class="form-control" value="${data.tiempo_produccion_dias}" required></div>
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn-modal btn-secondary" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''">Cancelar</button>
+            <button class="btn-modal btn-secondary" onclick="${closeModal}">Cancelar</button>
             <button class="btn-modal btn-success" id="btnSaveProducto"><i class="fas fa-save"></i> Guardar</button>
         </div>
     </div>`;
@@ -387,17 +465,45 @@ async function abrirFormProducto(id) {
     ov.classList.add('active');
     document.body.style.overflow = 'hidden';
 
+    // SKU validation on blur
+    const skuInput = modal.querySelector('[name="sku"]');
+    let skuValid = true;
+    skuInput.addEventListener('blur', async () => {
+        const sku = skuInput.value.trim();
+        const fb = document.getElementById('skuFeedback');
+        if (!sku) { fb.innerHTML = ''; skuValid = true; return; }
+        try {
+            const res = await api.validarSku(sku, id || '');
+            if (res.exists) {
+                fb.innerHTML = '<span style="color:#dc3545;">⚠ Este SKU ya existe</span>';
+                skuValid = false;
+            } else {
+                fb.innerHTML = '<span style="color:#28a745;">✓ SKU disponible</span>';
+                skuValid = true;
+            }
+        } catch(e) { fb.innerHTML = ''; skuValid = true; }
+    });
+
     document.getElementById('btnSaveProducto').onclick = async () => {
+        if (!skuValid) {
+            document.getElementById('prodFormError').style.display = 'block';
+            document.getElementById('prodFormError').textContent = 'El SKU ya está en uso por otro producto';
+            return;
+        }
         const fd = new FormData(document.getElementById('formProductoParam'));
         const obj = Object.fromEntries(fd.entries());
-        obj.precio_base = parseFloat(obj.precio_base);
+        obj.precio_base = 0;
         obj.costo_material = parseFloat(obj.costo_material);
-        obj.costo_mano_obra = parseFloat(obj.costo_mano_obra);
+        obj.costo_mano_obra = 0;
         obj.tiempo_produccion_dias = parseInt(obj.tiempo_produccion_dias);
 
         try {
-            if (id) await api.updateProducto(id, obj);
-            else await api.createProducto(obj);
+            const res = id ? await api.updateProducto(id, obj) : await api.createProducto(obj);
+            if (res && !res.success && res.error) {
+                document.getElementById('prodFormError').style.display = 'block';
+                document.getElementById('prodFormError').textContent = res.error;
+                return;
+            }
             modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
             showNotification(id ? 'Producto actualizado' : 'Producto creado', 'success');
             cargarParametrizacion();
@@ -406,7 +512,7 @@ async function abrirFormProducto(id) {
 }
 
 async function abrirFormPersonalizacion(id) {
-    let data = { codigo: '', tipo: '', descripcion: '', precio: '', tiempo_adicional_dias: 0 };
+    let data = { codigo: '', tipo: '', descripcion: '', precio: 0, tiempo_adicional_dias: 0, metodo_calculo: 'fijo', costo_por_mil_puntadas: 0 };
     let title = 'Nueva Personalización';
 
     if (id) {
@@ -415,29 +521,58 @@ async function abrirFormPersonalizacion(id) {
         if (found) { data = found; title = 'Editar Personalización'; }
     }
 
+    const closeModal = `this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''`;
+    const esPuntadas = data.metodo_calculo === 'puntadas';
+
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.innerHTML = `
-    <div class="modal-content" style="max-width:500px;">
+    <div class="modal-content" style="max-width:540px;">
         <div class="modal-header">
             <h2 class="modal-title"><i class="fas fa-palette"></i> ${title}</h2>
-            <button class="modal-close" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''"><i class="fas fa-times"></i></button>
+            <button class="modal-close" onclick="${closeModal}"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form id="formPersParam">
                 <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
                     <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Código</label><input name="codigo" class="form-control" value="${data.codigo}" ${id ? 'readonly style="background:#f5f5f5"' : ''} required></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Tipo</label><input name="tipo" class="form-control" value="${data.tipo}" required></div>
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Tipo / Nombre</label><input name="tipo" class="form-control" value="${data.tipo}" required></div>
                 </div>
                 <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Descripción</label><textarea name="descripcion" class="form-control" rows="2">${data.descripcion||''}</textarea></div>
-                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Precio (RD$)</label><input name="precio" type="number" class="form-control" value="${data.precio}" required></div>
+
+                <!-- Método de cálculo -->
+                <div style="margin-bottom:14px;">
+                    <label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Método de Cálculo</label>
+                    <select name="metodo_calculo" id="persMetodo" class="form-control">
+                        <option value="fijo" ${data.metodo_calculo==='fijo'?'selected':''}>Precio Fijo (Sublimación, Serigrafía)</option>
+                        <option value="puntadas" ${data.metodo_calculo==='puntadas'?'selected':''}>Por Puntadas (Bordados)</option>
+                    </select>
+                </div>
+
+                <!-- Precio fijo -->
+                <div id="seccionFijo" class="form-row" style="display:${esPuntadas?'none':'grid'};grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Precio Fijo (RD$)</label><input name="precio" type="number" step="0.01" class="form-control" value="${data.precio}"></div>
                     <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Adicionales</label><input name="tiempo_adicional_dias" type="number" class="form-control" value="${data.tiempo_adicional_dias}"></div>
+                </div>
+
+                <!-- Precio por puntadas -->
+                <div id="seccionPuntadas" style="display:${esPuntadas?'block':'none'};">
+                    <div style="background:#f0f4ff;padding:14px;border-radius:8px;border-left:4px solid #6f42c1;margin-bottom:14px;">
+                        <p style="font-size:.85em;color:#555;margin-bottom:8px;">💡 <strong>Fórmula:</strong> (puntadas ÷ 1000) × costo por mil = precio</p>
+                        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                            <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">RD$ por 1,000 puntadas</label><input name="costo_por_mil_puntadas" type="number" step="0.01" class="form-control" value="${data.costo_por_mil_puntadas||0}"></div>
+                            <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Adicionales</label><input name="tiempo_adicional_dias_p" type="number" class="form-control" value="${data.tiempo_adicional_dias}"></div>
+                        </div>
+                        <!-- Calculator preview -->
+                        <div style="margin-top:10px;font-size:.82em;color:#666;">
+                            <strong>Calculadora:</strong> <input id="calcPuntadas" type="number" placeholder="Puntadas" style="width:100px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:.9em;"> → <span id="calcResultado">RD$0</span>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn-modal btn-secondary" onclick="this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''">Cancelar</button>
+            <button class="btn-modal btn-secondary" onclick="${closeModal}">Cancelar</button>
             <button class="btn-modal btn-success" id="btnSavePers"><i class="fas fa-save"></i> Guardar</button>
         </div>
     </div>`;
@@ -447,17 +582,101 @@ async function abrirFormPersonalizacion(id) {
     ov.classList.add('active');
     document.body.style.overflow = 'hidden';
 
+    // Toggle visibility based on method
+    document.getElementById('persMetodo').addEventListener('change', (e) => {
+        const isPuntadas = e.target.value === 'puntadas';
+        document.getElementById('seccionFijo').style.display = isPuntadas ? 'none' : 'grid';
+        document.getElementById('seccionPuntadas').style.display = isPuntadas ? 'block' : 'none';
+    });
+
+    // Calculator
+    document.getElementById('calcPuntadas')?.addEventListener('input', (e) => {
+        const puntadas = parseInt(e.target.value) || 0;
+        const costoMil = parseFloat(modal.querySelector('[name="costo_por_mil_puntadas"]').value) || 0;
+        const total = (puntadas / 1000) * costoMil;
+        document.getElementById('calcResultado').textContent = 'RD$' + total.toLocaleString();
+    });
+    modal.querySelector('[name="costo_por_mil_puntadas"]')?.addEventListener('input', () => {
+        document.getElementById('calcPuntadas')?.dispatchEvent(new Event('input'));
+    });
+
     document.getElementById('btnSavePers').onclick = async () => {
         const fd = new FormData(document.getElementById('formPersParam'));
         const obj = Object.fromEntries(fd.entries());
-        obj.precio = parseFloat(obj.precio);
-        obj.tiempo_adicional_dias = parseInt(obj.tiempo_adicional_dias || 0);
+        obj.metodo_calculo = obj.metodo_calculo || 'fijo';
+
+        if (obj.metodo_calculo === 'puntadas') {
+            obj.costo_por_mil_puntadas = parseFloat(obj.costo_por_mil_puntadas) || 0;
+            obj.precio = 0; // No fixed price for puntadas
+            obj.tiempo_adicional_dias = parseInt(obj.tiempo_adicional_dias_p || 0);
+        } else {
+            obj.precio = parseFloat(obj.precio) || 0;
+            obj.costo_por_mil_puntadas = 0;
+            obj.tiempo_adicional_dias = parseInt(obj.tiempo_adicional_dias || 0);
+        }
+        delete obj.tiempo_adicional_dias_p;
 
         try {
             if (id) await api.updatePersonalizacion(id, obj);
             else await api.createPersonalizacion(obj);
             modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
             showNotification(id ? 'Personalización actualizada' : 'Personalización creada', 'success');
+            cargarParametrizacion();
+        } catch (e) { showNotification(e.message, 'error'); }
+    };
+}
+
+// ===================== CATEGORÍA FORM =====================
+
+async function abrirFormCategoria(id) {
+    let data = { nombre: '', descripcion: '' };
+    let title = 'Nueva Categoría';
+
+    if (id) {
+        const items = await api.getCategorias(true);
+        const found = items.find(c => c.id === id);
+        if (found) { data = found; title = 'Editar Categoría'; }
+    }
+
+    const closeModal = `this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''`;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+    <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-tag"></i> ${title}</h2>
+            <button class="modal-close" onclick="${closeModal}"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="formCatParam">
+                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Nombre</label><input name="nombre" class="form-control" value="${data.nombre}" required placeholder="Ej: Tazas, Gorras, Camisetas..."></div>
+                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Descripción</label><textarea name="descripcion" class="form-control" rows="2" placeholder="Opcional">${data.descripcion||''}</textarea></div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-secondary" onclick="${closeModal}">Cancelar</button>
+            <button class="btn-modal btn-success" id="btnSaveCat"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+    let ov = document.querySelector('.modal-overlay');
+    if (!ov) { ov = document.createElement('div'); ov.className='modal-overlay'; document.body.appendChild(ov); }
+    ov.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('btnSaveCat').onclick = async () => {
+        const fd = new FormData(document.getElementById('formCatParam'));
+        const obj = Object.fromEntries(fd.entries());
+
+        try {
+            const res = id ? await api.updateCategoria(id, obj) : await api.createCategoria(obj);
+            if (res && !res.success && res.error) {
+                showNotification(res.error, 'error');
+                return;
+            }
+            modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
+            showNotification(id ? 'Categoría actualizada' : 'Categoría creada', 'success');
             cargarParametrizacion();
         } catch (e) { showNotification(e.message, 'error'); }
     };

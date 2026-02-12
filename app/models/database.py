@@ -63,6 +63,67 @@ class DatabaseManager:
 
 
 # ==============================================================================
+# CATEGORÍAS DE PRODUCTO
+# ==============================================================================
+
+class CategoriasRepository:
+
+    @staticmethod
+    def get_all(include_inactive=False):
+        where = "" if include_inactive else "WHERE activo = true"
+        query = f"SELECT id, nombre, descripcion, activo FROM categorias_producto_tabla {where} ORDER BY nombre"
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query)
+            results = []
+            for row in cursor.fetchall():
+                r = dict(row)
+                if r.get('id'):
+                    r['id'] = str(r['id'])
+                results.append(r)
+            return results
+
+    @staticmethod
+    def create(data):
+        query = """
+            INSERT INTO categorias_producto_tabla (nombre, descripcion)
+            VALUES (%(nombre)s, %(descripcion)s)
+            RETURNING id, nombre
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, data)
+            r = dict(cursor.fetchone())
+            if r.get('id'):
+                r['id'] = str(r['id'])
+            return r
+
+    @staticmethod
+    def update(cat_id, data):
+        query = """
+            UPDATE categorias_producto_tabla
+            SET nombre = %(nombre)s, descripcion = %(descripcion)s
+            WHERE id = %(id)s
+            RETURNING id, nombre
+        """
+        data['id'] = cat_id
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, data)
+            row = cursor.fetchone()
+            if row:
+                r = dict(row)
+                if r.get('id'):
+                    r['id'] = str(r['id'])
+                return r
+            return None
+
+    @staticmethod
+    def toggle_active(cat_id, activo):
+        query = "UPDATE categorias_producto_tabla SET activo = %s WHERE id = %s RETURNING id"
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (activo, cat_id))
+            return cursor.fetchone() is not None
+
+
+# ==============================================================================
 # PRODUCTOS
 # ==============================================================================
 
@@ -113,9 +174,15 @@ class ProductosRepository:
 
     @staticmethod
     def create(data):
+        # Validate SKU uniqueness
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute("SELECT id FROM productos WHERE sku = %s", (data['sku'],))
+            if cursor.fetchone():
+                raise ValueError(f"El SKU '{data['sku']}' ya existe")
+
         query = """
             INSERT INTO productos (sku, nombre, categoria, precio_base, costo_material, costo_mano_obra, tiempo_produccion_dias)
-            VALUES (%(sku)s, %(nombre)s, %(categoria)s::categoria_producto, %(precio_base)s, %(costo_material)s, %(costo_mano_obra)s, %(tiempo_produccion_dias)s)
+            VALUES (%(sku)s, %(nombre)s, %(categoria)s, %(precio_base)s, %(costo_material)s, %(costo_mano_obra)s, %(tiempo_produccion_dias)s)
             RETURNING id, sku, nombre
         """
         with DatabaseManager.get_cursor() as cursor:
@@ -127,9 +194,18 @@ class ProductosRepository:
 
     @staticmethod
     def update(product_id, data):
+        # If SKU is being changed, validate no duplicates
+        new_sku = data.get('sku')
+        if new_sku:
+            check_query = "SELECT id FROM productos WHERE sku = %s AND id != %s"
+            with DatabaseManager.get_cursor() as cursor:
+                cursor.execute(check_query, (new_sku, product_id))
+                if cursor.fetchone():
+                    raise ValueError(f"El SKU '{new_sku}' ya existe en otro producto")
+
         query = """
             UPDATE productos SET
-                nombre = %(nombre)s, categoria = %(categoria)s::categoria_producto,
+                sku = %(sku)s, nombre = %(nombre)s, categoria = %(categoria)s,
                 precio_base = %(precio_base)s, costo_material = %(costo_material)s,
                 costo_mano_obra = %(costo_mano_obra)s, tiempo_produccion_dias = %(tiempo_produccion_dias)s
             WHERE id = %(id)s
@@ -145,6 +221,19 @@ class ProductosRepository:
                     r['id'] = str(r['id'])
                 return r
             return None
+
+    @staticmethod
+    def sku_exists(sku, exclude_id=None):
+        """Check if SKU already exists (for validation)"""
+        if exclude_id:
+            query = "SELECT id FROM productos WHERE sku = %s AND id != %s"
+            params = (sku, exclude_id)
+        else:
+            query = "SELECT id FROM productos WHERE sku = %s"
+            params = (sku,)
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, params)
+            return cursor.fetchone() is not None
 
     @staticmethod
     def toggle_active(product_id, activo):
@@ -173,6 +262,8 @@ class PersonalizacionesRepository:
             p['id'] = str(p['id'])
         if p.get('precio') is not None:
             p['precio'] = float(p['precio'])
+        if p.get('costo_por_mil_puntadas') is not None:
+            p['costo_por_mil_puntadas'] = float(p['costo_por_mil_puntadas'])
         for f in ['created_at', 'updated_at']:
             if p.get(f) and hasattr(p[f], 'isoformat'):
                 p[f] = p[f].isoformat()
@@ -182,7 +273,8 @@ class PersonalizacionesRepository:
     def get_all(include_inactive=False):
         where = "" if include_inactive else "WHERE activo = true"
         query = f"""
-            SELECT id, codigo, tipo, descripcion, precio, tiempo_adicional_dias, activo
+            SELECT id, codigo, tipo, descripcion, precio, tiempo_adicional_dias,
+                   metodo_calculo, costo_por_mil_puntadas, activo
             FROM personalizaciones {where}
             ORDER BY tipo
         """
@@ -207,10 +299,17 @@ class PersonalizacionesRepository:
     @staticmethod
     def create(data):
         query = """
-            INSERT INTO personalizaciones (codigo, tipo, descripcion, precio, tiempo_adicional_dias)
-            VALUES (%(codigo)s, %(tipo)s, %(descripcion)s, %(precio)s, %(tiempo_adicional_dias)s)
+            INSERT INTO personalizaciones (codigo, tipo, descripcion, precio, tiempo_adicional_dias,
+                                           metodo_calculo, costo_por_mil_puntadas)
+            VALUES (%(codigo)s, %(tipo)s, %(descripcion)s, %(precio)s, %(tiempo_adicional_dias)s,
+                    %(metodo_calculo)s, %(costo_por_mil_puntadas)s)
             RETURNING id, codigo, tipo
         """
+        # Defaults
+        if 'metodo_calculo' not in data:
+            data['metodo_calculo'] = 'fijo'
+        if 'costo_por_mil_puntadas' not in data:
+            data['costo_por_mil_puntadas'] = 0
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, data)
             result = dict(cursor.fetchone())
@@ -223,11 +322,16 @@ class PersonalizacionesRepository:
         query = """
             UPDATE personalizaciones SET
                 tipo = %(tipo)s, descripcion = %(descripcion)s,
-                precio = %(precio)s, tiempo_adicional_dias = %(tiempo_adicional_dias)s
+                precio = %(precio)s, tiempo_adicional_dias = %(tiempo_adicional_dias)s,
+                metodo_calculo = %(metodo_calculo)s, costo_por_mil_puntadas = %(costo_por_mil_puntadas)s
             WHERE id = %(id)s
             RETURNING id, codigo, tipo
         """
         data['id'] = pid
+        if 'metodo_calculo' not in data:
+            data['metodo_calculo'] = 'fijo'
+        if 'costo_por_mil_puntadas' not in data:
+            data['costo_por_mil_puntadas'] = 0
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, data)
             row = cursor.fetchone()
@@ -262,7 +366,8 @@ class PedidosRepository:
                 pedido[field] = pedido[field].strftime('%d/%m/%Y')
         for field in ['precio_producto', 'precio_personalizacion', 'precio_envio',
                       'precio_total', 'costo_producto', 'costo_personalizacion',
-                      'costo_total', 'ganancia', 'precio_person', 'costo_person']:
+                      'costo_total', 'ganancia', 'precio_person', 'costo_person',
+                      'costo_mano_obra', 'costos_adicionales']:
             if pedido.get(field) is not None:
                 pedido[field] = float(pedido[field])
         return pedido
@@ -276,8 +381,10 @@ class PedidosRepository:
         producto_sku as sku,
         producto_nombre as producto,
         talla_seleccionada::text as talla,
+        color,
         personalizacion_codigo,
         personalizacion_detalles as personalizacion,
+        personalizacion_puntadas as puntadas,
         fecha_pago, fecha_compromiso, fecha_entrega_real,
         dias_produccion, dias_retraso,
         precio_producto,
@@ -285,6 +392,8 @@ class PedidosRepository:
         precio_envio, precio_total,
         costo_producto,
         costo_personalizacion as costo_person,
+        costo_mano_obra,
+        COALESCE(costos_adicionales, 0) as costos_adicionales,
         costo_total, ganancia,
         canal::text,
         metodo_pago::text as banco,
@@ -316,13 +425,32 @@ class PedidosRepository:
         personalizacion_id = None
         precio_personalizacion = 0
         costo_personalizacion = 0
+        puntadas = int(data.get('personalizacion_puntadas', 0) or 0)
 
         if data.get('personalizacion_tipo') and data['personalizacion_tipo'] != 'ninguna':
             pers = PersonalizacionesRepository.get_by_codigo(data['personalizacion_tipo'])
             if pers:
                 personalizacion_id = pers['id']
-                precio_personalizacion = float(pers['precio'])
-                costo_personalizacion = precio_personalizacion * 0.5
+
+                if pers.get('metodo_calculo') == 'puntadas':
+                    # Bordado: precio_personalizacion = 0 (no fixed price)
+                    precio_personalizacion = 0
+                    costo_personalizacion = 0
+                else:
+                    precio_personalizacion = float(pers['precio'])
+                    costo_personalizacion = precio_personalizacion * 0.5
+
+        # Mano de obra desde puntadas
+        costo_por_mil = float(data.get('costo_por_mil_puntadas', 0) or 0)
+        costo_mano_obra = (puntadas / 1000) * costo_por_mil if puntadas > 0 and costo_por_mil > 0 else 0
+
+        # Costos adicionales
+        costos_adicionales = float(data.get('costos_adicionales', 0) or 0)
+
+        # Precio de venta: si viene del form (bordados), usarlo; si no, usar precio_base del producto
+        precio_venta = float(data.get('precio_venta', 0) or 0)
+        if precio_venta <= 0:
+            precio_venta = float(producto['precio_base'])
 
         dias = int(str(data.get('tiempo_estimado', '7')).split()[0])
         fecha_pago = datetime.now().date()
@@ -331,22 +459,26 @@ class PedidosRepository:
         pedido_data = {
             'cliente_nombre': data['nombre_cliente'],
             'cliente_telefono': data['telefono'],
-            'cliente_email': data.get('email'),
+            'cliente_email': data.get('email') or None,
             'direccion_envio': data['direccion'],
             'producto_id': producto['id'],
             'producto_sku': data['producto_sku'],
             'producto_nombre': data.get('producto_nombre', producto['nombre']),
             'talla': data['talla'],
+            'color': data.get('color') or None,
             'personalizacion_id': personalizacion_id,
             'personalizacion_codigo': data.get('personalizacion_tipo') if personalizacion_id else None,
-            'personalizacion_detalles': data.get('personalizacion_detalles'),
+            'personalizacion_detalles': data.get('personalizacion_detalles') or None,
+            'personalizacion_puntadas': puntadas,
             'fecha_pago': fecha_pago,
             'fecha_compromiso': fecha_compromiso,
-            'precio_producto': float(producto['precio_base']),
+            'precio_producto': precio_venta,
             'precio_personalizacion': precio_personalizacion,
             'precio_envio': float(data.get('costo_envio', 200)),
-            'costo_producto': float(producto['costo_total']),
+            'costo_producto': float(producto.get('costo_material', 0) or producto.get('costo_total', 0) or 0),
             'costo_personalizacion': costo_personalizacion,
+            'costo_mano_obra': costo_mano_obra,
+            'costos_adicionales': costos_adicionales,
             'canal': data['canal'],
             'metodo_pago': data['banco'],
             'estado_pago': data['estatus_pago']
@@ -356,21 +488,25 @@ class PedidosRepository:
             INSERT INTO pedidos (
                 cliente_nombre, cliente_telefono, cliente_email, direccion_envio,
                 producto_id, producto_sku, producto_nombre, talla_seleccionada,
+                color,
                 personalizacion_id, personalizacion_codigo, personalizacion_detalles,
+                personalizacion_puntadas,
                 fecha_pago, fecha_compromiso,
                 precio_producto, precio_personalizacion, precio_envio,
-                costo_producto, costo_personalizacion,
+                costo_producto, costo_personalizacion, costo_mano_obra, costos_adicionales,
                 canal, metodo_pago, estado_pago
             ) VALUES (
                 %(cliente_nombre)s, %(cliente_telefono)s, %(cliente_email)s, %(direccion_envio)s,
                 %(producto_id)s, %(producto_sku)s, %(producto_nombre)s, %(talla)s::talla,
+                %(color)s,
                 %(personalizacion_id)s, %(personalizacion_codigo)s, %(personalizacion_detalles)s,
+                %(personalizacion_puntadas)s,
                 %(fecha_pago)s, %(fecha_compromiso)s,
                 %(precio_producto)s, %(precio_personalizacion)s, %(precio_envio)s,
-                %(costo_producto)s, %(costo_personalizacion)s,
+                %(costo_producto)s, %(costo_personalizacion)s, %(costo_mano_obra)s, %(costos_adicionales)s,
                 %(canal)s::canal_venta, %(metodo_pago)s::metodo_pago, %(estado_pago)s::estado_pago
             )
-            RETURNING numero_pedido, fecha_compromiso, precio_total
+            RETURNING numero_pedido, fecha_compromiso, precio_total, ganancia
         """
 
         with DatabaseManager.get_cursor() as cursor:
@@ -379,43 +515,89 @@ class PedidosRepository:
             return {
                 'id': result['numero_pedido'],
                 'fecha_entrega': result['fecha_compromiso'].strftime('%d/%m/%Y'),
-                'total': float(result['precio_total'])
+                'total': float(result['precio_total']),
+                'ganancia': float(result['ganancia'])
             }
 
     @staticmethod
     def update(pedido_id, data):
         campos = []
         params = {'pedido_id': pedido_id}
-        field_map = {
-            'cliente': ('cliente_nombre', None),
-            'telefono': ('cliente_telefono', None),
-            'email': ('cliente_email', None),
-            'direccion': ('direccion_envio', None),
-            'estatus_produccion': ('estado_produccion', '::estado_produccion'),
-            'estatus_pago': ('estado_pago', '::estado_pago'),
-            'banco': ('metodo_pago', '::metodo_pago'),
-            'canal': ('canal', '::canal_venta'),
-        }
 
-        for key, (col, cast) in field_map.items():
+        # Simple text fields
+        simple_fields = {
+            'cliente': 'cliente_nombre',
+            'telefono': 'cliente_telefono',
+            'direccion': 'direccion_envio',
+            'personalizacion': 'personalizacion_detalles',
+            'color': 'color',
+        }
+        for key, col in simple_fields.items():
             if key in data:
-                cast_str = cast or ''
-                campos.append(f'{col} = %({key}s){cast_str}')
+                placeholder = f'%({key})s'
+                campos.append(f'{col} = {placeholder}')
+                params[key] = data[key] if data[key] else None
+
+        # Email: explicitly allow empty/null
+        if 'email' in data:
+            campos.append('cliente_email = %(email)s')
+            params['email'] = data['email'] if data['email'] else None
+
+        # ENUM fields
+        enum_fields = {
+            'estatus_produccion': ('estado_produccion', 'estado_produccion'),
+            'estatus_pago': ('estado_pago', 'estado_pago'),
+            'banco': ('metodo_pago', 'metodo_pago'),
+            'canal': ('canal', 'canal_venta'),
+        }
+        for key, (col, enum_name) in enum_fields.items():
+            if key in data and data[key]:
+                placeholder = f'%({key})s'
+                campos.append(f"{col} = {placeholder}::{enum_name}")
                 params[key] = data[key]
 
-        if data.get('fecha_entrega_real'):
-            partes = data['fecha_entrega_real'].split('/')
-            if len(partes) == 3:
-                params['fecha_entrega'] = date(int(partes[2]), int(partes[1]), int(partes[0]))
-                campos.append('fecha_entrega_real = %(fecha_entrega)s')
+        # Date field
+        if 'fecha_entrega_real' in data:
+            val = data['fecha_entrega_real']
+            if val and '/' in val:
+                partes = val.split('/')
+                if len(partes) == 3:
+                    try:
+                        params['fecha_entrega'] = date(int(partes[2]), int(partes[1]), int(partes[0]))
+                        campos.append('fecha_entrega_real = %(fecha_entrega)s')
+                    except (ValueError, IndexError):
+                        pass
+            elif not val:
+                campos.append('fecha_entrega_real = NULL')
+
+        # Numeric financial fields (editable for corrections)
+        numeric_fields = {
+            'precio_producto': 'precio_producto',
+            'costo_mano_obra': 'costo_mano_obra',
+            'costos_adicionales': 'costos_adicionales',
+            'precio_envio': 'precio_envio',
+            'costo_producto': 'costo_producto',
+        }
+        for key, col in numeric_fields.items():
+            if key in data and data[key] is not None and data[key] != '':
+                try:
+                    params[key] = float(data[key])
+                    campos.append(f'{col} = %({key})s')
+                except (ValueError, TypeError):
+                    pass
 
         if not campos:
             return True
 
         query = f"UPDATE pedidos SET {', '.join(campos)} WHERE numero_pedido = %(pedido_id)s RETURNING numero_pedido"
-        with DatabaseManager.get_cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.fetchone() is not None
+        try:
+            with DatabaseManager.get_cursor() as cursor:
+                cursor.execute(query, params)
+                row = cursor.fetchone()
+                return row is not None
+        except Exception as e:
+            print(f"[PEDIDO UPDATE ERROR] pedido={pedido_id} query={query} error={e}")
+            raise
 
     @staticmethod
     def delete(pedido_id):
@@ -427,22 +609,26 @@ class PedidosRepository:
     @staticmethod
     def get_pendientes():
         query = """
-            SELECT numero_pedido as id, cliente_nombre as cliente, producto_nombre as producto,
-                   precio_total, estado_produccion::text as estatus_produccion, dias_retraso,
-                   fecha_compromiso, direccion_envio as direccion,
-                   CASE
-                       WHEN estado_produccion = 'Bloqueado - Sin Direccion' THEN 'Sin direccion de envio'
-                       WHEN dias_retraso > 0 THEN dias_retraso || ' dias de retraso'
-                       ELSE 'Revision pendiente'
-                   END AS motivo_pendiente
-            FROM pedidos
-            WHERE estado_produccion = 'Bloqueado - Sin Direccion'
-               OR (estado_produccion NOT IN ('Entregado', 'Cancelado') AND dias_retraso > 0)
-            ORDER BY dias_retraso DESC NULLS LAST, fecha_compromiso ASC
+            SELECT id, cliente, telefono, producto, precio_total,
+                   estatus_produccion, estatus_pago, dias_retraso,
+                   fecha_compromiso, direccion, personalizacion_codigo,
+                   personalizacion, email, talla, canal, color,
+                   motivos, motivo_pendiente, categoria_pendiente
+            FROM vista_pedidos_pendientes
         """
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query)
-            return [PedidosRepository._format_pedido(row) for row in cursor.fetchall()]
+            results = []
+            for row in cursor.fetchall():
+                p = dict(row)
+                if p.get('precio_total') is not None:
+                    p['precio_total'] = float(p['precio_total'])
+                if p.get('fecha_compromiso') and isinstance(p['fecha_compromiso'], date):
+                    p['fecha_compromiso'] = p['fecha_compromiso'].strftime('%d/%m/%Y')
+                if p.get('fecha_pago') and isinstance(p.get('fecha_pago'), date):
+                    p['fecha_pago'] = p['fecha_pago'].strftime('%d/%m/%Y')
+                results.append(p)
+            return results
 
     @staticmethod
     def buscar(query_text):
@@ -554,3 +740,114 @@ class EstadisticasRepository:
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query)
             return [{'estado': r['estado'], 'total': r['total']} for r in cursor.fetchall()]
+
+
+# ==============================================================================
+# COMENTARIOS
+# ==============================================================================
+
+class ComentariosRepository:
+
+    @staticmethod
+    def _format(row):
+        if not row:
+            return None
+        c = dict(row)
+        if c.get('id'):
+            c['id'] = str(c['id'])
+        if c.get('created_at') and hasattr(c['created_at'], 'isoformat'):
+            c['created_at'] = c['created_at'].isoformat()
+        return c
+
+    @staticmethod
+    def get_by_pedido(pedido_numero):
+        query = """
+            SELECT id, pedido_numero, autor_email, autor_nombre, texto, created_at
+            FROM pedido_comentarios
+            WHERE pedido_numero = %s
+            ORDER BY created_at DESC
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (pedido_numero,))
+            return [ComentariosRepository._format(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def create(pedido_numero, autor_email, autor_nombre, texto):
+        query = """
+            INSERT INTO pedido_comentarios (pedido_numero, autor_email, autor_nombre, texto)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, pedido_numero, autor_email, autor_nombre, texto, created_at
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (pedido_numero, autor_email, autor_nombre, texto))
+            return ComentariosRepository._format(cursor.fetchone())
+
+    @staticmethod
+    def delete(comment_id):
+        query = "DELETE FROM pedido_comentarios WHERE id = %s RETURNING id"
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (comment_id,))
+            return cursor.fetchone() is not None
+
+
+# ==============================================================================
+# ADJUNTOS
+# ==============================================================================
+
+class AdjuntosRepository:
+
+    @staticmethod
+    def _format(row):
+        if not row:
+            return None
+        a = dict(row)
+        if a.get('id'):
+            a['id'] = str(a['id'])
+        if a.get('created_at') and hasattr(a['created_at'], 'isoformat'):
+            a['created_at'] = a['created_at'].isoformat()
+        return a
+
+    @staticmethod
+    def get_by_pedido(pedido_numero):
+        query = """
+            SELECT id, pedido_numero, nombre_archivo, nombre_original,
+                   tipo_mime, tamano_bytes, storage_path,
+                   subido_por_email, subido_por_nombre, created_at
+            FROM pedido_adjuntos
+            WHERE pedido_numero = %s
+            ORDER BY created_at DESC
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (pedido_numero,))
+            return [AdjuntosRepository._format(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def create(pedido_numero, nombre_original, tipo_mime, tamano_bytes, storage_path, email, nombre):
+        query = """
+            INSERT INTO pedido_adjuntos
+                (pedido_numero, nombre_archivo, nombre_original, tipo_mime, tamano_bytes, storage_path, subido_por_email, subido_por_nombre)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, pedido_numero, nombre_archivo, nombre_original, tipo_mime, tamano_bytes, storage_path, created_at
+        """
+        # nombre_archivo = last part of storage_path
+        nombre_archivo = storage_path.split('/')[-1] if '/' in storage_path else storage_path
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (pedido_numero, nombre_archivo, nombre_original, tipo_mime, tamano_bytes, storage_path, email, nombre))
+            return AdjuntosRepository._format(cursor.fetchone())
+
+    @staticmethod
+    def get_by_id(adjunto_id):
+        query = "SELECT * FROM pedido_adjuntos WHERE id = %s"
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (adjunto_id,))
+            return AdjuntosRepository._format(cursor.fetchone())
+
+    @staticmethod
+    def delete(adjunto_id):
+        query = "DELETE FROM pedido_adjuntos WHERE id = %s RETURNING storage_path"
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (adjunto_id,))
+            row = cursor.fetchone()
+            if row:
+                return row['storage_path']
+            return None

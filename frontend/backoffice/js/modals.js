@@ -112,17 +112,33 @@
                                 <div class="detail-item"><div class="detail-label">Producto</div><div class="detail-value">${esc(p.producto)}</div></div>
                                 <div class="detail-item"><div class="detail-label">SKU</div><div class="detail-value">${esc(p.sku)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Talla</div><div class="detail-value">${val(p.talla)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Color</div><div class="detail-value">${val(p.color)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Personalización</div><div class="detail-value">${val(p.personalizacion)}</div></div>
+                                ${p.puntadas ? `<div class="detail-item"><div class="detail-label">Puntadas</div><div class="detail-value">${Number(p.puntadas).toLocaleString()}</div></div>` : ''}
                             </div>
                         </div>
 
                         <div class="detail-section">
                             <div class="section-title"><i class="fas fa-dollar-sign"></i> Financiero</div>
                             <div class="detail-grid">
-                                <div class="detail-item"><div class="detail-label">Producto</div><div class="detail-value">${money(p.precio_producto)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Precio Venta</div><div class="detail-value">${money(p.precio_producto)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Personalización</div><div class="detail-value">${money(p.precio_person)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Envío</div><div class="detail-value">${money(p.precio_envio)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Ganancia</div><div class="detail-value" style="color:#28a745;font-weight:700;">${money(p.ganancia)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Total Cliente</div><div class="detail-value" style="font-weight:700;color:#2F5496;">${money(p.precio_total)}</div></div>
+                            </div>
+                            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e0e0e0;">
+                                <div style="font-size:.85em;font-weight:600;color:#666;margin-bottom:8px;">Costos</div>
+                                <div class="detail-grid">
+                                    <div class="detail-item"><div class="detail-label">Costo Prenda</div><div class="detail-value">${money(p.costo_producto)}</div></div>
+                                    <div class="detail-item"><div class="detail-label">Mano de Obra</div><div class="detail-value">${money(p.costo_mano_obra)}</div></div>
+                                    ${p.costos_adicionales > 0 ? `<div class="detail-item"><div class="detail-label">Costos Adicionales</div><div class="detail-value">${money(p.costos_adicionales)}</div></div>` : ''}
+                                    <div class="detail-item"><div class="detail-label">Costo Total</div><div class="detail-value" style="font-weight:600;">${money(p.costo_total)}</div></div>
+                                </div>
+                            </div>
+                            <div style="margin-top:12px;padding:12px;background:${p.ganancia >= 0 ? '#f0fff4' : '#fff5f5'};border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:600;">Ganancia Neta</span>
+                                <span style="font-size:1.3em;font-weight:700;color:${p.ganancia >= 0 ? '#28a745' : '#dc3545'};">${money(p.ganancia)}</span>
+                                ${p.precio_total > 0 ? `<span style="font-weight:600;color:#6f42c1;">${(p.ganancia / p.precio_total * 100).toFixed(1)}%</span>` : ''}
                             </div>
                         </div>
 
@@ -135,6 +151,27 @@
                                 <div class="detail-item"><div class="detail-label">Retraso</div><div class="detail-value" style="${p.dias_retraso > 0 ? 'color:#dc3545;font-weight:700' : ''}">${p.dias_retraso > 0 ? p.dias_retraso + ' días' : 'Sin retraso'}</div></div>
                             </div>
                         </div>
+
+                        <!-- ADJUNTOS -->
+                        <div class="detail-section">
+                            <div class="section-title"><i class="fas fa-paperclip"></i> Adjuntos</div>
+                            <div id="adjuntosLista" style="margin-bottom:12px;"><em style="color:#999;">Cargando...</em></div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="file" id="adjuntoInput" style="display:none;" multiple>
+                                <button class="btn-modal btn-primary" style="font-size:.85em;padding:8px 14px;" id="btnAddFile"><i class="fas fa-upload"></i> Subir archivo</button>
+                                <span id="adjuntoStatus" style="font-size:.82em;color:#666;"></span>
+                            </div>
+                        </div>
+
+                        <!-- COMENTARIOS -->
+                        <div class="detail-section">
+                            <div class="section-title"><i class="fas fa-comments"></i> Comentarios</div>
+                            <div id="comentariosLista" style="margin-bottom:12px;"><em style="color:#999;">Cargando...</em></div>
+                            <div style="display:flex;gap:8px;">
+                                <input id="nuevoComentario" class="form-control" placeholder="Escribe un comentario..." style="flex:1;">
+                                <button class="btn-modal btn-primary" style="padding:8px 16px;" id="btnAddComment"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button class="btn-modal btn-secondary" data-close>Cerrar</button>
@@ -144,9 +181,124 @@
 
                 this.modal.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeModal(this.modal));
                 this.modal.querySelector('[data-edit]').onclick = () => { closeModal(this.modal); editarPedidoModal.open(id); };
+
+                // --- Load comments ---
+                this._loadComentarios(id);
+
+                // --- Add comment ---
+                document.getElementById('btnAddComment').onclick = async () => {
+                    const input = document.getElementById('nuevoComentario');
+                    const texto = input.value.trim();
+                    if (!texto) return;
+                    input.disabled = true;
+                    try {
+                        await api.crearComentario(id, texto);
+                        input.value = '';
+                        this._loadComentarios(id);
+                    } catch (e) {
+                        showNotification(e.message, 'error');
+                    }
+                    input.disabled = false;
+                };
+
+                // Enter key to submit
+                document.getElementById('nuevoComentario').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') document.getElementById('btnAddComment').click();
+                });
+
+                // --- Load attachments ---
+                this._loadAdjuntos(id);
+
+                // --- Upload file ---
+                document.getElementById('btnAddFile').onclick = () => document.getElementById('adjuntoInput').click();
+                document.getElementById('adjuntoInput').onchange = async (e) => {
+                    const files = e.target.files;
+                    if (!files.length) return;
+                    const status = document.getElementById('adjuntoStatus');
+                    for (const file of files) {
+                        status.textContent = `Subiendo ${file.name}...`;
+                        try {
+                            await api.subirAdjunto(id, file);
+                        } catch (err) {
+                            showNotification(`Error subiendo ${file.name}: ${err.message}`, 'error');
+                        }
+                    }
+                    status.textContent = '';
+                    e.target.value = '';
+                    this._loadAdjuntos(id);
+                };
             } catch (e) {
                 this.modal.innerHTML = `<div class="modal-content"><div class="modal-body"><p style="color:#dc3545;">Error: ${esc(e.message)}</p></div><div class="modal-footer"><button class="btn-modal btn-secondary" data-close>Cerrar</button></div></div>`;
                 this.modal.querySelector('[data-close]').onclick = () => closeModal(this.modal);
+            }
+        }
+
+        async _loadComentarios(pedidoId) {
+            const container = document.getElementById('comentariosLista');
+            if (!container) return;
+            try {
+                const comentarios = await api.getComentarios(pedidoId);
+                if (!comentarios || comentarios.length === 0) {
+                    container.innerHTML = '<p style="color:#999;font-size:.9em;">Sin comentarios</p>';
+                    return;
+                }
+                container.innerHTML = comentarios.map(c => {
+                    const fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-DO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+                    return `<div style="padding:10px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;border-left:3px solid #2F5496;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                            <span style="font-weight:600;font-size:.85em;color:#2F5496;">${esc(c.autor_nombre)}</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:.75em;color:#999;">${fecha}</span>
+                                <button onclick="eliminarComentarioUI('${c.id}','${pedidoId}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.8em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="font-size:.9em;">${esc(c.texto)}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color:#dc3545;font-size:.85em;">Error cargando comentarios</p>';
+            }
+        }
+
+        async _loadAdjuntos(pedidoId) {
+            const container = document.getElementById('adjuntosLista');
+            if (!container) return;
+            try {
+                const adjuntos = await api.getAdjuntos(pedidoId);
+                if (!adjuntos || adjuntos.length === 0) {
+                    container.innerHTML = '<p style="color:#999;font-size:.9em;">Sin adjuntos</p>';
+                    return;
+                }
+                const iconMap = {
+                    'image': 'fa-image', 'video': 'fa-video', 'audio': 'fa-music',
+                    'application/pdf': 'fa-file-pdf', 'text': 'fa-file-alt'
+                };
+                function fileIcon(mime) {
+                    if (!mime) return 'fa-file';
+                    for (const [k, v] of Object.entries(iconMap)) { if (mime.includes(k)) return v; }
+                    return 'fa-file';
+                }
+                function fileSize(bytes) {
+                    if (!bytes) return '';
+                    if (bytes < 1024) return bytes + ' B';
+                    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                    return (bytes / 1048576).toFixed(1) + ' MB';
+                }
+
+                container.innerHTML = adjuntos.map(a => {
+                    const fecha = a.created_at ? new Date(a.created_at).toLocaleString('es-DO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+                    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:6px;">
+                        <i class="fas ${fileIcon(a.tipo_mime)}" style="font-size:1.2em;color:#2F5496;width:20px;text-align:center;"></i>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:.88em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.nombre_original)}</div>
+                            <div style="font-size:.75em;color:#999;">${fileSize(a.tamano_bytes)} · ${esc(a.subido_por_nombre)} · ${fecha}</div>
+                        </div>
+                        <button onclick="descargarAdjuntoUI('${a.id}')" style="background:none;border:none;cursor:pointer;color:#2F5496;font-size:1em;" title="Descargar"><i class="fas fa-download"></i></button>
+                        <button onclick="eliminarAdjuntoUI('${a.id}','${pedidoId}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.9em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color:#dc3545;font-size:.85em;">Error cargando adjuntos</p>';
             }
         }
     }
@@ -191,15 +343,43 @@
                                 <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Teléfono</label><input name="telefono" class="form-control" value="${esc(p.telefono)}"></div>
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Email</label><input name="email" class="form-control" value="${esc(p.email || '')}"></div>
-                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Método Pago</label><select name="banco" class="form-control">${selectOpts(bancos, p.banco)}</select></div>
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Email <span style="color:#999;font-weight:400;">(opcional)</span></label><input name="email" class="form-control" value="${esc(p.email || '')}" placeholder="No requerido"></div>
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Color</label><input name="color" class="form-control" value="${esc(p.color || '')}" placeholder="Ej: Negro, Blanco, Rojo"></div>
                             </div>
                             <div style="margin-bottom:14px;"><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Dirección</label><textarea name="direccion" class="form-control" rows="2">${esc(p.direccion || '')}</textarea></div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Canal</label><select name="canal" class="form-control">${selectOpts(canales, p.canal)}</select></div>
-                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Fecha Entrega Real</label><input type="date" name="fecha_entrega_real" class="form-control" value="${ddmmToIso(p.fecha_entrega_real)}"></div>
+                            <div style="margin-bottom:14px;"><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Detalles Personalización</label><textarea name="personalizacion" class="form-control" rows="2" placeholder="Detalles del bordado/diseño...">${esc(p.personalizacion || '')}</textarea></div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Precio Venta (RD$)</label><input name="precio_producto" type="number" step="0.01" class="form-control" value="${p.precio_producto || 0}"></div>
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Costos Adicionales</label><input name="costos_adicionales" type="number" step="0.01" class="form-control" value="${p.costos_adicionales || 0}"></div>
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Envío</label><input name="precio_envio" type="number" step="0.01" class="form-control" value="${p.precio_envio || 0}"></div>
                             </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Método Pago</label><select name="banco" class="form-control">${selectOpts(bancos, p.banco)}</select></div>
+                                <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Canal</label><select name="canal" class="form-control">${selectOpts(canales, p.canal)}</select></div>
+                            </div>
+                            <div><label style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:4px;">Fecha Entrega Real</label><input type="date" name="fecha_entrega_real" class="form-control" value="${ddmmToIso(p.fecha_entrega_real)}"></div>
                         </form>
+
+                        <!-- ADJUNTOS en edición -->
+                        <div style="margin-top:20px;padding-top:16px;border-top:2px solid #e0e0e0;">
+                            <div style="font-size:1em;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><i class="fas fa-paperclip" style="color:#2F5496;"></i> Adjuntos</div>
+                            <div id="editAdjuntosLista" style="margin-bottom:10px;"><em style="color:#999;font-size:.9em;">Cargando...</em></div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="file" id="editAdjuntoInput" style="display:none;" multiple>
+                                <button type="button" class="btn-modal btn-primary" style="font-size:.82em;padding:6px 12px;" id="btnEditAddFile"><i class="fas fa-upload"></i> Subir</button>
+                                <span id="editAdjuntoStatus" style="font-size:.8em;color:#666;"></span>
+                            </div>
+                        </div>
+
+                        <!-- COMENTARIOS en edición -->
+                        <div style="margin-top:16px;padding-top:16px;border-top:2px solid #e0e0e0;">
+                            <div style="font-size:1em;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><i class="fas fa-comments" style="color:#2F5496;"></i> Comentarios</div>
+                            <div id="editComentariosLista" style="margin-bottom:10px;"><em style="color:#999;font-size:.9em;">Cargando...</em></div>
+                            <div style="display:flex;gap:8px;">
+                                <input id="editNuevoComentario" class="form-control" placeholder="Escribe un comentario..." style="flex:1;padding:8px 12px;font-size:.9em;">
+                                <button type="button" class="btn-modal btn-primary" style="padding:8px 14px;" id="btnEditAddComment"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button class="btn-modal btn-secondary" data-close>Cancelar</button>
@@ -209,17 +389,62 @@
 
                 this.modal.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeModal(this.modal));
 
-                document.getElementById('btnSaveEdit').onclick = async () => {
-                    const fd = new FormData(document.getElementById('editForm'));
-                    const obj = {};
-                    for (const [k, v] of fd.entries()) {
-                        if (v.trim()) obj[k] = v.trim();
+                // --- Load comments and attachments ---
+                this._loadComentarios(id);
+                this._loadAdjuntos(id);
+
+                // --- Add comment ---
+                document.getElementById('btnEditAddComment').onclick = async () => {
+                    const input = document.getElementById('editNuevoComentario');
+                    const texto = input.value.trim();
+                    if (!texto) return;
+                    input.disabled = true;
+                    try {
+                        await api.crearComentario(id, texto);
+                        input.value = '';
+                        this._loadComentarios(id);
+                    } catch (e) { showNotification(e.message, 'error'); }
+                    input.disabled = false;
+                };
+                document.getElementById('editNuevoComentario').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') document.getElementById('btnEditAddComment').click();
+                });
+
+                // --- Upload file ---
+                document.getElementById('btnEditAddFile').onclick = () => document.getElementById('editAdjuntoInput').click();
+                document.getElementById('editAdjuntoInput').onchange = async (e) => {
+                    const files = e.target.files;
+                    if (!files.length) return;
+                    const status = document.getElementById('editAdjuntoStatus');
+                    for (const file of files) {
+                        status.textContent = `Subiendo ${file.name}...`;
+                        try { await api.subirAdjunto(id, file); } catch (err) { showNotification(`Error: ${err.message}`, 'error'); }
                     }
-                    if (obj.fecha_entrega_real) obj.fecha_entrega_real = isoToDdmm(obj.fecha_entrega_real);
+                    status.textContent = '';
+                    e.target.value = '';
+                    this._loadAdjuntos(id);
+                };
+
+                // --- Save form ---
+                document.getElementById('btnSaveEdit').onclick = async () => {
+                    const form = document.getElementById('editForm');
+                    const fd = new FormData(form);
+                    const obj = {};
+
+                    // Include ALL fields, even empty ones (so backend can clear values)
+                    for (const [k, v] of fd.entries()) {
+                        obj[k] = v.trim();
+                    }
+
+                    // Convert date from ISO to DD/MM/YYYY for backend
+                    if (obj.fecha_entrega_real) {
+                        obj.fecha_entrega_real = isoToDdmm(obj.fecha_entrega_real);
+                    }
 
                     const btn = document.getElementById('btnSaveEdit');
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                    document.getElementById('editError').style.display = 'none';
 
                     try {
                         const res = await api.updatePedido(id, obj);
@@ -242,6 +467,51 @@
             } catch (e) {
                 this.modal.innerHTML = `<div class="modal-content"><div class="modal-body"><p style="color:#dc3545;">Error: ${esc(e.message)}</p></div></div>`;
             }
+        }
+
+        async _loadComentarios(pedidoId) {
+            const container = document.getElementById('editComentariosLista');
+            if (!container) return;
+            try {
+                const comentarios = await api.getComentarios(pedidoId);
+                if (!comentarios || comentarios.length === 0) { container.innerHTML = '<p style="color:#999;font-size:.85em;">Sin comentarios</p>'; return; }
+                container.innerHTML = comentarios.map(c => {
+                    const fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-DO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+                    return `<div style="padding:8px 10px;background:#f8f9fa;border-radius:6px;margin-bottom:6px;border-left:3px solid #2F5496;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                            <span style="font-weight:600;font-size:.82em;color:#2F5496;">${esc(c.autor_nombre)}</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:.72em;color:#999;">${fecha}</span>
+                                <button onclick="eliminarComentarioEditUI('${c.id}','${pedidoId}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.75em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="font-size:.85em;">${esc(c.texto)}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) { container.innerHTML = '<p style="color:#dc3545;font-size:.82em;">Error cargando comentarios</p>'; }
+        }
+
+        async _loadAdjuntos(pedidoId) {
+            const container = document.getElementById('editAdjuntosLista');
+            if (!container) return;
+            try {
+                const adjuntos = await api.getAdjuntos(pedidoId);
+                if (!adjuntos || adjuntos.length === 0) { container.innerHTML = '<p style="color:#999;font-size:.85em;">Sin adjuntos</p>'; return; }
+                function fileIcon(mime) {
+                    if (!mime) return 'fa-file';
+                    if (mime.includes('image')) return 'fa-image';
+                    if (mime.includes('pdf')) return 'fa-file-pdf';
+                    if (mime.includes('video')) return 'fa-video';
+                    return 'fa-file';
+                }
+                function fileSize(b) { if (!b) return ''; if (b < 1024) return b+' B'; if (b < 1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+                container.innerHTML = adjuntos.map(a => `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8f9fa;border-radius:6px;margin-bottom:4px;">
+                    <i class="fas ${fileIcon(a.tipo_mime)}" style="color:#2F5496;width:16px;text-align:center;"></i>
+                    <div style="flex:1;min-width:0;"><div style="font-size:.82em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.nombre_original)}</div><div style="font-size:.72em;color:#999;">${fileSize(a.tamano_bytes)}</div></div>
+                    <button onclick="descargarAdjuntoUI('${a.id}')" style="background:none;border:none;cursor:pointer;color:#2F5496;font-size:.9em;" title="Descargar"><i class="fas fa-download"></i></button>
+                    <button onclick="eliminarAdjuntoEditUI('${a.id}','${pedidoId}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.8em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </div>`).join('');
+            } catch (e) { container.innerHTML = '<p style="color:#dc3545;font-size:.82em;">Error cargando adjuntos</p>'; }
         }
     }
 
@@ -343,5 +613,66 @@
         window.abrirDetallesPedido = (id) => verPedidoModal.open(id);
         window.abrirEdicionPedido = (id) => editarPedidoModal.open(id);
         window.abrirEliminarPedido = (id) => eliminarPedidoModal.open(id);
+
+        // Global helpers for comments/attachments - VER modal
+        window.eliminarComentarioUI = async (commentId, pedidoId) => {
+            if (!confirm('¿Eliminar este comentario?')) return;
+            try {
+                await api.eliminarComentario(commentId);
+                verPedidoModal._loadComentarios(pedidoId);
+                showNotification('Comentario eliminado', 'success');
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        };
+
+        window.descargarAdjuntoUI = async (adjuntoId) => {
+            try {
+                const res = await api.getAdjuntoUrl(adjuntoId);
+                if (res && res.url) {
+                    const a = document.createElement('a');
+                    a.href = res.url;
+                    a.target = '_blank';
+                    a.download = res.nombre || 'archivo';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    showNotification('No se pudo obtener la URL', 'error');
+                }
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        };
+
+        window.eliminarAdjuntoUI = async (adjuntoId, pedidoId) => {
+            if (!confirm('¿Eliminar este archivo?')) return;
+            try {
+                await api.eliminarAdjunto(adjuntoId);
+                verPedidoModal._loadAdjuntos(pedidoId);
+                showNotification('Archivo eliminado', 'success');
+            } catch (e) {
+                showNotification(e.message, 'error');
+            }
+        };
+
+        // Global helpers - EDITAR modal
+        window.eliminarComentarioEditUI = async (commentId, pedidoId) => {
+            if (!confirm('¿Eliminar este comentario?')) return;
+            try {
+                await api.eliminarComentario(commentId);
+                editarPedidoModal._loadComentarios(pedidoId);
+                showNotification('Comentario eliminado', 'success');
+            } catch (e) { showNotification(e.message, 'error'); }
+        };
+
+        window.eliminarAdjuntoEditUI = async (adjuntoId, pedidoId) => {
+            if (!confirm('¿Eliminar este archivo?')) return;
+            try {
+                await api.eliminarAdjunto(adjuntoId);
+                editarPedidoModal._loadAdjuntos(pedidoId);
+                showNotification('Archivo eliminado', 'success');
+            } catch (e) { showNotification(e.message, 'error'); }
+        };
     });
 })();

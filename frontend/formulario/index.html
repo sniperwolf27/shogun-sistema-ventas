@@ -82,8 +82,51 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Color</label>
+                        <input type="text" id="color" placeholder="Ej: Negro, Blanco, Rojo" list="coloresList">
+                        <datalist id="coloresList">
+                            <option value="Negro">
+                            <option value="Blanco">
+                            <option value="Gris">
+                            <option value="Azul">
+                            <option value="Rojo">
+                            <option value="Verde">
+                            <option value="Beige">
+                        </datalist>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
                         <label>Personalización</label>
                         <select id="personalizacion"><option value="ninguna">Ninguna</option></select>
+                    </div>
+                    <div class="form-group" id="puntadasGroup" style="display:none;">
+                        <label>Cantidad de Puntadas <span class="required">*</span></label>
+                        <input type="number" id="puntadas" placeholder="Ej: 36000" min="0">
+                        <div id="puntadasCalc" style="font-size:.85em;color:#6f42c1;margin-top:4px;"></div>
+                    </div>
+                </div>
+                <!-- Precio de venta y costos adicionales (siempre visibles) -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Precio de Venta al Cliente (RD$) <span class="required">*</span></label>
+                        <input type="number" id="precioVenta" placeholder="Ej: 1500" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Costos Adicionales (RD$)</label>
+                        <input type="number" id="costosAdicionales" placeholder="0" min="0" value="0">
+                    </div>
+                </div>
+                <!-- Resumen financiero (visible cuando hay datos) -->
+                <div id="bordadoResumen" style="background:#f0f4ff;padding:14px;border-radius:8px;border-left:4px solid #6f42c1;margin-bottom:14px;display:none;">
+                    <div style="font-size:.85em;font-weight:600;color:#555;margin-bottom:8px;">📊 Resumen Financiero</div>
+                    <div style="font-size:.88em;color:#333;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Costo prenda:</span><span id="resCostoPrenda">RD$0</span></div>
+                        <div id="resManoObraRow" style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Mano de obra:</span><span id="resManoObra">RD$0</span></div>
+                        <div id="resCostosAdRow" style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Costos adicionales:</span><span id="resCostosAd">RD$0</span></div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;border-top:1px solid #ddd;padding-top:4px;font-weight:600;"><span>Costo total:</span><span id="resCostoTotal">RD$0</span></div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-weight:700;color:#28a745;"><span>Ganancia neta:</span><span id="resGanancia">RD$0</span></div>
+                        <div style="display:flex;justify-content:space-between;font-weight:700;color:#6f42c1;"><span>Margen:</span><span id="resMargen">0%</span></div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -147,15 +190,40 @@
 
                 <!-- Price preview -->
                 <div class="price-preview" id="pricePreview">
-                    <div class="price-row"><span>Producto:</span><span id="prevProducto">RD$0</span></div>
-                    <div class="price-row"><span>Personalización:</span><span id="prevPers">RD$0</span></div>
+                    <div class="price-row"><span>Precio venta:</span><span id="prevProducto">RD$0</span></div>
                     <div class="price-row"><span>Envío:</span><span id="prevEnvio">RD$200</span></div>
-                    <div class="price-row price-total"><span>Total estimado:</span><span id="prevTotal">RD$0</span></div>
+                    <div class="price-row price-total"><span>Total al cliente:</span><span id="prevTotal">RD$0</span></div>
                 </div>
             </div>
 
             <button type="submit" class="btn-submit" id="btnSubmit">💾 Guardar Pedido</button>
         </form>
+
+        <!-- Post-creation: Comments & Attachments -->
+        <div id="postCreationSection" style="display:none;margin-top:28px;padding-top:24px;border-top:3px solid #667eea;">
+            <h2 style="color:#2F5496;font-size:1.3em;margin-bottom:16px;">📎 Adjuntos y Comentarios — <span id="postPedidoId"></span></h2>
+
+            <!-- Adjuntos -->
+            <div style="margin-bottom:20px;">
+                <label style="font-size:.95em;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px;"><i class="fas fa-paperclip" style="color:#667eea;"></i> Adjuntos</label>
+                <div id="postAdjuntosLista" style="margin-bottom:10px;"><p style="color:#999;font-size:.9em;">Sin adjuntos</p></div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="file" id="postAdjuntoInput" style="display:none;" multiple>
+                    <button type="button" class="btn-submit" style="width:auto;padding:10px 18px;font-size:.9em;" id="btnPostAddFile"><i class="fas fa-upload"></i> Subir archivo</button>
+                    <span id="postAdjuntoStatus" style="font-size:.85em;color:#666;"></span>
+                </div>
+            </div>
+
+            <!-- Comentarios -->
+            <div>
+                <label style="font-size:.95em;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px;"><i class="fas fa-comments" style="color:#667eea;"></i> Comentarios</label>
+                <div id="postComentariosLista" style="margin-bottom:10px;"><p style="color:#999;font-size:.9em;">Sin comentarios</p></div>
+                <div style="display:flex;gap:8px;">
+                    <input id="postNuevoComentario" placeholder="Escribe un comentario..." style="flex:1;padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;">
+                    <button type="button" class="btn-submit" style="width:auto;padding:10px 18px;font-size:.9em;" id="btnPostAddComment"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -231,14 +299,17 @@
             const prodSelect = document.getElementById('producto');
             prodSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
                 productosData.map(p =>
-                    `<option value="${p.sku}" data-precio="${p.precio_base}" data-nombre="${p.nombre}" data-dias="${p.tiempo_produccion_dias}">${p.nombre} — RD$${Number(p.precio_base).toLocaleString()}</option>`
+                    `<option value="${p.sku}" data-precio="${p.precio_base}" data-costo-material="${p.costo_material || 0}" data-nombre="${p.nombre}" data-dias="${p.tiempo_produccion_dias}">${p.nombre}</option>`
                 ).join('');
 
             const persSelect = document.getElementById('personalizacion');
             persSelect.innerHTML = '<option value="ninguna">Ninguna</option>' +
-                persData.map(p =>
-                    `<option value="${p.codigo}" data-precio="${p.precio}">${p.tipo} (+RD$${Number(p.precio).toLocaleString()})</option>`
-                ).join('');
+                persData.map(p => {
+                    const label = p.metodo_calculo === 'puntadas'
+                        ? `${p.tipo} (Bordado — RD$${Number(p.costo_por_mil_puntadas||0).toLocaleString()}/1K punt.)`
+                        : `${p.tipo} (+RD$${Number(p.precio).toLocaleString()})`;
+                    return `<option value="${p.codigo}" data-precio="${p.precio}" data-metodo="${p.metodo_calculo||'fijo'}" data-costo-mil="${p.costo_por_mil_puntadas||0}">${label}</option>`;
+                }).join('');
         } catch (e) {
             console.error('Error cargando catálogo:', e);
             showError('Error al cargar el catálogo de productos');
@@ -247,26 +318,87 @@
 
     loadCatalog();
 
-    // --- Price preview ---
+    // --- Show/hide puntadas based on personalización ---
+    let isBordadoMode = false;
+
+    function handlePersChange() {
+        const persOpt = document.getElementById('personalizacion').selectedOptions[0];
+        const metodo = persOpt?.dataset?.metodo || 'fijo';
+        const puntadasGrp = document.getElementById('puntadasGroup');
+
+        isBordadoMode = (metodo === 'puntadas');
+
+        if (isBordadoMode) {
+            puntadasGrp.style.display = 'block';
+        } else {
+            puntadasGrp.style.display = 'none';
+            document.getElementById('puntadas').value = '';
+            document.getElementById('puntadasCalc').textContent = '';
+        }
+        updatePreview();
+    }
+
+    // --- Price preview (siempre basado en precioVenta) ---
     function updatePreview() {
         const prodOpt = document.getElementById('producto').selectedOptions[0];
         const persOpt = document.getElementById('personalizacion').selectedOptions[0];
         const envio = parseInt(document.getElementById('costoEnvio').value) || 0;
+        const puntadas = parseInt(document.getElementById('puntadas').value) || 0;
+        const precioVenta = parseFloat(document.getElementById('precioVenta').value) || 0;
+        const costosAd = parseFloat(document.getElementById('costosAdicionales').value) || 0;
 
-        const precioProd = parseFloat(prodOpt?.dataset?.precio || 0);
-        const precioPers = parseFloat(persOpt?.dataset?.precio || 0);
-        const total = precioProd + precioPers + envio;
+        const costoMat = parseFloat(prodOpt?.dataset?.costoMaterial || 0);
+        const costoMil = parseFloat(persOpt?.dataset?.costoMil || 0);
 
-        document.getElementById('prevProducto').textContent = 'RD$' + precioProd.toLocaleString();
-        document.getElementById('prevPers').textContent = 'RD$' + precioPers.toLocaleString();
+        // Mano de obra (solo si hay puntadas/bordado)
+        const manoObra = (isBordadoMode && puntadas > 0 && costoMil > 0)
+            ? (puntadas / 1000) * costoMil : 0;
+
+        // Puntadas calc label
+        const calcEl = document.getElementById('puntadasCalc');
+        if (calcEl) {
+            calcEl.textContent = (isBordadoMode && puntadas > 0)
+                ? `${(puntadas/1000).toFixed(1)} mil × RD$${costoMil.toLocaleString()} = RD$${manoObra.toLocaleString()}`
+                : '';
+        }
+
+        // Costos y ganancia
+        const costoTotal = costoMat + manoObra + costosAd;
+        const ganancia = precioVenta - costoTotal;
+        const margen = precioVenta > 0 ? (ganancia / precioVenta * 100) : 0;
+
+        // Resumen financiero
+        const resumen = document.getElementById('bordadoResumen');
+        if (precioVenta > 0 && costoMat > 0) {
+            resumen.style.display = 'block';
+            document.getElementById('resCostoPrenda').textContent = 'RD$' + costoMat.toLocaleString();
+            document.getElementById('resManoObra').textContent = 'RD$' + manoObra.toLocaleString();
+            document.getElementById('resManoObraRow').style.display = manoObra > 0 ? 'flex' : 'none';
+            document.getElementById('resCostosAd').textContent = 'RD$' + costosAd.toLocaleString();
+            document.getElementById('resCostosAdRow').style.display = costosAd > 0 ? 'flex' : 'none';
+            document.getElementById('resCostoTotal').textContent = 'RD$' + costoTotal.toLocaleString();
+            document.getElementById('resGanancia').textContent = 'RD$' + ganancia.toLocaleString();
+            document.getElementById('resGanancia').style.color = ganancia >= 0 ? '#28a745' : '#dc3545';
+            document.getElementById('resMargen').textContent = margen.toFixed(1) + '%';
+            document.getElementById('resMargen').style.color = margen >= 0 ? '#6f42c1' : '#dc3545';
+        } else {
+            resumen.style.display = 'none';
+        }
+
+        // Preview total al cliente
+        const total = precioVenta + envio;
+        document.getElementById('prevProducto').textContent = 'RD$' + precioVenta.toLocaleString();
         document.getElementById('prevEnvio').textContent = 'RD$' + envio.toLocaleString();
         document.getElementById('prevTotal').textContent = 'RD$' + total.toLocaleString();
-        document.getElementById('pricePreview').style.display = precioProd > 0 ? 'block' : 'none';
+        document.getElementById('pricePreview').style.display = precioVenta > 0 ? 'block' : 'none';
     }
 
     document.getElementById('producto').addEventListener('change', updatePreview);
-    document.getElementById('personalizacion').addEventListener('change', updatePreview);
+    document.getElementById('personalizacion').addEventListener('change', handlePersChange);
     document.getElementById('costoEnvio').addEventListener('input', updatePreview);
+    document.getElementById('puntadas').addEventListener('input', updatePreview);
+    document.getElementById('precioVenta').addEventListener('input', updatePreview);
+    document.getElementById('costosAdicionales').addEventListener('input', updatePreview);
 
     // --- Alert helpers ---
     function showSuccess(msg) {
@@ -303,8 +435,13 @@
             producto_sku: document.getElementById('producto').value,
             producto_nombre: prodOpt.dataset.nombre || '',
             talla: document.getElementById('talla').value,
+            color: document.getElementById('color').value.trim(),
             personalizacion_tipo: document.getElementById('personalizacion').value,
             personalizacion_detalles: document.getElementById('detalles').value.trim(),
+            personalizacion_puntadas: parseInt(document.getElementById('puntadas').value) || 0,
+            costo_por_mil_puntadas: parseFloat(document.getElementById('personalizacion').selectedOptions[0]?.dataset?.costoMil || 0),
+            precio_venta: parseFloat(document.getElementById('precioVenta').value) || 0,
+            costos_adicionales: parseFloat(document.getElementById('costosAdicionales').value) || 0,
             nombre_cliente: document.getElementById('cliente').value.trim(),
             telefono: document.getElementById('telefono').value.trim(),
             email: document.getElementById('email').value.trim(),
@@ -345,6 +482,9 @@
                 document.getElementById('formPedido').reset();
                 document.getElementById('pricePreview').style.display = 'none';
                 window.scrollTo(0, 0);
+
+                // Show post-creation section
+                showPostCreation(result.pedido_id);
             } else {
                 throw new Error(result?.error || 'Error desconocido');
             }
@@ -356,6 +496,135 @@
             btn.disabled = false;
         }
     });
+
+    // ========== POST-CREATION: Comments & Attachments ==========
+
+    let currentPostPedidoId = null;
+
+    function showPostCreation(pedidoId) {
+        currentPostPedidoId = pedidoId;
+        document.getElementById('postPedidoId').textContent = pedidoId;
+        document.getElementById('postCreationSection').style.display = 'block';
+        loadPostAdjuntos(pedidoId);
+        loadPostComentarios(pedidoId);
+        setupPostListeners(pedidoId);
+        // Scroll to section
+        setTimeout(() => document.getElementById('postCreationSection').scrollIntoView({behavior:'smooth'}), 300);
+    }
+
+    function setupPostListeners(pedidoId) {
+        // Upload file
+        document.getElementById('btnPostAddFile').onclick = () => document.getElementById('postAdjuntoInput').click();
+        document.getElementById('postAdjuntoInput').onchange = async (e) => {
+            const files = e.target.files;
+            if (!files.length) return;
+            const status = document.getElementById('postAdjuntoStatus');
+            for (const file of files) {
+                status.textContent = `Subiendo ${file.name}...`;
+                try {
+                    const token = getToken();
+                    const fd = new FormData();
+                    fd.append('archivo', file);
+                    const res = await fetch(API_BASE + '/pedidos/' + pedidoId + '/adjuntos', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error || 'Error');
+                } catch (err) {
+                    showError(`Error subiendo ${file.name}: ${err.message}`);
+                }
+            }
+            status.textContent = '';
+            e.target.value = '';
+            loadPostAdjuntos(pedidoId);
+        };
+
+        // Add comment
+        document.getElementById('btnPostAddComment').onclick = async () => {
+            const input = document.getElementById('postNuevoComentario');
+            const texto = input.value.trim();
+            if (!texto) return;
+            input.disabled = true;
+            try {
+                await apiFetch('/pedidos/' + pedidoId + '/comentarios', {
+                    method: 'POST',
+                    body: JSON.stringify({ texto })
+                });
+                input.value = '';
+                loadPostComentarios(pedidoId);
+            } catch (e) {
+                showError(e.message);
+            }
+            input.disabled = false;
+        };
+
+        document.getElementById('postNuevoComentario').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('btnPostAddComment').click();
+        });
+    }
+
+    async function loadPostAdjuntos(pedidoId) {
+        const container = document.getElementById('postAdjuntosLista');
+        try {
+            const adjuntos = await apiFetch('/pedidos/' + pedidoId + '/adjuntos');
+            if (!adjuntos || adjuntos.length === 0) { container.innerHTML = '<p style="color:#999;font-size:.9em;">Sin adjuntos</p>'; return; }
+            function ico(m) { if (!m) return 'fa-file'; if (m.includes('image')) return 'fa-image'; if (m.includes('pdf')) return 'fa-file-pdf'; if (m.includes('video')) return 'fa-video'; return 'fa-file'; }
+            function sz(b) { if (!b) return ''; if (b<1024) return b+' B'; if (b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+            container.innerHTML = adjuntos.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:6px;">
+                <i class="fas ${ico(a.tipo_mime)}" style="color:#667eea;font-size:1.1em;width:18px;text-align:center;"></i>
+                <div style="flex:1;min-width:0;"><div style="font-size:.9em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.nombre_original}</div><div style="font-size:.75em;color:#999;">${sz(a.tamano_bytes)}</div></div>
+                <button onclick="postDescargarAdj('${a.id}')" style="background:none;border:none;cursor:pointer;color:#667eea;" title="Descargar"><i class="fas fa-download"></i></button>
+                <button onclick="postEliminarAdj('${a.id}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.9em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+            </div>`).join('');
+        } catch (e) { container.innerHTML = '<p style="color:#dc3545;font-size:.85em;">Error cargando adjuntos</p>'; }
+    }
+
+    async function loadPostComentarios(pedidoId) {
+        const container = document.getElementById('postComentariosLista');
+        try {
+            const comentarios = await apiFetch('/pedidos/' + pedidoId + '/comentarios');
+            if (!comentarios || comentarios.length === 0) { container.innerHTML = '<p style="color:#999;font-size:.9em;">Sin comentarios</p>'; return; }
+            container.innerHTML = comentarios.map(c => {
+                const fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-DO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+                return `<div style="padding:10px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:6px;border-left:3px solid #667eea;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <span style="font-weight:600;font-size:.85em;color:#667eea;">${c.autor_nombre}</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:.72em;color:#999;">${fecha}</span>
+                            <button onclick="postEliminarCom('${c.id}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.75em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div style="font-size:.9em;">${c.texto}</div>
+                </div>`;
+            }).join('');
+        } catch (e) { container.innerHTML = '<p style="color:#dc3545;font-size:.85em;">Error cargando comentarios</p>'; }
+    }
+
+    // Global handlers for formulario
+    window.postDescargarAdj = async (adjId) => {
+        try {
+            const res = await apiFetch('/adjuntos/' + adjId + '/download');
+            if (res && res.url) { window.open(res.url, '_blank'); }
+        } catch (e) { showError(e.message); }
+    };
+
+    window.postEliminarAdj = async (adjId) => {
+        if (!confirm('¿Eliminar este archivo?')) return;
+        try {
+            await apiFetch('/adjuntos/' + adjId, { method: 'DELETE' });
+            if (currentPostPedidoId) loadPostAdjuntos(currentPostPedidoId);
+        } catch (e) { showError(e.message); }
+    };
+
+    window.postEliminarCom = async (comId) => {
+        if (!confirm('¿Eliminar este comentario?')) return;
+        try {
+            await apiFetch('/comentarios/' + comId, { method: 'DELETE' });
+            if (currentPostPedidoId) loadPostComentarios(currentPostPedidoId);
+        } catch (e) { showError(e.message); }
+    };
 })();
 </script>
 </body>
