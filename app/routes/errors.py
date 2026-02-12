@@ -28,3 +28,19 @@ def register_error_handlers(app):
             'version': '4.0',
             'database': db_status
         })
+
+    @app.route('/api/debug/routes')
+    def debug_routes():
+        """List all registered routes - useful for diagnosing 404s"""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': sorted(list(rule.methods - {'OPTIONS', 'HEAD'})),
+                'path': str(rule)
+            })
+        routes.sort(key=lambda r: r['path'])
+        return jsonify({
+            'total_routes': len(routes),
+            'routes': routes
+        })
