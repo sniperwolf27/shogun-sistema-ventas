@@ -217,17 +217,65 @@ tbody td {
     .container {
         padding: 10px;
     }
-    
-    table {
-        font-size: 0.9em;
-    }
-    
-    thead th, tbody td {
-        padding: 10px 8px;
-    }
-    
+
     .btn {
         font-size: 0.85em;
         padding: 8px 16px;
+    }
+
+    /* ===== MOBILE TABLE → CARDS ===== */
+    #tabla-pedidos thead {
+        display: none;
+    }
+
+    #tabla-pedidos tbody tr {
+        display: block;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.06);
+        border-left: 4px solid #2F5496;
+        border-bottom: none;
+    }
+
+    #tabla-pedidos tbody tr.row-alert {
+        border-left-color: #ffc107;
+    }
+
+    #tabla-pedidos tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        border: none;
+    }
+
+    #tabla-pedidos tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #888;
+        font-size: .82em;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+
+    #tabla-pedidos tbody td.td-actions {
+        justify-content: flex-end;
+        gap: 14px;
+        padding-top: 10px;
+        margin-top: 6px;
+        border-top: 1px solid #eee;
+    }
+
+    #tabla-pedidos tbody td.td-actions::before {
+        display: none;
+    }
+
+    /* Bigger touch targets on mobile */
+    #tabla-pedidos .btn-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.05em;
     }
 }

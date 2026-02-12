@@ -427,6 +427,13 @@
 
                 // --- Save form ---
                 document.getElementById('btnSaveEdit').onclick = async () => {
+                    const btn = document.getElementById('btnSaveEdit');
+                    // Disable IMMEDIATELY to prevent double-click
+                    if (btn.disabled) return;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                    document.getElementById('editError').style.display = 'none';
+
                     const form = document.getElementById('editForm');
                     const fd = new FormData(form);
                     const obj = {};
@@ -441,17 +448,14 @@
                         obj.fecha_entrega_real = isoToDdmm(obj.fecha_entrega_real);
                     }
 
-                    const btn = document.getElementById('btnSaveEdit');
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-                    document.getElementById('editError').style.display = 'none';
-
                     try {
                         const res = await api.updatePedido(id, obj);
                         if (res && res.success) {
                             closeModal(this.modal);
                             showNotification('Pedido actualizado', 'success');
                             await cargarPedidos();
+                            // Highlight updated row
+                            if (typeof highlightPedidoRow === 'function') highlightPedidoRow(id);
                         } else {
                             document.getElementById('editError').style.display = 'block';
                             document.getElementById('editError').textContent = res?.error || 'Error al guardar';
@@ -560,6 +564,7 @@
 
                 document.getElementById('btnConfirmDelete').onclick = async () => {
                     const btn = document.getElementById('btnConfirmDelete');
+                    if (btn.disabled) return;
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
 
@@ -586,16 +591,30 @@
         }
     }
 
-    // ===== TOAST NOTIFICATIONS =====
+    // ===== TOAST NOTIFICATIONS (stacking) =====
 
     window.showNotification = function (message, type = 'info', duration = 3000) {
         const colors = { success: '#28a745', error: '#dc3545', info: '#2F5496', warning: '#ffc107' };
         const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle', warning: 'exclamation-triangle' };
 
+        // Ensure stacking container exists
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column-reverse;gap:8px;max-width:400px;';
+            document.body.appendChild(container);
+        }
+
         const toast = document.createElement('div');
-        toast.style.cssText = `position:fixed;bottom:20px;right:20px;padding:14px 20px;background:white;border-left:4px solid ${colors[type]};border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;z-index:10000;font-size:.95em;animation:slideUp .3s ease;max-width:400px;`;
-        toast.innerHTML = `<i class="fas fa-${icons[type]}" style="color:${colors[type]};font-size:1.2em;"></i><span>${message}</span>`;
-        document.body.appendChild(toast);
+        toast.style.cssText = `padding:14px 20px;background:white;border-left:4px solid ${colors[type]};border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;font-size:.95em;animation:slideUp .3s ease;`;
+        toast.innerHTML = `<i class="fas fa-${icons[type]}" style="color:${colors[type]};font-size:1.2em;flex-shrink:0;"></i><span>${message}</span>`;
+        container.appendChild(toast);
+
+        // Max 4 visible toasts
+        while (container.children.length > 4) {
+            container.removeChild(container.firstChild);
+        }
 
         setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; setTimeout(() => toast.remove(), 300); }, duration);
     };

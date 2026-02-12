@@ -18,6 +18,10 @@ def get_comentarios(user, pedido_numero):
     try:
         return jsonify(ComentariosRepository.get_by_pedido(pedido_numero)), 200
     except Exception as e:
+        error_msg = str(e).lower()
+        if 'relation' in error_msg and 'does not exist' in error_msg:
+            print(f"[WARN] Tabla pedido_comentarios no existe. Ejecuta migración 002_comentarios_adjuntos.sql")
+            return jsonify([]), 200  # Return empty gracefully
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -52,6 +56,9 @@ def eliminar_comentario(user, comment_id):
             return jsonify({'success': False, 'error': 'Comentario no encontrado'}), 404
         return jsonify({'success': True}), 200
     except Exception as e:
+        error_msg = str(e).lower()
+        if 'relation' in error_msg and 'does not exist' in error_msg:
+            return jsonify({'success': False, 'error': 'Tabla de comentarios no existe. Ejecuta migración 002.'}), 500
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -64,6 +71,10 @@ def get_adjuntos(user, pedido_numero):
     try:
         return jsonify(AdjuntosRepository.get_by_pedido(pedido_numero)), 200
     except Exception as e:
+        error_msg = str(e).lower()
+        if 'relation' in error_msg and 'does not exist' in error_msg:
+            print(f"[WARN] Tabla pedido_adjuntos no existe. Ejecuta migración 002_comentarios_adjuntos.sql")
+            return jsonify([]), 200  # Return empty gracefully
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 

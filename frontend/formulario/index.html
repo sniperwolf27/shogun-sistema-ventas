@@ -39,7 +39,9 @@
         .access-denied{text-align:center;padding:60px 20px}
         .access-denied i{font-size:4em;color:#dc3545;display:block;margin-bottom:16px}
         .back-btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#2F5496;color:white;border-radius:8px;text-decoration:none;font-weight:600}
-        @media(max-width:768px){.form-grid{grid-template-columns:1fr}.container{padding:20px}}
+        @media(max-width:768px){.form-grid{grid-template-columns:1fr}.container{padding:20px}#stickyResumen{margin:0 -20px -20px !important;border-radius:0 !important;}}
+        .field-error { border-color: #dc3545 !important; box-shadow: 0 0 0 3px rgba(220,53,69,.12) !important; }
+        .field-error-label { color: #dc3545; font-size: .8em; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -198,6 +200,17 @@
 
             <button type="submit" class="btn-submit" id="btnSubmit">💾 Guardar Pedido</button>
         </form>
+
+        <!-- Sticky bottom summary bar -->
+        <div id="stickyResumen" style="display:none;position:sticky;bottom:0;background:white;border-top:2px solid #e0e0e0;padding:12px 16px;margin:0 -36px -36px;border-radius:0 0 16px 16px;z-index:10;box-shadow:0 -4px 12px rgba(0,0,0,.06);">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:.9em;color:#555;">
+                    <strong id="stickyProducto" style="color:#2F5496;">—</strong>
+                    <span id="stickyCliente" style="margin-left:8px;">—</span>
+                </div>
+                <div style="font-weight:700;color:#2F5496;font-size:1.15em;" id="stickyTotal">RD$0</div>
+            </div>
+        </div>
 
         <!-- Post-creation: Comments & Attachments -->
         <div id="postCreationSection" style="display:none;margin-top:28px;padding-top:24px;border-top:3px solid #667eea;">
@@ -420,13 +433,92 @@
         document.getElementById('alertError').classList.remove('show');
     }
 
+    // --- Field mapping for validation ---
+    const fieldMap = {
+        producto_sku: { el: 'producto', label: 'Producto' },
+        talla: { el: 'talla', label: 'Talla' },
+        precio_venta: { el: 'precioVenta', label: 'Precio de Venta' },
+        nombre_cliente: { el: 'cliente', label: 'Nombre del cliente' },
+        telefono: { el: 'telefono', label: 'Teléfono' },
+        direccion: { el: 'direccion', label: 'Dirección' },
+        canal: { el: 'canal', label: 'Canal de venta' },
+        banco: { el: 'banco', label: 'Método de pago' }
+    };
+
+    function clearFieldErrors() {
+        document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+        document.querySelectorAll('.field-error-label').forEach(el => el.remove());
+    }
+
+    function markFieldError(inputId, message) {
+        const el = document.getElementById(inputId);
+        if (!el) return null;
+        el.classList.add('field-error');
+        // Add error label below
+        let errLabel = el.parentElement.querySelector('.field-error-label');
+        if (!errLabel) {
+            errLabel = document.createElement('div');
+            errLabel.className = 'field-error-label';
+            el.parentElement.appendChild(errLabel);
+        }
+        errLabel.textContent = message;
+        return el;
+    }
+
+    // --- Update sticky summary bar ---
+    function updateSticky() {
+        const sticky = document.getElementById('stickyResumen');
+        const prodOpt = document.getElementById('producto').selectedOptions[0];
+        const precioVenta = parseFloat(document.getElementById('precioVenta').value) || 0;
+        const envio = parseInt(document.getElementById('costoEnvio').value) || 0;
+        const cliente = document.getElementById('cliente').value.trim();
+
+        const hasData = (prodOpt && prodOpt.value) || precioVenta > 0 || cliente;
+        sticky.style.display = hasData ? 'block' : 'none';
+
+        document.getElementById('stickyProducto').textContent = (prodOpt && prodOpt.value) ? (prodOpt.dataset.nombre || prodOpt.textContent) : '—';
+        document.getElementById('stickyCliente').textContent = cliente ? '· ' + cliente : '';
+        document.getElementById('stickyTotal').textContent = precioVenta > 0 ? 'RD$' + (precioVenta + envio).toLocaleString() : 'RD$0';
+    }
+
+    // Hook sticky updates to relevant fields
+    ['producto', 'precioVenta', 'costoEnvio', 'cliente'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', updateSticky);
+    });
+
+    // Clear field errors on user interaction
+    document.querySelectorAll('#formPedido input, #formPedido select, #formPedido textarea').forEach(el => {
+        const evt = (el.tagName === 'SELECT') ? 'change' : 'input';
+        el.addEventListener(evt, () => {
+            el.classList.remove('field-error');
+            const errLabel = el.parentElement.querySelector('.field-error-label');
+            if (errLabel) errLabel.remove();
+        });
+    });
+
+    // --- Progressive hiding: hide personalización details when 'Ninguna' ---
+    const persDetailsGroup = document.getElementById('detalles').closest('.form-group');
+    function updatePersVisibility() {
+        const persVal = document.getElementById('personalizacion').value;
+        const isNinguna = !persVal || persVal === 'ninguna';
+        if (persDetailsGroup) persDetailsGroup.style.display = isNinguna ? 'none' : 'block';
+    }
+    document.getElementById('personalizacion').addEventListener('change', updatePersVisibility);
+    // Run once on load
+    setTimeout(updatePersVisibility, 500);
+
     // --- Submit ---
     document.getElementById('formPedido').addEventListener('submit', async (e) => {
         e.preventDefault();
         hideAlerts();
+        clearFieldErrors();
 
         const prodOpt = document.getElementById('producto').selectedOptions[0];
         if (!prodOpt || !prodOpt.value) {
+            markFieldError('producto', 'Selecciona un producto');
+            document.getElementById('producto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('producto').focus();
             showError('Selecciona un producto');
             return;
         }
@@ -453,11 +545,21 @@
             tiempo_estimado: (prodOpt.dataset.dias || '7') + ' días'
         };
 
-        // Validate required
-        const required = ['producto_sku', 'talla', 'nombre_cliente', 'telefono', 'direccion', 'canal', 'banco'];
+        // Validate required with scroll-to-error
+        const required = ['producto_sku', 'talla', 'precio_venta', 'nombre_cliente', 'telefono', 'direccion', 'canal', 'banco'];
         for (const field of required) {
             if (!formData[field]) {
-                showError('Completa todos los campos obligatorios');
+                const mapping = fieldMap[field];
+                if (mapping) {
+                    const el = markFieldError(mapping.el, `${mapping.label} es requerido`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.focus();
+                    }
+                    showError(`Campo requerido: <strong>${mapping.label}</strong>`);
+                } else {
+                    showError('Completa todos los campos obligatorios');
+                }
                 return;
             }
         }
@@ -481,6 +583,11 @@
                 `);
                 document.getElementById('formPedido').reset();
                 document.getElementById('pricePreview').style.display = 'none';
+                document.getElementById('bordadoResumen').style.display = 'none';
+                document.getElementById('stickyResumen').style.display = 'none';
+                document.getElementById('puntadasGroup').style.display = 'none';
+                clearFieldErrors();
+                updatePersVisibility();
                 window.scrollTo(0, 0);
 
                 // Show post-creation section
