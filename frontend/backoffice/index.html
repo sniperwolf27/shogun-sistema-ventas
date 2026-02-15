@@ -3,691 +3,693 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backoffice - Shogun</title>
+    <title>Backoffice — Shogun</title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/modals.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        .top-bar { background:white; padding:20px; margin:-20px -20px 20px -20px; box-shadow:0 2px 8px rgba(0,0,0,.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; }
-        .top-bar-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-        .user-info { display:flex; align-items:center; gap:8px; padding:8px 16px; background:#f8f9fa; border-radius:8px; font-size:.9em; }
-        .user-info strong { color:#2F5496; }
-        .nav-tabs { display:flex; gap:8px; border-bottom:2px solid #e0e0e0; flex-wrap:wrap; }
-        .tab-btn { padding:12px 20px; border:none; background:none; cursor:pointer; font-size:.95em; font-weight:600; color:#666; border-bottom:3px solid transparent; transition:all .2s; }
-        .tab-btn:hover { color:#2F5496; }
-        .tab-btn.active { color:#2F5496; border-bottom-color:#2F5496; }
-        .tab-content { display:none; animation:fadeIn .3s; }
-        .tab-content.active { display:block; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        .section-header { margin-bottom:20px; padding-bottom:15px; border-bottom:2px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
-        .row-alert { background:#fff3cd !important; }
-        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin:20px 0; }
-        .stat-card { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
-        .stat-card .label { color:#666; font-size:.85em; margin-bottom:8px; }
-        .stat-card .value { font-size:1.8em; font-weight:700; }
-        .filters { margin:20px 0; display:flex; gap:12px; flex-wrap:wrap; }
-        .filters input, .filters select { padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:.95em; }
-        .filters input { flex:1; min-width:200px; }
-        .filters select { min-width:180px; }
-        .dashboard-filters { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-        .dashboard-filters input { padding:8px 12px; border:1.5px solid #e0e0e0; border-radius:6px; font-size:.9em; }
-        .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
-        .chart-card { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
-        .chart-card h3 { font-size:1em; color:#555; margin-bottom:12px; }
-        .param-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
-        .param-card { background:white; border-radius:10px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,.06); border-left:4px solid #2F5496; position:relative; }
-        .param-card.inactive { opacity:.6; border-left-color:#999; }
-        .param-card .param-name { font-weight:700; font-size:1.05em; margin-bottom:4px; }
-        .param-card .param-meta { font-size:.85em; color:#666; }
-        .param-card .param-actions { margin-top:12px; display:flex; gap:8px; }
-        .param-tabs { display:flex; gap:8px; margin-bottom:20px; }
-        .param-tab { padding:8px 16px; border:2px solid #e0e0e0; border-radius:6px; background:white; cursor:pointer; font-weight:600; font-size:.9em; color:#666; }
-        .param-tab.active { border-color:#2F5496; color:#2F5496; background:#f0f4ff; }
-        .pendiente-card { background:white; padding:16px; margin-bottom:12px; border-radius:10px; border-left:4px solid #dc3545; box-shadow:0 2px 6px rgba(0,0,0,.06); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-        .hidden { display:none !important; }
-        @media(max-width:768px) {
-            .top-bar { flex-direction:column; align-items:stretch; }
-            .charts-row { grid-template-columns:1fr; }
-        }
-    </style>
 </head>
 <body>
-<div class="container">
-    <!-- TOP BAR -->
-    <div class="top-bar">
-        <div>
-            <h1>🪡 Backoffice Shogun</h1>
-            <p style="color:#666;margin-top:4px;">Sistema de Gestión de Pedidos</p>
+    <!-- P11: Skip to content -->
+    <a href="#main-content" class="skip-link">Saltar al contenido</a>
+
+    <!-- HEADER — P10: minimal chrome -->
+    <header class="top-bar">
+        <div class="top-bar-brand">
+            <div class="logo-mark">S</div>
+            <h1>Shogun</h1>
         </div>
         <div class="top-bar-actions">
-            <div class="user-info" id="userInfo"><i class="fas fa-user-circle"></i> <span>...</span></div>
-            <a href="/formulario" class="btn btn-primary admin-only hidden" id="btnNuevoPedido"><i class="fas fa-plus"></i> Nuevo Pedido</a>
-            <button class="btn btn-danger" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+            <!-- NUEVO: Botón Nuevo Pedido -->
+            <button class="btn btn-primary" onclick="nuevoPedido()" aria-label="Crear nuevo pedido">
+                <i class="fas fa-plus"></i> Nuevo Pedido
+            </button>
+            <div class="user-info" id="userInfo">
+                <i class="fas fa-circle-user"></i>
+                <span>Cargando...</span>
+            </div>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()" aria-label="Cambiar tema">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="btn btn-secondary" onclick="exportarExcel()" aria-label="Exportar pedidos">
+                <i class="fas fa-arrow-down-to-line"></i> Exportar
+            </button>
+            <button class="btn btn-danger" onclick="Auth.logout()" aria-label="Cerrar sesión">
+                <i class="fas fa-right-from-bracket"></i>
+            </button>
         </div>
-    </div>
+    </header>
 
-    <!-- TABS -->
-    <div class="nav-tabs" style="margin:20px 0;">
-        <button class="tab-btn active" data-tab="pedidos"><i class="fas fa-shopping-cart"></i> Pedidos</button>
-        <button class="tab-btn" data-tab="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
-        <button class="tab-btn" data-tab="pendientes"><i class="fas fa-exclamation-triangle"></i> Pendientes</button>
-        <button class="tab-btn admin-only hidden" data-tab="parametrizacion"><i class="fas fa-cog"></i> Parametrización</button>
-    </div>
+    <!-- NAV — P10: text only, no icons -->
+    <nav class="nav-tabs" role="tablist" aria-label="Secciones">
+        <button class="tab-btn active" data-tab="pedidos" role="tab" aria-selected="true">
+            <i class="fas fa-shopping-cart"></i> Pedidos
+        </button>
+        <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </button>
+        <button class="tab-btn" data-tab="pendientes" role="tab" aria-selected="false">
+            <i class="fas fa-triangle-exclamation"></i> Pendientes
+        </button>
+        <!-- NUEVO: Tab de Parámetros -->
+        <button class="tab-btn" data-tab="parametros" role="tab" aria-selected="false">
+            <i class="fas fa-cog"></i> Parámetros
+        </button>
+    </nav>
 
-    <!-- ===== PEDIDOS ===== -->
-    <div id="pedidos-section" class="tab-content active">
-        <div class="section-header"><h2>📦 Gestión de Pedidos</h2></div>
-        <div class="filters">
-            <input type="text" id="searchPedidos" placeholder="🔍 Buscar por ID, cliente, producto...">
-            <select id="filterEstado">
-                <option value="">Todos los estados</option>
-                <option value="En Producción">En Producción</option>
-                <option value="Listo para Envío">Listo para Envío</option>
-                <option value="En Camino">En Camino</option>
-                <option value="Entregado">Entregado</option>
-                <option value="Bloqueado - Sin Dirección">Bloqueado</option>
-                <option value="Cancelado">Cancelado</option>
-            </select>
-            <select id="filterCanal">
-                <option value="">Todos los canales</option>
-                <option value="WhatsApp">WhatsApp</option>
-                <option value="Instagram">Instagram</option>
-                <option value="Facebook">Facebook</option>
-                <option value="Referido">Referido</option>
-                <option value="Tienda">Tienda</option>
-            </select>
+    <main id="main-content" class="container">
+        <!-- ═══════ PEDIDOS ═══════ -->
+        <div id="pedidos-section" class="tab-content active" role="tabpanel">
+            <div class="section-header">
+                <h2>Pedidos</h2>
+            </div>
+
+            <div class="filters">
+                <div class="search-wrapper">
+                    <i class="fas fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchPedidos" placeholder="Buscar por ID, cliente, producto..." aria-label="Buscar pedidos">
+                    <div class="kbd-hint"><kbd>⌘</kbd><kbd>K</kbd></div>
+                </div>
+                <select id="filterEstado" aria-label="Filtrar por estado">
+                    <option value="">Estado</option>
+                    <option value="En Producción">En Producción</option>
+                    <option value="Listo para Envío">Listo para Envío</option>
+                    <option value="En Camino">En Camino</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Bloqueado - Sin Dirección">Bloqueado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+                <select id="filterCanal" aria-label="Filtrar por canal">
+                    <option value="">Canal</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Referido">Referido</option>
+                    <option value="Tienda">Tienda</option>
+                </select>
+            </div>
+
+            <div class="table-container">
+                <table id="tabla-pedidos" aria-label="Lista de pedidos">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" class="order-checkbox" id="select-all-checkbox" onchange="toggleSelectAll()" aria-label="Seleccionar todos">
+                            </th>
+                            <th>Pedido</th>
+                            <th>Cliente</th>
+                            <th>Producto</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th><span class="sr-only">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-container">
-            <table id="tabla-pedidos">
-                <thead><tr><th>ID</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
-                <tbody></tbody>
-            </table>
+
+        <!-- ═══════ DASHBOARD ═══════ -->
+        <div id="dashboard-section" class="tab-content" role="tabpanel">
+            <div class="section-header">
+                <h2>Dashboard</h2>
+            </div>
+
+            <div class="dashboard-filters">
+                <label>Desde</label>
+                <input type="date" id="dashFechaDesde" aria-label="Fecha desde">
+                <label>Hasta</label>
+                <input type="date" id="dashFechaHasta" aria-label="Fecha hasta">
+                <button class="btn btn-secondary" onclick="cargarDashboard()" aria-label="Aplicar filtro">Aplicar</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Pedidos</div>
+                    <div class="value" id="stat-total">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Ventas</div>
+                    <div class="value" id="stat-ventas">RD$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Ganancia</div>
+                    <div class="value" id="stat-ganancia">RD$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Pendientes</div>
+                    <div class="value" id="stat-pendientes">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Entregados</div>
+                    <div class="value" id="stat-entregados">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Margen</div>
+                    <div class="value" id="stat-margen">0%</div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h3>Ventas por Canal</h3>
+                    <canvas id="chartCanal" height="260"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Estado de Pedidos</h3>
+                    <canvas id="chartEstados" height="260"></canvas>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- ===== DASHBOARD ===== -->
-    <div id="dashboard-section" class="tab-content">
-        <div class="section-header"><h2>📊 Dashboard</h2></div>
-        <div class="dashboard-filters">
-            <label style="font-size:.9em;color:#666;align-self:center;">Filtrar:</label>
-            <input type="date" id="dashDesde">
-            <input type="date" id="dashHasta">
-            <button class="btn btn-primary" onclick="cargarDashboard()" style="padding:8px 16px;"><i class="fas fa-filter"></i> Aplicar</button>
+        <!-- ═══════ PENDIENTES ═══════ -->
+        <div id="pendientes-section" class="tab-content" role="tabpanel">
+            <div class="section-header">
+                <h2>Pedidos Pendientes</h2>
+            </div>
+            <div id="lista-pendientes"></div>
         </div>
-        <div class="stats-grid">
-            <div class="stat-card"><div class="label">Total Pedidos</div><div class="value" style="color:#2F5496;" id="stat-total">0</div></div>
-            <div class="stat-card"><div class="label">Ventas Totales</div><div class="value" style="color:#28a745;" id="stat-ventas">RD$0</div></div>
-            <div class="stat-card"><div class="label">Ganancia Neta</div><div class="value" style="color:#007bff;" id="stat-ganancia">RD$0</div></div>
-            <div class="stat-card"><div class="label">Pendientes</div><div class="value" style="color:#ffc107;" id="stat-pendientes">0</div></div>
-            <div class="stat-card"><div class="label">Entregados</div><div class="value" style="color:#28a745;" id="stat-entregados">0</div></div>
-            <div class="stat-card"><div class="label">Margen Promedio</div><div class="value" style="color:#6f42c1;" id="stat-margen">0%</div></div>
+
+        <!-- ═══════ PARÁMETROS (NUEVO) ═══════ -->
+        <div id="parametros-section" class="tab-content" role="tabpanel">
+            <div class="section-header">
+                <h2>Parámetros</h2>
+            </div>
+
+            <!-- Sub-tabs de Parámetros -->
+            <div class="param-tabs">
+                <button class="param-tab active" data-param-tab="productos">
+                    <i class="fas fa-box"></i> Productos
+                </button>
+                <button class="param-tab" data-param-tab="categorias">
+                    <i class="fas fa-tags"></i> Categorías
+                </button>
+                <button class="param-tab" data-param-tab="personalizaciones">
+                    <i class="fas fa-palette"></i> Personalizaciones
+                </button>
+            </div>
+
+            <!-- Contenido: Productos -->
+            <div class="param-content active" data-param-content="productos">
+                <div class="param-header-actions">
+                    <button class="btn btn-primary" onclick="nuevoProducto()">
+                        <i class="fas fa-plus"></i> Nuevo Producto
+                    </button>
+                </div>
+                <div class="param-grid" id="productos-grid"></div>
+            </div>
+
+            <!-- Contenido: Categorías -->
+            <div class="param-content" data-param-content="categorias">
+                <div class="param-header-actions">
+                    <button class="btn btn-primary" onclick="nuevaCategoria()">
+                        <i class="fas fa-plus"></i> Nueva Categoría
+                    </button>
+                </div>
+                <div class="param-grid" id="categorias-grid"></div>
+            </div>
+
+            <!-- Contenido: Personalizaciones -->
+            <div class="param-content" data-param-content="personalizaciones">
+                <div class="param-header-actions">
+                    <button class="btn btn-primary" onclick="nuevaPersonalizacion()">
+                        <i class="fas fa-plus"></i> Nueva Personalización
+                    </button>
+                </div>
+                <div class="param-grid" id="personalizaciones-grid"></div>
+            </div>
         </div>
-        <div class="charts-row">
-            <div class="chart-card"><h3>Ventas por Canal</h3><canvas id="chartCanales"></canvas></div>
-            <div class="chart-card"><h3>Estado de Pedidos</h3><canvas id="chartEstados"></canvas></div>
-        </div>
-    </div>
+    </main>
 
-    <!-- ===== PENDIENTES ===== -->
-    <div id="pendientes-section" class="tab-content">
-        <div class="section-header"><h2>⚠️ Pedidos Pendientes</h2></div>
-        <div id="lista-pendientes"></div>
-    </div>
+    <!-- SCRIPTS — load order matters -->
+    <script src="/js/config.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/modals.js"></script>
+    <script src="/js/pedidos.js"></script>
+    <script src="/js/parametros.js"></script>
 
-    <!-- ===== PARAMETRIZACIÓN ===== -->
-    <div id="parametrizacion-section" class="tab-content">
-        <div class="section-header">
-            <h2>⚙️ Parametrización</h2>
-            <button class="btn btn-primary" id="btnAddParam"><i class="fas fa-plus"></i> Agregar</button>
-        </div>
-        <div class="param-tabs">
-            <button class="param-tab active" data-param="productos">Productos</button>
-            <button class="param-tab" data-param="personalizaciones">Personalizaciones</button>
-            <button class="param-tab" data-param="categorias">Categorías</button>
-        </div>
-        <div id="param-content"></div>
-    </div>
-</div>
+    <script>
+        // ═══════ INIT ═══════
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            setupAutofocus();
+            restorePersistentFilters();
 
-<!-- SCRIPTS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/js/config.js"></script>
-<script src="/js/utils.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/modals.js"></script>
-<script src="/js/pedidos.js"></script>
+            // User info
+            const user = Auth.getUser();
+            if (user) {
+                document.getElementById('userInfo').innerHTML = `
+                    <i class="fas fa-circle-user"></i>
+                    <span><strong>${user.nombre || user.name || ''}</strong> · ${user.rol || user.role || ''}</span>
+                `;
+            }
 
-<script>
-// ===================== INIT =====================
+            // Tab system principal
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.dataset.tab;
 
-const user = Auth.getUser();
-if (user) {
-    document.getElementById('userInfo').innerHTML = `<i class="fas fa-user-circle"></i> <span><strong>${user.nombre || user.email}</strong> (${user.rol})</span>`;
-    if (user.rol === 'admin') {
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-    }
-}
+                    // Actualizar tabs
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-selected', 'false');
+                    });
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
 
-// ===================== TABS =====================
+                    // Mostrar contenido
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(`${tab}-section`).classList.add('active');
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(tab + '-section').classList.add('active');
+                    // Cargar datos según el tab
+                    if (tab === 'pedidos') cargarPedidos();
+                    else if (tab === 'dashboard') cargarDashboard();
+                    else if (tab === 'pendientes') cargarPendientes();
+                    else if (tab === 'parametros') cargarProductos();
+                });
+            });
 
-        if (tab === 'pedidos') cargarPedidos();
-        else if (tab === 'dashboard') cargarDashboard();
-        else if (tab === 'pendientes') cargarPendientes();
-        else if (tab === 'parametrizacion') cargarParametrizacion();
-    });
-});
+            // Setup persistent filter listeners
+            const searchInput = document.getElementById('searchPedidos');
+            const filterEstado = document.getElementById('filterEstado');
+            const filterCanal = document.getElementById('filterCanal');
 
-// ===================== DASHBOARD =====================
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(() => {
+                    FilterStore.save('search', searchInput.value);
+                }, 500));
+            }
 
-let chartCanalesInstance = null;
-let chartEstadosInstance = null;
+            if (filterEstado) {
+                filterEstado.addEventListener('change', () => {
+                    FilterStore.save('estado', filterEstado.value);
+                });
+            }
 
-async function cargarDashboard() {
-    try {
-        const desde = document.getElementById('dashDesde').value || undefined;
-        const hasta = document.getElementById('dashHasta').value || undefined;
+            if (filterCanal) {
+                filterCanal.addEventListener('change', () => {
+                    FilterStore.save('canal', filterCanal.value);
+                });
+            }
 
-        const [stats, canales, estados] = await Promise.all([
-            api.getEstadisticas(desde, hasta),
-            api.getVentasPorCanal(desde, hasta),
-            api.getVentasPorEstado()
-        ]);
-
-        document.getElementById('stat-total').textContent = stats.total_pedidos;
-        document.getElementById('stat-ventas').textContent = formatearMoneda(stats.ventas_totales);
-        document.getElementById('stat-ganancia').textContent = formatearMoneda(stats.ganancia_neta);
-        document.getElementById('stat-pendientes').textContent = stats.pedidos_pendientes;
-        document.getElementById('stat-entregados').textContent = stats.pedidos_entregados || 0;
-        document.getElementById('stat-margen').textContent = (stats.margen_promedio || 0).toFixed(1) + '%';
-
-        // Chart canales
-        if (chartCanalesInstance) chartCanalesInstance.destroy();
-        const ctxC = document.getElementById('chartCanales').getContext('2d');
-        chartCanalesInstance = new Chart(ctxC, {
-            type: 'doughnut',
-            data: {
-                labels: canales.map(c => c.canal),
-                datasets: [{ data: canales.map(c => c.ventas), backgroundColor: ['#667eea','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1'] }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            // Load initial data
+            await cargarPedidos();
         });
 
-        // Chart estados
-        if (chartEstadosInstance) chartEstadosInstance.destroy();
-        const ctxE = document.getElementById('chartEstados').getContext('2d');
-        chartEstadosInstance = new Chart(ctxE, {
-            type: 'bar',
-            data: {
-                labels: estados.map(e => e.estado),
-                datasets: [{ label: 'Pedidos', data: estados.map(e => e.total), backgroundColor: '#2F5496' }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
-    } catch (error) {
-        console.error('Error dashboard:', error);
-    }
-}
+        // Restore persistent filters
+        function restorePersistentFilters() {
+            const search = FilterStore.load('search');
+            const estado = FilterStore.load('estado');
+            const canal = FilterStore.load('canal');
 
-// ===================== PENDIENTES =====================
+            const searchInput = document.getElementById('searchPedidos');
+            const filterEstado = document.getElementById('filterEstado');
+            const filterCanal = document.getElementById('filterCanal');
 
-async function cargarPendientes() {
-    try {
-        const pendientes = await api.getPedidosPendientes();
-        const container = document.getElementById('lista-pendientes');
-
-        if (!pendientes || !pendientes.length) {
-            container.innerHTML = '<div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-check-circle" style="font-size:3em;color:#28a745;display:block;margin-bottom:16px;"></i><h3>¡Todo al día!</h3><p>No hay pedidos pendientes</p></div>';
-            return;
+            if (searchInput && search) searchInput.value = search;
+            if (filterEstado && estado) filterEstado.value = estado;
+            if (filterCanal && canal) filterCanal.value = canal;
         }
 
-        // Group by category
-        const groups = { bloqueado: [], retraso: [], personalizacion: [], informacion: [] };
-        pendientes.forEach(p => {
-            const cat = p.categoria_pendiente || 'informacion';
-            if (groups[cat]) groups[cat].push(p);
-            else groups.informacion.push(p);
-        });
-
-        const categoryConfig = {
-            bloqueado: { icon: 'fa-ban', color: '#dc3545', title: 'Bloqueados' },
-            retraso: { icon: 'fa-clock', color: '#fd7e14', title: 'Con Retraso' },
-            personalizacion: { icon: 'fa-palette', color: '#6f42c1', title: 'Falta Personalización' },
-            informacion: { icon: 'fa-info-circle', color: '#17a2b8', title: 'Información Incompleta' }
-        };
-
-        let html = '';
-        for (const [cat, items] of Object.entries(groups)) {
-            if (!items.length) continue;
-            const cfg = categoryConfig[cat];
-            html += `<div style="margin-bottom:24px;">
-                <h3 style="font-size:1.05em;color:${cfg.color};margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-                    <i class="fas ${cfg.icon}"></i> ${cfg.title} (${items.length})
-                </h3>`;
-            html += items.map(p => {
-                const motivos = (p.motivos || []).map(m => {
-                    const labels = {
-                        sin_direccion: '<span style="color:#dc3545;">Sin dirección</span>',
-                        retraso: `<span style="color:#fd7e14;">${p.dias_retraso} días retraso</span>`,
-                        sin_detalles_personalizacion: '<span style="color:#6f42c1;">Sin detalles personalización</span>',
-                        sin_email: '<span style="color:#17a2b8;">Sin email</span>',
-                        direccion_pendiente: '<span style="color:#dc3545;">Dirección pendiente</span>'
-                    };
-                    return labels[m] || m;
-                }).join(' · ');
-
-                return `<div class="pendiente-card" style="border-left-color:${cfg.color};">
-                    <div style="flex:1;">
-                        <strong style="color:#2F5496;">${p.id}</strong> — ${p.cliente}<br>
-                        <span style="font-size:.9em;color:#666;">${p.producto} · ${formatearMoneda(p.precio_total)}</span><br>
-                        <div style="font-size:.85em;margin-top:4px;">${motivos}</div>
-                    </div>
-                    <button class="btn btn-primary" onclick="editarPedido('${p.id}')"><i class="fas fa-edit"></i> Resolver</button>
-                </div>`;
-            }).join('');
-            html += '</div>';
+        // ═══════ NAVEGACIÓN ═══════
+        function nuevoPedido() {
+            window.open('/formulario', '_blank');
         }
 
-        container.innerHTML = html;
-    } catch (error) {
-        console.error('Error pendientes:', error);
-    }
-}
+        // ═══════ DASHBOARD ═══════
+        let chartCanal, chartEstados;
 
-// ===================== PARAMETRIZACIÓN =====================
+        async function cargarDashboard() {
+            showStatsSkeleton();
 
-let paramActiveTab = 'productos';
+            try {
+                const desde = document.getElementById('dashFechaDesde')?.value;
+                const hasta = document.getElementById('dashFechaHasta')?.value;
 
-document.querySelectorAll('.param-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        paramActiveTab = tab.dataset.param;
-        document.querySelectorAll('.param-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        cargarParametrizacion();
-    });
-});
+                // Llamar a las tres APIs en paralelo
+                const [stats, canales, estados] = await Promise.all([
+                    api.getEstadisticas(desde, hasta),
+                    api.getVentasPorCanal(desde, hasta),
+                    api.getVentasPorEstado()
+                ]);
 
-document.getElementById('btnAddParam').addEventListener('click', () => {
-    if (paramActiveTab === 'productos') abrirFormProducto();
-    else if (paramActiveTab === 'personalizaciones') abrirFormPersonalizacion();
-    else abrirFormCategoria();
-});
+                // Validar que tenemos datos
+                if (!stats) {
+                    throw new Error('No se recibieron datos del servidor');
+                }
 
-async function cargarParametrizacion() {
-    const container = document.getElementById('param-content');
-    container.innerHTML = '<p style="text-align:center;padding:30px;color:#999;">Cargando...</p>';
+                // Actualizar estadísticas con animación
+                animateValue('stat-total', 0, stats.total_pedidos || 0, 800, false);
+                animateValue('stat-ventas', 0, stats.ventas_totales || 0, 800, true);
+                animateValue('stat-ganancia', 0, stats.ganancia_neta || 0, 800, true);
+                animateValue('stat-pendientes', 0, stats.pedidos_pendientes || 0, 800, false);
+                animateValue('stat-entregados', 0, stats.pedidos_entregados || 0, 800, false);
 
-    try {
-        if (paramActiveTab === 'productos') {
-            const items = await api.getProductos(true);
-            container.innerHTML = '<div class="param-grid">' + items.map(p => `
-                <div class="param-card ${p.activo ? '' : 'inactive'}">
-                    <div class="param-name">${p.nombre}</div>
-                    <div class="param-meta">
-                        SKU: ${p.sku} · ${p.categoria}<br>
-                        Costo prenda: ${formatearMoneda(p.costo_material)} · ${p.tiempo_produccion_dias} días
-                    </div>
-                    <div class="param-actions">
-                        <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormProducto('${p.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn ${p.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="toggleProductoUI('${p.id}', ${!p.activo})">
-                            <i class="fas ${p.activo ? 'fa-ban' : 'fa-check'}"></i> ${p.activo ? 'Desactivar' : 'Activar'}
-                        </button>
-                    </div>
-                </div>
-            `).join('') + '</div>';
+                const margen = stats.margen_promedio || 0;
+                document.getElementById('stat-margen').textContent = margen.toFixed(1) + '%';
+                document.getElementById('stat-margen').style.color = margen >= 0 ? 'var(--success)' : 'var(--danger)';
 
-        } else if (paramActiveTab === 'personalizaciones') {
-            const items = await api.getPersonalizaciones(true);
-            container.innerHTML = '<div class="param-grid">' + items.map(p => {
-                const esPuntadas = p.metodo_calculo === 'puntadas';
-                const precioInfo = esPuntadas
-                    ? `RD$${(p.costo_por_mil_puntadas||0).toLocaleString()}/1K puntadas`
-                    : `Precio: ${formatearMoneda(p.precio)}`;
-                return `
-                <div class="param-card ${p.activo ? '' : 'inactive'}" style="border-left-color:#6f42c1;">
-                    <div class="param-name">${p.tipo}</div>
-                    <div class="param-meta">
-                        Código: ${p.codigo}<br>
-                        ${precioInfo} · +${p.tiempo_adicional_dias} días<br>
-                        Método: <strong>${esPuntadas ? 'Por puntadas' : 'Precio fijo'}</strong><br>
-                        ${p.descripcion || ''}
-                    </div>
-                    <div class="param-actions">
-                        <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormPersonalizacion('${p.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn ${p.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="togglePersonalizacionUI('${p.id}', ${!p.activo})">
-                            <i class="fas ${p.activo ? 'fa-ban' : 'fa-check'}"></i> ${p.activo ? 'Desactivar' : 'Activar'}
-                        </button>
-                    </div>
-                </div>`;
-            }).join('') + '</div>';
+                // Mapear datos para los gráficos (ajustando nombres de propiedades)
+                const chartData = {
+                    ...stats,
+                    ventas_por_canal: (canales || []).map(c => ({
+                        canal: c.canal,
+                        total_pedidos: c.total,
+                        ventas: c.ventas
+                    })),
+                    pedidos_por_estado: (estados || []).map(e => ({
+                        estado: e.estado,
+                        cantidad: e.total
+                    }))
+                };
 
-        } else {
-            // Categorías
-            const items = await api.getCategorias(true);
-            container.innerHTML = '<div class="param-grid">' + items.map(c => `
-                <div class="param-card ${c.activo ? '' : 'inactive'}" style="border-left-color:#28a745;">
-                    <div class="param-name">${c.nombre}</div>
-                    <div class="param-meta">${c.descripcion || 'Sin descripción'}</div>
-                    <div class="param-actions">
-                        <button class="btn btn-info" style="padding:6px 12px;font-size:.85em;" onclick="abrirFormCategoria('${c.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn ${c.activo ? 'btn-warning' : 'btn-success'}" style="padding:6px 12px;font-size:.85em;" onclick="toggleCategoriaUI('${c.id}', ${!c.activo})">
-                            <i class="fas ${c.activo ? 'fa-ban' : 'fa-check'}"></i> ${c.activo ? 'Desactivar' : 'Activar'}
-                        </button>
-                    </div>
-                </div>
-            `).join('') + '</div>';
+                // Renderizar gráficos
+                renderCharts(chartData);
+
+            } catch (e) {
+                console.error('Error dashboard:', e);
+                showNotification('Error cargando estadísticas: ' + e.message, 'error');
+
+                // Mostrar valores en 0 en caso de error
+                ['stat-total', 'stat-ventas', 'stat-ganancia', 'stat-pendientes', 'stat-entregados'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = id === 'stat-margen' ? '0%' : (id.includes('ventas') || id.includes('ganancia') ? 'RD$0' : '0');
+                });
+            }
         }
-    } catch (error) {
-        container.innerHTML = '<p style="color:#dc3545;text-align:center;padding:20px;">Error al cargar datos</p>';
-    }
-}
 
+        function animateValue(id, start, end, duration, isCurrency) {
+            const el = document.getElementById(id);
+            if (!el) return;
 
-async function toggleProductoUI(id, activo) {
-    await api.toggleProducto(id, activo);
-    showNotification(activo ? 'Producto activado' : 'Producto desactivado', 'success');
-    cargarParametrizacion();
-}
+            const startTime = performance.now();
 
-async function togglePersonalizacionUI(id, activo) {
-    await api.togglePersonalizacion(id, activo);
-    showNotification(activo ? 'Personalización activada' : 'Personalización desactivada', 'success');
-    cargarParametrizacion();
-}
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // ease-out cubic
 
-async function toggleCategoriaUI(id, activo) {
-    await api.toggleCategoria(id, activo);
-    showNotification(activo ? 'Categoría activada' : 'Categoría desactivada', 'success');
-    cargarParametrizacion();
-}
+                const current = start + (end - start) * easeProgress;
+                el.textContent = isCurrency ? formatearMoneda(current) : Math.round(current).toLocaleString();
 
-// ===================== PARAM MODALS =====================
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
 
-async function abrirFormProducto(id) {
-    let data = { sku: '', nombre: '', categoria: 'Camisetas', costo_material: '', tiempo_produccion_dias: 7 };
-    let title = 'Nuevo Producto';
+            requestAnimationFrame(update);
+        }
 
-    if (id) {
-        const items = await api.getProductos(true);
-        const found = items.find(p => p.id === id);
-        if (found) { data = found; title = 'Editar Producto'; }
-    }
+        function renderCharts(stats) {
+            const style = getComputedStyle(document.documentElement);
+            const accent = style.getPropertyValue('--accent').trim() || '#0071E3';
+            const success = style.getPropertyValue('--success').trim() || '#34C759';
+            const warning = style.getPropertyValue('--warning').trim() || '#FF9F0A';
+            const danger = style.getPropertyValue('--danger').trim() || '#FF3B30';
+            const info = style.getPropertyValue('--info').trim() || '#5AC8FA';
+            const purple = style.getPropertyValue('--purple').trim() || '#AF52DE';
+            const textTertiary = style.getPropertyValue('--text-tertiary').trim() || '#86868B';
+            const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#6E6E73';
 
-    // Load categories dynamically
-    let categorias = [];
-    try { categorias = await api.getCategorias(); } catch(e) { categorias = [{nombre:'Camisetas'},{nombre:'Hoodies'},{nombre:'Abrigos'},{nombre:'Otros'}]; }
-    const catOptions = categorias.map(c => `<option ${data.categoria===c.nombre?'selected':''}>${c.nombre}</option>`).join('');
-    const closeModal = `this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''`;
+            // Mapeo de colores por canal (identidad de marca)
+            const canalColors = {
+                'WhatsApp': '#25D366E6',      // Verde WhatsApp
+                'Instagram': '#C13584E6',     // Morado Instagram (gradiente central)
+                'Facebook': '#1877F2E6',      // Azul Facebook
+                'Referido': '#8E8E93E6',      // Gris neutro
+                'Tienda': accent + 'E6'       // Accent del sistema
+            };
 
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-    <div class="modal-content" style="max-width:560px;">
-        <div class="modal-header">
-            <h2 class="modal-title"><i class="fas fa-tshirt"></i> ${title}</h2>
-            <button class="modal-close" onclick="${closeModal}"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div id="prodFormError" style="display:none;padding:10px;background:#f8d7da;color:#721c24;border-radius:6px;margin-bottom:14px;font-size:.9em;"></div>
-            <form id="formProductoParam">
-                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div>
-                        <label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">SKU</label>
-                        <input name="sku" class="form-control" value="${data.sku}" required>
-                        <div id="skuFeedback" style="font-size:.75em;margin-top:4px;"></div>
-                    </div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Categoría</label><select name="categoria" class="form-control">${catOptions}</select></div>
-                </div>
-                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Nombre</label><input name="nombre" class="form-control" value="${data.nombre}" required></div>
-                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Costo Prenda (RD$)</label><input name="costo_material" type="number" class="form-control" value="${data.costo_material}" required></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Producción</label><input name="tiempo_produccion_dias" type="number" class="form-control" value="${data.tiempo_produccion_dias}" required></div>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-modal btn-secondary" onclick="${closeModal}">Cancelar</button>
-            <button class="btn-modal btn-success" id="btnSaveProducto"><i class="fas fa-save"></i> Guardar</button>
-        </div>
-    </div>`;
-    document.body.appendChild(modal);
-    let ov = document.querySelector('.modal-overlay');
-    if (!ov) { ov = document.createElement('div'); ov.className='modal-overlay'; document.body.appendChild(ov); }
-    ov.classList.add('active');
-    document.body.style.overflow = 'hidden';
+            // Mapeo de colores por estado (psicología del color)
+            const estadoColors = {
+                'En Producción': accent + 'E6',              // Azul: trabajo en proceso
+                'Listo para Envío': warning + 'E6',         // Naranja: acción necesaria
+                'En Camino': info + 'E6',                   // Azul claro: en tránsito
+                'Entregado': success + 'E6',                // Verde: éxito completado
+                'Bloqueado - Sin Dirección': danger + 'E6', // Rojo: problema crítico
+                'Bloqueado': danger + 'E6',                 // Rojo: problema crítico
+                'Cancelado': textTertiary + '99'            // Gris: inactivo
+            };
 
-    // SKU validation on blur
-    const skuInput = modal.querySelector('[name="sku"]');
-    let skuValid = true;
-    skuInput.addEventListener('blur', async () => {
-        const sku = skuInput.value.trim();
-        const fb = document.getElementById('skuFeedback');
-        if (!sku) { fb.innerHTML = ''; skuValid = true; return; }
-        try {
-            const res = await api.validarSku(sku, id || '');
-            if (res.exists) {
-                fb.innerHTML = '<span style="color:#dc3545;">⚠ Este SKU ya existe</span>';
-                skuValid = false;
+            // Apple-style Chart.js defaults
+            const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+            const labelColor = isDarkMode ? '#D1D1D6' : textTertiary;
+
+            Chart.defaults.font.family = "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif";
+            Chart.defaults.font.size = 12;
+            Chart.defaults.color = labelColor;
+            Chart.defaults.plugins.legend.labels.usePointStyle = true;
+            Chart.defaults.plugins.legend.labels.padding = 16;
+            Chart.defaults.plugins.legend.labels.boxWidth = 8;
+            Chart.defaults.plugins.legend.labels.boxHeight = 8;
+            Chart.defaults.elements.arc.borderWidth = 0;
+            Chart.defaults.elements.bar.borderRadius = 8;
+
+            // Canal chart
+            const canalCtx = document.getElementById('chartCanal');
+            if (!canalCtx) return;
+
+            if (chartCanal) chartCanal.destroy();
+
+            const canales = stats.ventas_por_canal || [];
+
+            if (canales.length === 0) {
+                // Mostrar mensaje cuando no hay datos
+                const ctx = canalCtx.getContext('2d');
+                ctx.clearRect(0, 0, canalCtx.width, canalCtx.height);
+                ctx.font = '500 13px DM Sans, -apple-system, sans-serif';
+                ctx.fillStyle = labelColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Sin datos', canalCtx.width / 2, canalCtx.height / 2);
             } else {
-                fb.innerHTML = '<span style="color:#28a745;">✓ SKU disponible</span>';
-                skuValid = true;
+                chartCanal = new Chart(canalCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: canales.map(c => c.canal || 'Otro'),
+                        datasets: [{
+                            data: canales.map(c => c.total_pedidos || 0),
+                            backgroundColor: canales.map(c => {
+                                const canal = c.canal || 'Otro';
+                                return canalColors[canal] || (accent + 'E6'); // Fallback al accent si no está mapeado
+                            }),
+                            borderWidth: 0,
+                            spacing: 2,
+                            offset: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                align: 'center',
+                                labels: {
+                                    padding: 14,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    },
+                                    color: labelColor,
+                                    boxWidth: 8,
+                                    boxHeight: 8,
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        return data.labels.map((label, i) => ({
+                                            text: label,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i,
+                                            strokeStyle: 'transparent',
+                                            lineWidth: 0
+                                        }));
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(28, 28, 30, 0.95)',
+                                titleColor: '#F5F5F7',
+                                bodyColor: '#F5F5F7',
+                                padding: 12,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                boxPadding: 6,
+                                usePointStyle: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const value = context.parsed;
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return context.label + ': ' + value + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '70%',
+                        animation: {
+                            animateRotate: true,
+                            animateScale: false,
+                            duration: 800,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
             }
-        } catch(e) { fb.innerHTML = ''; skuValid = true; }
-    });
 
-    document.getElementById('btnSaveProducto').onclick = async () => {
-        if (!skuValid) {
-            document.getElementById('prodFormError').style.display = 'block';
-            document.getElementById('prodFormError').textContent = 'El SKU ya está en uso por otro producto';
-            return;
+            // Estados chart
+            const estadosCtx = document.getElementById('chartEstados');
+            if (!estadosCtx) return;
+
+            if (chartEstados) chartEstados.destroy();
+
+            const estados = stats.pedidos_por_estado || [];
+
+            if (estados.length === 0) {
+                const ctx = estadosCtx.getContext('2d');
+                ctx.clearRect(0, 0, estadosCtx.width, estadosCtx.height);
+                ctx.font = '500 13px DM Sans, -apple-system, sans-serif';
+                ctx.fillStyle = labelColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Sin datos', estadosCtx.width / 2, estadosCtx.height / 2);
+            } else {
+                chartEstados = new Chart(estadosCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: estados.map(e => e.estado || ''),
+                        datasets: [{
+                            data: estados.map(e => e.cantidad || 0),
+                            backgroundColor: estados.map(e => {
+                                const estado = e.estado || '';
+                                return estadoColors[estado] || (textTertiary + '99'); // Fallback a gris si no está mapeado
+                            }),
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            barThickness: 24
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        indexAxis: 'y',
+                        layout: {
+                            padding: {
+                                right: 24
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(28, 28, 30, 0.95)',
+                                titleColor: '#F5F5F7',
+                                bodyColor: '#F5F5F7',
+                                padding: 12,
+                                cornerRadius: 8,
+                                displayColors: false,
+                                callbacks: {
+                                    title: function(context) {
+                                        return context[0].label;
+                                    },
+                                    label: function(context) {
+                                        return context.parsed.x + ' pedidos';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false,
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    display: false
+                                },
+                                border: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false,
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    },
+                                    color: labelColor,
+                                    padding: 12
+                                },
+                                border: {
+                                    display: false
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 800,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
+            }
         }
-        const fd = new FormData(document.getElementById('formProductoParam'));
-        const obj = Object.fromEntries(fd.entries());
-        obj.precio_base = 0;
-        obj.costo_material = parseFloat(obj.costo_material);
-        obj.costo_mano_obra = 0;
-        obj.tiempo_produccion_dias = parseInt(obj.tiempo_produccion_dias);
 
-        try {
-            const res = id ? await api.updateProducto(id, obj) : await api.createProducto(obj);
-            if (res && !res.success && res.error) {
-                document.getElementById('prodFormError').style.display = 'block';
-                document.getElementById('prodFormError').textContent = res.error;
-                return;
-            }
-            modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
-            showNotification(id ? 'Producto actualizado' : 'Producto creado', 'success');
-            cargarParametrizacion();
-        } catch (e) { showNotification(e.message, 'error'); }
-    };
-}
+        // ═══════ PENDIENTES ═══════
+        async function cargarPendientes() {
+            const container = document.getElementById('lista-pendientes');
+            if (!container) return;
 
-async function abrirFormPersonalizacion(id) {
-    let data = { codigo: '', tipo: '', descripcion: '', precio: 0, tiempo_adicional_dias: 0, metodo_calculo: 'fijo', costo_por_mil_puntadas: 0 };
-    let title = 'Nueva Personalización';
+            showCardsSkeleton('lista-pendientes', 3);
 
-    if (id) {
-        const items = await api.getPersonalizaciones(true);
-        const found = items.find(p => p.id === id);
-        if (found) { data = found; title = 'Editar Personalización'; }
-    }
+            try {
+                const pendientes = await api.getPedidosPendientes();
 
-    const closeModal = `this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''`;
-    const esPuntadas = data.metodo_calculo === 'puntadas';
-
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-    <div class="modal-content" style="max-width:540px;">
-        <div class="modal-header">
-            <h2 class="modal-title"><i class="fas fa-palette"></i> ${title}</h2>
-            <button class="modal-close" onclick="${closeModal}"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <form id="formPersParam">
-                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Código</label><input name="codigo" class="form-control" value="${data.codigo}" ${id ? 'readonly style="background:#f5f5f5"' : ''} required></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Tipo / Nombre</label><input name="tipo" class="form-control" value="${data.tipo}" required></div>
-                </div>
-                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Descripción</label><textarea name="descripcion" class="form-control" rows="2">${data.descripcion||''}</textarea></div>
-
-                <!-- Método de cálculo -->
-                <div style="margin-bottom:14px;">
-                    <label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Método de Cálculo</label>
-                    <select name="metodo_calculo" id="persMetodo" class="form-control">
-                        <option value="fijo" ${data.metodo_calculo==='fijo'?'selected':''}>Precio Fijo (Sublimación, Serigrafía)</option>
-                        <option value="puntadas" ${data.metodo_calculo==='puntadas'?'selected':''}>Por Puntadas (Bordados)</option>
-                    </select>
-                </div>
-
-                <!-- Precio fijo -->
-                <div id="seccionFijo" class="form-row" style="display:${esPuntadas?'none':'grid'};grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Precio Fijo (RD$)</label><input name="precio" type="number" step="0.01" class="form-control" value="${data.precio}"></div>
-                    <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Adicionales</label><input name="tiempo_adicional_dias" type="number" class="form-control" value="${data.tiempo_adicional_dias}"></div>
-                </div>
-
-                <!-- Precio por puntadas -->
-                <div id="seccionPuntadas" style="display:${esPuntadas?'block':'none'};">
-                    <div style="background:#f0f4ff;padding:14px;border-radius:8px;border-left:4px solid #6f42c1;margin-bottom:14px;">
-                        <p style="font-size:.85em;color:#555;margin-bottom:8px;">💡 <strong>Fórmula:</strong> (puntadas ÷ 1000) × costo por mil = precio</p>
-                        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                            <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">RD$ por 1,000 puntadas</label><input name="costo_por_mil_puntadas" type="number" step="0.01" class="form-control" value="${data.costo_por_mil_puntadas||0}"></div>
-                            <div><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Días Adicionales</label><input name="tiempo_adicional_dias_p" type="number" class="form-control" value="${data.tiempo_adicional_dias}"></div>
+                if (!pendientes || !pendientes.length) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            ${emptyStateSVG()}
+                            <h3>¡Todo al día!</h3>
+                            <p>No hay pedidos pendientes</p>
                         </div>
-                        <!-- Calculator preview -->
-                        <div style="margin-top:10px;font-size:.82em;color:#666;">
-                            <strong>Calculadora:</strong> <input id="calcPuntadas" type="number" placeholder="Puntadas" style="width:100px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:.9em;"> → <span id="calcResultado">RD$0</span>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = pendientes.map(p => `
+                    <div class="pendiente-card">
+                        <div>
+                            <div style="font-family:var(--font-display);font-weight:700;font-size:var(--text-body);margin-bottom:4px;">
+                                ${p.id || p.numero_pedido} — ${p.cliente || p.cliente_nombre}
+                            </div>
+                            <div style="font-size:var(--text-caption);color:var(--text-secondary);">
+                                ${p.producto || p.producto_nombre} · ${p.talla || p.talla_seleccionada || ''}
+                            </div>
+                            <div style="font-size:var(--text-caption);color:var(--danger);margin-top:4px;font-weight:500;">
+                                ${p.motivo_pendiente || p.motivo || 'Revisión pendiente'}
+                            </div>
                         </div>
+                        <button class="btn btn-primary" onclick="editarPedido('${p.id || p.numero_pedido}')" aria-label="Resolver pedido ${p.id || p.numero_pedido}">
+                            Resolver
+                        </button>
                     </div>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-modal btn-secondary" onclick="${closeModal}">Cancelar</button>
-            <button class="btn-modal btn-success" id="btnSavePers"><i class="fas fa-save"></i> Guardar</button>
-        </div>
-    </div>`;
-    document.body.appendChild(modal);
-    let ov = document.querySelector('.modal-overlay');
-    if (!ov) { ov = document.createElement('div'); ov.className='modal-overlay'; document.body.appendChild(ov); }
-    ov.classList.add('active');
-    document.body.style.overflow = 'hidden';
+                `).join('');
 
-    // Toggle visibility based on method
-    document.getElementById('persMetodo').addEventListener('change', (e) => {
-        const isPuntadas = e.target.value === 'puntadas';
-        document.getElementById('seccionFijo').style.display = isPuntadas ? 'none' : 'grid';
-        document.getElementById('seccionPuntadas').style.display = isPuntadas ? 'block' : 'none';
-    });
-
-    // Calculator
-    document.getElementById('calcPuntadas')?.addEventListener('input', (e) => {
-        const puntadas = parseInt(e.target.value) || 0;
-        const costoMil = parseFloat(modal.querySelector('[name="costo_por_mil_puntadas"]').value) || 0;
-        const total = (puntadas / 1000) * costoMil;
-        document.getElementById('calcResultado').textContent = 'RD$' + total.toLocaleString();
-    });
-    modal.querySelector('[name="costo_por_mil_puntadas"]')?.addEventListener('input', () => {
-        document.getElementById('calcPuntadas')?.dispatchEvent(new Event('input'));
-    });
-
-    document.getElementById('btnSavePers').onclick = async () => {
-        const fd = new FormData(document.getElementById('formPersParam'));
-        const obj = Object.fromEntries(fd.entries());
-        obj.metodo_calculo = obj.metodo_calculo || 'fijo';
-
-        if (obj.metodo_calculo === 'puntadas') {
-            obj.costo_por_mil_puntadas = parseFloat(obj.costo_por_mil_puntadas) || 0;
-            obj.precio = 0; // No fixed price for puntadas
-            obj.tiempo_adicional_dias = parseInt(obj.tiempo_adicional_dias_p || 0);
-        } else {
-            obj.precio = parseFloat(obj.precio) || 0;
-            obj.costo_por_mil_puntadas = 0;
-            obj.tiempo_adicional_dias = parseInt(obj.tiempo_adicional_dias || 0);
-        }
-        delete obj.tiempo_adicional_dias_p;
-
-        try {
-            if (id) await api.updatePersonalizacion(id, obj);
-            else await api.createPersonalizacion(obj);
-            modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
-            showNotification(id ? 'Personalización actualizada' : 'Personalización creada', 'success');
-            cargarParametrizacion();
-        } catch (e) { showNotification(e.message, 'error'); }
-    };
-}
-
-// ===================== CATEGORÍA FORM =====================
-
-async function abrirFormCategoria(id) {
-    let data = { nombre: '', descripcion: '' };
-    let title = 'Nueva Categoría';
-
-    if (id) {
-        const items = await api.getCategorias(true);
-        const found = items.find(c => c.id === id);
-        if (found) { data = found; title = 'Editar Categoría'; }
-    }
-
-    const closeModal = `this.closest('.modal').remove();document.querySelector('.modal-overlay')?.classList.remove('active');document.body.style.overflow=''`;
-
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-    <div class="modal-content" style="max-width:420px;">
-        <div class="modal-header">
-            <h2 class="modal-title"><i class="fas fa-tag"></i> ${title}</h2>
-            <button class="modal-close" onclick="${closeModal}"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <form id="formCatParam">
-                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Nombre</label><input name="nombre" class="form-control" value="${data.nombre}" required placeholder="Ej: Tazas, Gorras, Camisetas..."></div>
-                <div style="margin-bottom:14px;"><label class="form-label" style="display:block;font-size:.82em;font-weight:600;color:#555;margin-bottom:6px;">Descripción</label><textarea name="descripcion" class="form-control" rows="2" placeholder="Opcional">${data.descripcion||''}</textarea></div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-modal btn-secondary" onclick="${closeModal}">Cancelar</button>
-            <button class="btn-modal btn-success" id="btnSaveCat"><i class="fas fa-save"></i> Guardar</button>
-        </div>
-    </div>`;
-    document.body.appendChild(modal);
-    let ov = document.querySelector('.modal-overlay');
-    if (!ov) { ov = document.createElement('div'); ov.className='modal-overlay'; document.body.appendChild(ov); }
-    ov.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    document.getElementById('btnSaveCat').onclick = async () => {
-        const fd = new FormData(document.getElementById('formCatParam'));
-        const obj = Object.fromEntries(fd.entries());
-
-        try {
-            const res = id ? await api.updateCategoria(id, obj) : await api.createCategoria(obj);
-            if (res && !res.success && res.error) {
-                showNotification(res.error, 'error');
-                return;
+            } catch (e) {
+                console.error('Error pendientes:', e);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="color:var(--danger);">Error al cargar pendientes</p>
+                    </div>
+                `;
             }
-            modal.remove(); ov.classList.remove('active'); document.body.style.overflow = '';
-            showNotification(id ? 'Categoría actualizada' : 'Categoría creada', 'success');
-            cargarParametrizacion();
-        } catch (e) { showNotification(e.message, 'error'); }
-    };
-}
-
-// ===================== BOOT =====================
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await cargarPedidos();
-    await cargarDashboard();
-});
-</script>
+        }
+    </script>
 </body>
 </html>

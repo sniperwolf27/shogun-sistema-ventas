@@ -3,736 +3,738 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuevo Pedido - Shogun</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Nuevo Pedido — Shogun</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
-        .container{max-width:800px;margin:0 auto;background:white;border-radius:16px;padding:36px;box-shadow:0 16px 48px rgba(0,0,0,.25)}
-        h1{color:#2F5496;margin-bottom:8px}
-        .subtitle{color:#666;margin-bottom:24px}
-        .form-section{margin-bottom:28px}
-        .form-section h2{color:#5B9BD5;font-size:1.2em;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e0e0e0}
-        .form-group{margin-bottom:18px}
-        label{display:block;margin-bottom:6px;font-weight:600;color:#333;font-size:.95em}
-        .required{color:#dc3545}
-        input,select,textarea{width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;transition:border-color .2s;font-family:inherit}
-        input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.1)}
-        textarea{resize:vertical;min-height:70px}
-        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-        .btn-submit{padding:14px 28px;border:none;border-radius:8px;font-size:1.05em;font-weight:600;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;width:100%}
-        .btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(102,126,234,.3)}
-        .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
-        .alert{padding:14px 18px;border-radius:8px;margin-bottom:18px;display:none}
-        .alert-success{background:#d4edda;color:#155724;border-left:4px solid #28a745}
-        .alert-danger{background:#f8d7da;color:#721c24;border-left:4px solid #dc3545}
-        .alert.show{display:block}
-        .loading{display:none;text-align:center;padding:20px}
+        /* ═══════════════════════════════════════════════════════════════
+           SHOGUN — Formulario de Pedidos v4.0
+           Apple HIG — All 12 Principles
+           ═══════════════════════════════════════════════════════════════ */
+
+        :root {
+            --surface-primary:#FFFFFF; --surface-secondary:#F5F5F7; --surface-tertiary:#E8E8ED;
+            --text-primary:#1D1D1F; --text-secondary:#6E6E73; --text-tertiary:#86868B;
+            --text-inverted:#FFFFFF; --text-placeholder:#AEAEB2;
+            --accent:#0071E3; --accent-hover:#0077ED;
+            --accent-soft:rgba(0,113,227,0.08); --accent-medium:rgba(0,113,227,0.15);
+            --success:#34C759; --success-soft:rgba(52,199,89,0.1);
+            --warning:#FF9F0A; --warning-soft:rgba(255,159,10,0.1);
+            --danger:#FF3B30; --danger-soft:rgba(255,59,48,0.08);
+            --border-primary:rgba(0,0,0,0.06); --border-secondary:rgba(0,0,0,0.04);
+            --shadow-sm:0 2px 8px rgba(0,0,0,0.04); --shadow-md:0 4px 16px rgba(0,0,0,0.06);
+            --shadow-lg:0 8px 32px rgba(0,0,0,0.08); --shadow-xl:0 16px 48px rgba(0,0,0,0.1);
+            --shadow-glow:0 0 0 4px rgba(0,113,227,0.2);
+            --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px; --radius-full:9999px;
+            --font-display:'Satoshi',-apple-system,BlinkMacSystemFont,sans-serif;
+            --font-body:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+            --text-body:15px; --text-caption:13px; --text-micro:11px;
+            --ease-spring:cubic-bezier(0.22,1,0.36,1);
+            --sp-xs:4px; --sp-sm:8px; --sp-md:16px; --sp-lg:24px; --sp-xl:32px;
+        }
+
+        [data-theme="dark"] {
+            --surface-primary:#000000; --surface-secondary:#1C1C1E; --surface-tertiary:#2C2C2E;
+            --text-primary:#F5F5F7; --text-secondary:#A1A1A6; --text-tertiary:#8E8E93;
+            --border-primary:rgba(255,255,255,0.08);
+        }
+
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{-webkit-font-smoothing:antialiased}
+        body{font-family:var(--font-body);font-size:var(--text-body);line-height:1.55;color:var(--text-primary);background:var(--surface-secondary);min-height:100vh;padding:20px}
+
+        /* Header */
+        .form-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-xl);max-width:860px;margin-left:auto;margin-right:auto}
+        .form-header-brand{display:flex;align-items:center;gap:12px}
+        .logo-mark{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--text-primary);color:var(--surface-primary);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:-0.5px}
+        .form-header-brand h1{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-0.3px;color:var(--text-primary)}
+        .back-link{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surface-primary);border:1px solid var(--border-primary);border-radius:var(--radius-full);color:var(--text-secondary);text-decoration:none;font-size:var(--text-caption);font-weight:500;transition:all 0.2s var(--ease-spring)}
+        .back-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+        /* Container */
+        .container{max-width:860px;margin:0 auto;background:var(--surface-primary);border-radius:var(--radius-xl);padding:var(--sp-xl);box-shadow:var(--shadow-xl)}
+
+        /* Page Title */
+        .page-title{margin-bottom:var(--sp-lg)}
+        .page-title h2{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);margin-bottom:6px}
+        .page-title p{color:var(--text-secondary);font-size:var(--text-body)}
+
+        /* Section */
+        .form-section{margin-bottom:var(--sp-xl)}
+        .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-md);padding-bottom:var(--sp-sm);border-bottom:1px solid var(--border-primary)}
+        .section-title{font-family:var(--font-display);font-size:var(--text-body);font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+        .section-title i{color:var(--accent);font-size:14px}
+        .section-badge{font-size:var(--text-micro);font-weight:600;padding:2px 8px;border-radius:var(--radius-full);background:var(--surface-tertiary);color:var(--text-secondary)}
+
+        /* Form Grid */
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-md)}
+        .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-md)}
+        .form-group{margin-bottom:var(--sp-md)}
+        .form-group.full-width{grid-column:1/-1}
+
+        .form-label{display:block;font-size:var(--text-caption);font-weight:500;color:var(--text-secondary);margin-bottom:6px}
+        .form-label .required{color:var(--danger);margin-left:2px}
+
+        .form-control{width:100%;padding:12px 14px;background:var(--surface-primary);border:1px solid var(--border-primary);border-radius:var(--radius-sm);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;transition:all 0.2s var(--ease-spring)}
+        .form-control::placeholder{color:var(--text-placeholder)}
+        .form-control:focus{border-color:var(--accent);box-shadow:var(--shadow-glow)}
+        .form-control:hover:not(:focus){border-color:var(--text-tertiary)}
+        .form-control:disabled{background:var(--surface-secondary);color:var(--text-tertiary);cursor:not-allowed}
+
+        select.form-control{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236E6E73' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+        textarea.form-control{resize:vertical;min-height:80px}
+
+        .field-error{border-color:var(--danger)!important;box-shadow:0 0 0 3px rgba(255,59,48,0.12)!important}
+
+        /* Item Cards */
+        .item-card{background:var(--surface-secondary);border:1px solid var(--border-primary);border-radius:var(--radius-lg);padding:var(--sp-lg);margin-bottom:var(--sp-md);position:relative;transition:all 0.2s var(--ease-spring)}
+        .item-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm)}
+        .item-card.single-item .item-remove{display:none}
+
+        .item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-md)}
+        .item-number{font-weight:700;color:var(--text-primary);font-size:var(--text-body);display:flex;align-items:center;gap:8px}
+        .item-number .badge-num{background:var(--accent);color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-micro);font-weight:600}
+        .item-remove{background:var(--danger-soft);border:none;color:var(--danger);cursor:pointer;width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.2s}
+        .item-remove:hover{background:var(--danger);color:white}
+
+        .btn-add-item{background:var(--surface-primary);border:2px dashed var(--border-primary);color:var(--text-secondary);padding:var(--sp-md);border-radius:var(--radius-md);width:100%;cursor:pointer;font-size:var(--text-body);font-weight:500;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .btn-add-item:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+        /* Item Summary */
+        .item-summary{background:var(--surface-primary);padding:var(--sp-md);border-radius:var(--radius-sm);margin-top:var(--sp-md);display:none}
+        .item-summary.visible{display:block}
+        .item-summary-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-sm)}
+        .item-summary-row span{font-size:var(--text-caption);color:var(--text-secondary)}
+        .item-summary-row strong{font-weight:600}
+
+        /* Grand Total */
+        .grand-total{background:linear-gradient(135deg,var(--accent),#0051A3);color:white;padding:var(--sp-lg);border-radius:var(--radius-lg);margin:var(--sp-lg) 0;display:none;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--sp-sm)}
+        .grand-total.visible{display:flex}
+        .grand-total .gt-label{font-size:var(--text-caption);opacity:.9}
+        .grand-total .gt-value{font-family:var(--font-display);font-size:24px;font-weight:700}
+        .grand-total .gt-items{font-size:var(--text-micro);opacity:.8}
+
+        /* Submit Button */
+        .btn-submit{width:100%;padding:16px 28px;border:none;border-radius:var(--radius-full);font-family:var(--font-body);font-size:16px;font-weight:600;cursor:pointer;transition:all 0.25s var(--ease-spring);background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;gap:10px}
+        .btn-submit:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,113,227,0.35)}
+        .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+        .btn-submit i{font-size:18px}
+
+        /* Alerts */
+        .alert{padding:14px 18px;border-radius:var(--radius-sm);margin-bottom:var(--sp-lg);display:none;align-items:center;gap:12px;font-size:var(--text-caption);font-weight:500}
+        .alert.show{display:flex}
+        .alert-success{background:var(--success-soft);color:var(--success);border-left:3px solid var(--success)}
+        .alert-danger{background:var(--danger-soft);color:var(--danger);border-left:3px solid var(--danger)}
+        .alert i{font-size:16px}
+
+        /* Loading */
+        .loading{display:none;text-align:center;padding:var(--sp-xl)}
         .loading.show{display:block}
-        .spinner{border:4px solid #f3f3f3;border-top:4px solid #667eea;border-radius:50%;width:36px;height:36px;animation:spin .8s linear infinite;margin:0 auto 10px}
+        .spinner{width:40px;height:40px;border:3px solid var(--surface-tertiary);border-top:3px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto var(--sp-sm)}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .top-links{display:flex;justify-content:space-between;margin-bottom:20px}
-        .top-links a{color:#667eea;text-decoration:none;font-weight:600}
-        .price-preview{background:#f8f9fa;padding:16px;border-radius:8px;margin-top:12px;border-left:4px solid #2F5496;display:none}
-        .price-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.95em}
-        .price-total{font-weight:700;font-size:1.1em;border-top:2px solid #e0e0e0;padding-top:8px;margin-top:8px}
+
+        /* Post Creation */
+        .post-creation{margin-top:var(--sp-xl);padding-top:var(--sp-xl);border-top:2px solid var(--accent-soft);display:none}
+        .post-creation.visible{display:block}
+        .post-creation h3{font-family:var(--font-display);font-size:var(--text-title);font-weight:600;color:var(--text-primary);margin-bottom:var(--sp-md)}
+        .post-pedido-card{background:var(--success-soft);padding:var(--sp-md);border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);display:flex;justify-content:space-between;align-items:center}
+        .post-pedido-card strong{color:var(--success)}
+        .post-pedido-card a{color:var(--accent);text-decoration:none;font-weight:500}
+        .post-pedido-card a:hover{text-decoration:underline}
+
+        /* Access Denied */
         .access-denied{text-align:center;padding:60px 20px}
-        .access-denied i{font-size:4em;color:#dc3545;display:block;margin-bottom:16px}
-        .back-btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#2F5496;color:white;border-radius:8px;text-decoration:none;font-weight:600}
-        @media(max-width:768px){.form-grid{grid-template-columns:1fr}.container{padding:20px}#stickyResumen{margin:0 -20px -20px !important;border-radius:0 !important;}}
-        .field-error { border-color: #dc3545 !important; box-shadow: 0 0 0 3px rgba(220,53,69,.12) !important; }
-        .field-error-label { color: #dc3545; font-size: .8em; margin-top: 4px; }
+        .access-denied i{font-size:64px;color:var(--danger);margin-bottom:var(--sp-lg)}
+        .access-denied h2{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:8px}
+        .access-denied p{color:var(--text-secondary);margin-bottom:var(--sp-lg)}
+
+        /* Responsive */
+        @media(max-width:768px){
+            body{padding:12px}
+            .container{padding:var(--sp-lg)}
+            .form-grid,.form-grid-3{grid-template-columns:1fr}
+            .form-header{flex-direction:column;gap:var(--sp-sm);align-items:flex-start}
+            .grand-total{flex-direction:column;text-align:center}
+            .page-title h2{font-size:24px}
+        }
+
+        /* Animations */
+        @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .container{animation:cardIn 0.5s var(--ease-spring)}
     </style>
 </head>
 <body>
-<div class="container">
-    <!-- Access denied screen -->
-    <div id="accessDenied" class="access-denied" style="display:none;">
+    <!-- Header -->
+    <div class="form-header">
+        <div class="form-header-brand">
+            <div class="logo-mark">S</div>
+            <h1>Shogun</h1>
+        </div>
+        <a href="/backoffice" class="back-link">
+            <i class="fas fa-arrow-left"></i> Volver al Backoffice
+        </a>
+    </div>
+
+    <!-- Access Denied -->
+    <div id="accessDenied" class="container access-denied" style="display:none;">
         <i class="fas fa-lock"></i>
         <h2>Acceso Denegado</h2>
-        <p style="color:#666;margin-top:8px;">Solo administradores pueden crear pedidos.</p>
-        <a href="/backoffice" class="back-btn">Ir al Backoffice</a>
+        <p>Solo administradores pueden crear pedidos.</p>
+        <a href="/backoffice" class="back-link">Ir al Backoffice</a>
     </div>
 
-    <!-- Form container -->
-    <div id="formContainer">
-        <div class="top-links">
-            <a href="/backoffice"><i class="fas fa-arrow-left"></i> Volver al Backoffice</a>
+    <!-- Form Container -->
+    <div id="formContainer" class="container">
+        <div class="page-title">
+            <h2>Nuevo Pedido</h2>
+            <p>Completa los datos del pedido. Puedes agregar múltiples artículos.</p>
         </div>
 
-        <h1>📦 Nuevo Pedido</h1>
-        <p class="subtitle">Los datos se guardan directamente en la base de datos</p>
+        <div id="alertSuccess" class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <span id="alertSuccessText"></span>
+        </div>
+        <div id="alertError" class="alert alert-danger">
+            <i class="fas fa-circle-exclamation"></i>
+            <span id="alertErrorText"></span>
+        </div>
 
-        <div id="alertSuccess" class="alert alert-success"></div>
-        <div id="alertError" class="alert alert-danger"></div>
-        <div id="loading" class="loading"><div class="spinner"></div><p>Guardando pedido...</p></div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Guardando pedido...</p>
+        </div>
 
         <form id="formPedido">
-            <!-- Producto -->
+            <!-- ARTÍCULOS -->
             <div class="form-section">
-                <h2>👕 Producto</h2>
-                <div class="form-group">
-                    <label>Producto <span class="required">*</span></label>
-                    <select id="producto" required><option value="">Cargando productos...</option></select>
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-box"></i> Artículos
+                    </div>
+                    <span class="section-badge" id="itemCount">1 artículo</span>
+                </div>
+                <div id="itemsContainer"></div>
+                <button type="button" class="btn-add-item" id="btnAddItem">
+                    <i class="fas fa-plus-circle"></i> Agregar otro artículo
+                </button>
+                <div class="grand-total" id="grandTotal">
+                    <div>
+                        <div class="gt-label">Total del pedido</div>
+                        <div class="gt-items" id="gtItems">1 artículo</div>
+                    </div>
+                    <div class="gt-value" id="gtValue">RD$0</div>
+                </div>
+            </div>
+
+            <!-- CLIENTE -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-user"></i> Cliente
+                    </div>
                 </div>
                 <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="form-label">Nombre completo <span class="required">*</span></label>
+                        <input type="text" id="cliente" class="form-control" required placeholder="Juan Pérez">
+                    </div>
                     <div class="form-group">
-                        <label>Talla <span class="required">*</span></label>
-                        <select id="talla" required>
+                        <label class="form-label">Teléfono <span class="required">*</span></label>
+                        <input type="tel" id="telefono" class="form-control" required placeholder="809-555-0000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="email" class="form-control" placeholder="juan@email.com">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Dirección de envío <span class="required">*</span></label>
+                        <textarea id="direccion" class="form-control" required placeholder="Calle, número, sector, ciudad"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Canal de venta <span class="required">*</span></label>
+                        <select id="canal" class="form-control" required>
                             <option value="">Seleccionar...</option>
-                            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+                            <option>WhatsApp</option>
+                            <option>Instagram</option>
+                            <option>Facebook</option>
+                            <option>Referido</option>
+                            <option>Tienda</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Color</label>
-                        <input type="text" id="color" placeholder="Ej: Negro, Blanco, Rojo" list="coloresList">
-                        <datalist id="coloresList">
-                            <option value="Negro">
-                            <option value="Blanco">
-                            <option value="Gris">
-                            <option value="Azul">
-                            <option value="Rojo">
-                            <option value="Verde">
-                            <option value="Beige">
-                        </datalist>
-                    </div>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Personalización</label>
-                        <select id="personalizacion"><option value="ninguna">Ninguna</option></select>
-                    </div>
-                    <div class="form-group" id="puntadasGroup" style="display:none;">
-                        <label>Cantidad de Puntadas <span class="required">*</span></label>
-                        <input type="number" id="puntadas" placeholder="Ej: 36000" min="0">
-                        <div id="puntadasCalc" style="font-size:.85em;color:#6f42c1;margin-top:4px;"></div>
-                    </div>
-                </div>
-                <!-- Precio de venta y costos adicionales (siempre visibles) -->
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Precio de Venta al Cliente (RD$) <span class="required">*</span></label>
-                        <input type="number" id="precioVenta" placeholder="Ej: 1500" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Costos Adicionales (RD$)</label>
-                        <input type="number" id="costosAdicionales" placeholder="0" min="0" value="0">
-                    </div>
-                </div>
-                <!-- Resumen financiero (visible cuando hay datos) -->
-                <div id="bordadoResumen" style="background:#f0f4ff;padding:14px;border-radius:8px;border-left:4px solid #6f42c1;margin-bottom:14px;display:none;">
-                    <div style="font-size:.85em;font-weight:600;color:#555;margin-bottom:8px;">📊 Resumen Financiero</div>
-                    <div style="font-size:.88em;color:#333;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Costo prenda:</span><span id="resCostoPrenda">RD$0</span></div>
-                        <div id="resManoObraRow" style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Mano de obra:</span><span id="resManoObra">RD$0</span></div>
-                        <div id="resCostosAdRow" style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Costos adicionales:</span><span id="resCostosAd">RD$0</span></div>
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;border-top:1px solid #ddd;padding-top:4px;font-weight:600;"><span>Costo total:</span><span id="resCostoTotal">RD$0</span></div>
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-weight:700;color:#28a745;"><span>Ganancia neta:</span><span id="resGanancia">RD$0</span></div>
-                        <div style="display:flex;justify-content:space-between;font-weight:700;color:#6f42c1;"><span>Margen:</span><span id="resMargen">0%</span></div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Detalles de personalización</label>
-                    <textarea id="detalles" placeholder="Ej: Logo empresa en el frente"></textarea>
                 </div>
             </div>
 
-            <!-- Cliente -->
+            <!-- PAGO -->
             <div class="form-section">
-                <h2>👤 Cliente</h2>
-                <div class="form-group">
-                    <label>Nombre completo <span class="required">*</span></label>
-                    <input type="text" id="cliente" required placeholder="Juan Pérez">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-credit-card"></i> Pago
+                    </div>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Teléfono <span class="required">*</span></label>
-                        <input type="tel" id="telefono" required placeholder="809-555-0000">
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="email" placeholder="juan@email.com">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Dirección de envío <span class="required">*</span></label>
-                    <textarea id="direccion" required placeholder="Calle, número, sector, ciudad"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Canal de venta <span class="required">*</span></label>
-                    <select id="canal" required>
-                        <option value="">Seleccionar...</option>
-                        <option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Referido</option><option>Tienda</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Pago -->
-            <div class="form-section">
-                <h2>💳 Pago</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Método de pago <span class="required">*</span></label>
-                        <select id="banco" required>
+                        <label class="form-label">Método de pago <span class="required">*</span></label>
+                        <select id="banco" class="form-control" required>
                             <option value="">Seleccionar...</option>
-                            <option>Popular</option><option>Banreservas</option><option>BHD</option><option>Efectivo</option><option>Transferencia</option>
+                            <option>Popular</option>
+                            <option>Banreservas</option>
+                            <option>BHD</option>
+                            <option>Efectivo</option>
+                            <option>Transferencia</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Estado del pago <span class="required">*</span></label>
-                        <select id="estatusPago" required>
-                            <option>Recibido</option><option>Pendiente</option><option>Parcial</option>
+                        <label class="form-label">Estado del pago <span class="required">*</span></label>
+                        <select id="estatusPago" class="form-control" required>
+                            <option>Recibido</option>
+                            <option>Pendiente</option>
+                            <option>Parcial</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Costo de envío (RD$)</label>
-                    <input type="number" id="costoEnvio" value="200" min="0">
-                </div>
-
-                <!-- Price preview -->
-                <div class="price-preview" id="pricePreview">
-                    <div class="price-row"><span>Precio venta:</span><span id="prevProducto">RD$0</span></div>
-                    <div class="price-row"><span>Envío:</span><span id="prevEnvio">RD$200</span></div>
-                    <div class="price-row price-total"><span>Total al cliente:</span><span id="prevTotal">RD$0</span></div>
+                    <div class="form-group">
+                        <label class="form-label">Costo de envío (RD$)</label>
+                        <input type="number" id="costoEnvio" class="form-control" value="200" min="0">
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit" id="btnSubmit">💾 Guardar Pedido</button>
+            <button type="submit" class="btn-submit" id="btnSubmit">
+                <i class="fas fa-save"></i> Guardar Pedido
+            </button>
         </form>
 
-        <!-- Sticky bottom summary bar -->
-        <div id="stickyResumen" style="display:none;position:sticky;bottom:0;background:white;border-top:2px solid #e0e0e0;padding:12px 16px;margin:0 -36px -36px;border-radius:0 0 16px 16px;z-index:10;box-shadow:0 -4px 12px rgba(0,0,0,.06);">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                <div style="font-size:.9em;color:#555;">
-                    <strong id="stickyProducto" style="color:#2F5496;">—</strong>
-                    <span id="stickyCliente" style="margin-left:8px;">—</span>
-                </div>
-                <div style="font-weight:700;color:#2F5496;font-size:1.15em;" id="stickyTotal">RD$0</div>
-            </div>
-        </div>
-
-        <!-- Post-creation: Comments & Attachments -->
-        <div id="postCreationSection" style="display:none;margin-top:28px;padding-top:24px;border-top:3px solid #667eea;">
-            <h2 style="color:#2F5496;font-size:1.3em;margin-bottom:16px;">📎 Adjuntos y Comentarios — <span id="postPedidoId"></span></h2>
-
-            <!-- Adjuntos -->
-            <div style="margin-bottom:20px;">
-                <label style="font-size:.95em;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px;"><i class="fas fa-paperclip" style="color:#667eea;"></i> Adjuntos</label>
-                <div id="postAdjuntosLista" style="margin-bottom:10px;"><p style="color:#999;font-size:.9em;">Sin adjuntos</p></div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="file" id="postAdjuntoInput" style="display:none;" multiple>
-                    <button type="button" class="btn-submit" style="width:auto;padding:10px 18px;font-size:.9em;" id="btnPostAddFile"><i class="fas fa-upload"></i> Subir archivo</button>
-                    <span id="postAdjuntoStatus" style="font-size:.85em;color:#666;"></span>
-                </div>
-            </div>
-
-            <!-- Comentarios -->
-            <div>
-                <label style="font-size:.95em;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px;"><i class="fas fa-comments" style="color:#667eea;"></i> Comentarios</label>
-                <div id="postComentariosLista" style="margin-bottom:10px;"><p style="color:#999;font-size:.9em;">Sin comentarios</p></div>
-                <div style="display:flex;gap:8px;">
-                    <input id="postNuevoComentario" placeholder="Escribe un comentario..." style="flex:1;padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;">
-                    <button type="button" class="btn-submit" style="width:auto;padding:10px 18px;font-size:.9em;" id="btnPostAddComment"><i class="fas fa-paper-plane"></i></button>
-                </div>
-            </div>
+        <!-- Post-creation -->
+        <div id="postCreationSection" class="post-creation">
+            <h3>Pedidos Creados — <span id="postGrupoId"></span></h3>
+            <div id="postPedidosList"></div>
         </div>
     </div>
-</div>
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/js/config.js"></script>
-<script>
-(async function() {
-    // --- Auth check ---
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    let currentToken = localStorage.getItem('sb_access_token');
+    <datalist id="coloresList">
+        <option value="Negro"><option value="Blanco"><option value="Gris">
+        <option value="Azul"><option value="Rojo"><option value="Verde">
+        <option value="Beige">
+    </datalist>
 
-    if (!currentToken || !user) {
-        window.location.href = '/login';
-        return;
-    }
+    <script>
+    (async function() {
+        // ═══════════════════════════════════════════════════════════════
+        // AUTH
+        // ═══════════════════════════════════════════════════════════════
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        let currentToken = localStorage.getItem('sb_access_token');
 
-    if (user.rol !== 'admin') {
-        document.getElementById('formContainer').style.display = 'none';
-        document.getElementById('accessDenied').style.display = 'block';
-        return;
-    }
-
-    // Try to refresh token via Supabase SDK
-    try {
-        const sb = window.initSupabase();
-        if (sb) {
-            const refreshToken = localStorage.getItem('sb_refresh_token');
-            if (refreshToken) {
-                const { data, error } = await sb.auth.setSession({
-                    access_token: currentToken,
-                    refresh_token: refreshToken
-                });
-                if (data && data.session) {
-                    currentToken = data.session.access_token;
-                    localStorage.setItem('sb_access_token', data.session.access_token);
-                    if (data.session.refresh_token) {
-                        localStorage.setItem('sb_refresh_token', data.session.refresh_token);
-                    }
-                }
-            }
-        }
-    } catch(e) {
-        console.warn('Token refresh failed:', e);
-    }
-
-    // --- API helper (always reads fresh token) ---
-    function getToken() {
-        return localStorage.getItem('sb_access_token') || currentToken;
-    }
-
-    async function apiFetch(endpoint, options = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + getToken(),
-            ...(options.headers || {})
-        };
-        const res = await fetch(API_BASE + endpoint, { ...options, headers });
-        if (res.status === 401) { window.location.href = '/login'; return null; }
-        if (res.status === 403) { throw new Error('Sin permisos para esta acción'); }
-        return res.json();
-    }
-
-    // --- Load catalog from DB ---
-    let productosData = [];
-    let persData = [];
-
-    async function loadCatalog() {
-        try {
-            productosData = await apiFetch('/productos') || [];
-            persData = await apiFetch('/personalizaciones') || [];
-
-            const prodSelect = document.getElementById('producto');
-            prodSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
-                productosData.map(p =>
-                    `<option value="${p.sku}" data-precio="${p.precio_base}" data-costo-material="${p.costo_material || 0}" data-nombre="${p.nombre}" data-dias="${p.tiempo_produccion_dias}">${p.nombre}</option>`
-                ).join('');
-
-            const persSelect = document.getElementById('personalizacion');
-            persSelect.innerHTML = '<option value="ninguna">Ninguna</option>' +
-                persData.map(p => {
-                    const label = p.metodo_calculo === 'puntadas'
-                        ? `${p.tipo} (Bordado — RD$${Number(p.costo_por_mil_puntadas||0).toLocaleString()}/1K punt.)`
-                        : `${p.tipo} (+RD$${Number(p.precio).toLocaleString()})`;
-                    return `<option value="${p.codigo}" data-precio="${p.precio}" data-metodo="${p.metodo_calculo||'fijo'}" data-costo-mil="${p.costo_por_mil_puntadas||0}">${label}</option>`;
-                }).join('');
-        } catch (e) {
-            console.error('Error cargando catálogo:', e);
-            showError('Error al cargar el catálogo de productos');
-        }
-    }
-
-    loadCatalog();
-
-    // --- Show/hide puntadas based on personalización ---
-    let isBordadoMode = false;
-
-    function handlePersChange() {
-        const persOpt = document.getElementById('personalizacion').selectedOptions[0];
-        const metodo = persOpt?.dataset?.metodo || 'fijo';
-        const puntadasGrp = document.getElementById('puntadasGroup');
-
-        isBordadoMode = (metodo === 'puntadas');
-
-        if (isBordadoMode) {
-            puntadasGrp.style.display = 'block';
-        } else {
-            puntadasGrp.style.display = 'none';
-            document.getElementById('puntadas').value = '';
-            document.getElementById('puntadasCalc').textContent = '';
-        }
-        updatePreview();
-    }
-
-    // --- Price preview (siempre basado en precioVenta) ---
-    function updatePreview() {
-        const prodOpt = document.getElementById('producto').selectedOptions[0];
-        const persOpt = document.getElementById('personalizacion').selectedOptions[0];
-        const envio = parseInt(document.getElementById('costoEnvio').value) || 0;
-        const puntadas = parseInt(document.getElementById('puntadas').value) || 0;
-        const precioVenta = parseFloat(document.getElementById('precioVenta').value) || 0;
-        const costosAd = parseFloat(document.getElementById('costosAdicionales').value) || 0;
-
-        const costoMat = parseFloat(prodOpt?.dataset?.costoMaterial || 0);
-        const costoMil = parseFloat(persOpt?.dataset?.costoMil || 0);
-
-        // Mano de obra (solo si hay puntadas/bordado)
-        const manoObra = (isBordadoMode && puntadas > 0 && costoMil > 0)
-            ? (puntadas / 1000) * costoMil : 0;
-
-        // Puntadas calc label
-        const calcEl = document.getElementById('puntadasCalc');
-        if (calcEl) {
-            calcEl.textContent = (isBordadoMode && puntadas > 0)
-                ? `${(puntadas/1000).toFixed(1)} mil × RD$${costoMil.toLocaleString()} = RD$${manoObra.toLocaleString()}`
-                : '';
-        }
-
-        // Costos y ganancia
-        const costoTotal = costoMat + manoObra + costosAd;
-        const ganancia = precioVenta - costoTotal;
-        const margen = precioVenta > 0 ? (ganancia / precioVenta * 100) : 0;
-
-        // Resumen financiero
-        const resumen = document.getElementById('bordadoResumen');
-        if (precioVenta > 0 && costoMat > 0) {
-            resumen.style.display = 'block';
-            document.getElementById('resCostoPrenda').textContent = 'RD$' + costoMat.toLocaleString();
-            document.getElementById('resManoObra').textContent = 'RD$' + manoObra.toLocaleString();
-            document.getElementById('resManoObraRow').style.display = manoObra > 0 ? 'flex' : 'none';
-            document.getElementById('resCostosAd').textContent = 'RD$' + costosAd.toLocaleString();
-            document.getElementById('resCostosAdRow').style.display = costosAd > 0 ? 'flex' : 'none';
-            document.getElementById('resCostoTotal').textContent = 'RD$' + costoTotal.toLocaleString();
-            document.getElementById('resGanancia').textContent = 'RD$' + ganancia.toLocaleString();
-            document.getElementById('resGanancia').style.color = ganancia >= 0 ? '#28a745' : '#dc3545';
-            document.getElementById('resMargen').textContent = margen.toFixed(1) + '%';
-            document.getElementById('resMargen').style.color = margen >= 0 ? '#6f42c1' : '#dc3545';
-        } else {
-            resumen.style.display = 'none';
-        }
-
-        // Preview total al cliente
-        const total = precioVenta + envio;
-        document.getElementById('prevProducto').textContent = 'RD$' + precioVenta.toLocaleString();
-        document.getElementById('prevEnvio').textContent = 'RD$' + envio.toLocaleString();
-        document.getElementById('prevTotal').textContent = 'RD$' + total.toLocaleString();
-        document.getElementById('pricePreview').style.display = precioVenta > 0 ? 'block' : 'none';
-    }
-
-    document.getElementById('producto').addEventListener('change', updatePreview);
-    document.getElementById('personalizacion').addEventListener('change', handlePersChange);
-    document.getElementById('costoEnvio').addEventListener('input', updatePreview);
-    document.getElementById('puntadas').addEventListener('input', updatePreview);
-    document.getElementById('precioVenta').addEventListener('input', updatePreview);
-    document.getElementById('costosAdicionales').addEventListener('input', updatePreview);
-
-    // --- Alert helpers ---
-    function showSuccess(msg) {
-        const el = document.getElementById('alertSuccess');
-        el.innerHTML = msg;
-        el.classList.add('show');
-        document.getElementById('alertError').classList.remove('show');
-    }
-
-    function showError(msg) {
-        const el = document.getElementById('alertError');
-        el.innerHTML = msg;
-        el.classList.add('show');
-        document.getElementById('alertSuccess').classList.remove('show');
-    }
-
-    function hideAlerts() {
-        document.getElementById('alertSuccess').classList.remove('show');
-        document.getElementById('alertError').classList.remove('show');
-    }
-
-    // --- Field mapping for validation ---
-    const fieldMap = {
-        producto_sku: { el: 'producto', label: 'Producto' },
-        talla: { el: 'talla', label: 'Talla' },
-        precio_venta: { el: 'precioVenta', label: 'Precio de Venta' },
-        nombre_cliente: { el: 'cliente', label: 'Nombre del cliente' },
-        telefono: { el: 'telefono', label: 'Teléfono' },
-        direccion: { el: 'direccion', label: 'Dirección' },
-        canal: { el: 'canal', label: 'Canal de venta' },
-        banco: { el: 'banco', label: 'Método de pago' }
-    };
-
-    function clearFieldErrors() {
-        document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
-        document.querySelectorAll('.field-error-label').forEach(el => el.remove());
-    }
-
-    function markFieldError(inputId, message) {
-        const el = document.getElementById(inputId);
-        if (!el) return null;
-        el.classList.add('field-error');
-        // Add error label below
-        let errLabel = el.parentElement.querySelector('.field-error-label');
-        if (!errLabel) {
-            errLabel = document.createElement('div');
-            errLabel.className = 'field-error-label';
-            el.parentElement.appendChild(errLabel);
-        }
-        errLabel.textContent = message;
-        return el;
-    }
-
-    // --- Update sticky summary bar ---
-    function updateSticky() {
-        const sticky = document.getElementById('stickyResumen');
-        const prodOpt = document.getElementById('producto').selectedOptions[0];
-        const precioVenta = parseFloat(document.getElementById('precioVenta').value) || 0;
-        const envio = parseInt(document.getElementById('costoEnvio').value) || 0;
-        const cliente = document.getElementById('cliente').value.trim();
-
-        const hasData = (prodOpt && prodOpt.value) || precioVenta > 0 || cliente;
-        sticky.style.display = hasData ? 'block' : 'none';
-
-        document.getElementById('stickyProducto').textContent = (prodOpt && prodOpt.value) ? (prodOpt.dataset.nombre || prodOpt.textContent) : '—';
-        document.getElementById('stickyCliente').textContent = cliente ? '· ' + cliente : '';
-        document.getElementById('stickyTotal').textContent = precioVenta > 0 ? 'RD$' + (precioVenta + envio).toLocaleString() : 'RD$0';
-    }
-
-    // Hook sticky updates to relevant fields
-    ['producto', 'precioVenta', 'costoEnvio', 'cliente'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', updateSticky);
-    });
-
-    // Clear field errors on user interaction
-    document.querySelectorAll('#formPedido input, #formPedido select, #formPedido textarea').forEach(el => {
-        const evt = (el.tagName === 'SELECT') ? 'change' : 'input';
-        el.addEventListener(evt, () => {
-            el.classList.remove('field-error');
-            const errLabel = el.parentElement.querySelector('.field-error-label');
-            if (errLabel) errLabel.remove();
-        });
-    });
-
-    // --- Progressive hiding: hide personalización details when 'Ninguna' ---
-    const persDetailsGroup = document.getElementById('detalles').closest('.form-group');
-    function updatePersVisibility() {
-        const persVal = document.getElementById('personalizacion').value;
-        const isNinguna = !persVal || persVal === 'ninguna';
-        if (persDetailsGroup) persDetailsGroup.style.display = isNinguna ? 'none' : 'block';
-    }
-    document.getElementById('personalizacion').addEventListener('change', updatePersVisibility);
-    // Run once on load
-    setTimeout(updatePersVisibility, 500);
-
-    // --- Submit ---
-    document.getElementById('formPedido').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        hideAlerts();
-        clearFieldErrors();
-
-        const prodOpt = document.getElementById('producto').selectedOptions[0];
-        if (!prodOpt || !prodOpt.value) {
-            markFieldError('producto', 'Selecciona un producto');
-            document.getElementById('producto').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            document.getElementById('producto').focus();
-            showError('Selecciona un producto');
+        if (!currentToken || !user) {
+            window.location.href = '/login';
             return;
         }
 
-        const formData = {
-            producto_sku: document.getElementById('producto').value,
-            producto_nombre: prodOpt.dataset.nombre || '',
-            talla: document.getElementById('talla').value,
-            color: document.getElementById('color').value.trim(),
-            personalizacion_tipo: document.getElementById('personalizacion').value,
-            personalizacion_detalles: document.getElementById('detalles').value.trim(),
-            personalizacion_puntadas: parseInt(document.getElementById('puntadas').value) || 0,
-            costo_por_mil_puntadas: parseFloat(document.getElementById('personalizacion').selectedOptions[0]?.dataset?.costoMil || 0),
-            precio_venta: parseFloat(document.getElementById('precioVenta').value) || 0,
-            costos_adicionales: parseFloat(document.getElementById('costosAdicionales').value) || 0,
-            nombre_cliente: document.getElementById('cliente').value.trim(),
-            telefono: document.getElementById('telefono').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            direccion: document.getElementById('direccion').value.trim(),
-            canal: document.getElementById('canal').value,
-            banco: document.getElementById('banco').value,
-            estatus_pago: document.getElementById('estatusPago').value,
-            costo_envio: document.getElementById('costoEnvio').value || '200',
-            tiempo_estimado: (prodOpt.dataset.dias || '7') + ' días'
-        };
+        if (user.rol !== 'admin') {
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('accessDenied').style.display = 'block';
+            return;
+        }
 
-        // Validate required with scroll-to-error
-        const required = ['producto_sku', 'talla', 'precio_venta', 'nombre_cliente', 'telefono', 'direccion', 'canal', 'banco'];
-        for (const field of required) {
-            if (!formData[field]) {
-                const mapping = fieldMap[field];
-                if (mapping) {
-                    const el = markFieldError(mapping.el, `${mapping.label} es requerido`);
-                    if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        el.focus();
+        try {
+            const sb = window.initSupabase();
+            if (sb) {
+                const rt = localStorage.getItem('sb_refresh_token');
+                if (rt) {
+                    const { data } = await sb.auth.setSession({ access_token: currentToken, refresh_token: rt });
+                    if (data && data.session) {
+                        currentToken = data.session.access_token;
+                        localStorage.setItem('sb_access_token', data.session.access_token);
+                        if (data.session.refresh_token) localStorage.setItem('sb_refresh_token', data.session.refresh_token);
                     }
-                    showError(`Campo requerido: <strong>${mapping.label}</strong>`);
-                } else {
-                    showError('Completa todos los campos obligatorios');
-                }
-                return;
-            }
-        }
-
-        const btn = document.getElementById('btnSubmit');
-        btn.disabled = true;
-        document.getElementById('loading').classList.add('show');
-
-        try {
-            const result = await apiFetch('/pedidos', {
-                method: 'POST',
-                body: JSON.stringify(formData)
-            });
-
-            document.getElementById('loading').classList.remove('show');
-
-            if (result && result.success) {
-                showSuccess(`
-                    ✅ <strong>Pedido ${result.pedido_id} creado exitosamente!</strong><br>
-                    Total estimado en base de datos.
-                `);
-                document.getElementById('formPedido').reset();
-                document.getElementById('pricePreview').style.display = 'none';
-                document.getElementById('bordadoResumen').style.display = 'none';
-                document.getElementById('stickyResumen').style.display = 'none';
-                document.getElementById('puntadasGroup').style.display = 'none';
-                clearFieldErrors();
-                updatePersVisibility();
-                window.scrollTo(0, 0);
-
-                // Show post-creation section
-                showPostCreation(result.pedido_id);
-            } else {
-                throw new Error(result?.error || 'Error desconocido');
-            }
-        } catch (error) {
-            document.getElementById('loading').classList.remove('show');
-            showError(`❌ <strong>Error:</strong> ${error.message}`);
-            window.scrollTo(0, 0);
-        } finally {
-            btn.disabled = false;
-        }
-    });
-
-    // ========== POST-CREATION: Comments & Attachments ==========
-
-    let currentPostPedidoId = null;
-
-    function showPostCreation(pedidoId) {
-        currentPostPedidoId = pedidoId;
-        document.getElementById('postPedidoId').textContent = pedidoId;
-        document.getElementById('postCreationSection').style.display = 'block';
-        loadPostAdjuntos(pedidoId);
-        loadPostComentarios(pedidoId);
-        setupPostListeners(pedidoId);
-        // Scroll to section
-        setTimeout(() => document.getElementById('postCreationSection').scrollIntoView({behavior:'smooth'}), 300);
-    }
-
-    function setupPostListeners(pedidoId) {
-        // Upload file
-        document.getElementById('btnPostAddFile').onclick = () => document.getElementById('postAdjuntoInput').click();
-        document.getElementById('postAdjuntoInput').onchange = async (e) => {
-            const files = e.target.files;
-            if (!files.length) return;
-            const status = document.getElementById('postAdjuntoStatus');
-            for (const file of files) {
-                status.textContent = `Subiendo ${file.name}...`;
-                try {
-                    const token = getToken();
-                    const fd = new FormData();
-                    fd.append('archivo', file);
-                    const res = await fetch(API_BASE + '/pedidos/' + pedidoId + '/adjuntos', {
-                        method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + token },
-                        body: fd
-                    });
-                    const data = await res.json();
-                    if (!data.success) throw new Error(data.error || 'Error');
-                } catch (err) {
-                    showError(`Error subiendo ${file.name}: ${err.message}`);
                 }
             }
-            status.textContent = '';
-            e.target.value = '';
-            loadPostAdjuntos(pedidoId);
-        };
+        } catch(e) { console.warn('Token refresh:', e); }
 
-        // Add comment
-        document.getElementById('btnPostAddComment').onclick = async () => {
-            const input = document.getElementById('postNuevoComentario');
-            const texto = input.value.trim();
-            if (!texto) return;
-            input.disabled = true;
+        function getToken() { return localStorage.getItem('sb_access_token') || currentToken; }
+
+        async function apiFetch(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken(),
+                ...(options.headers || {})
+            };
+            const res = await fetch(API_BASE + endpoint, { ...options, headers });
+            if (res.status === 401) { window.location.href = '/login'; return null; }
+            if (res.status === 403) throw new Error('Sin permisos');
+            return res.json();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // CATÁLOGO
+        // ═══════════════════════════════════════════════════════════════
+        let productosData = [], persData = [];
+
+        async function loadCatalog() {
             try {
-                await apiFetch('/pedidos/' + pedidoId + '/comentarios', {
-                    method: 'POST',
-                    body: JSON.stringify({ texto })
-                });
-                input.value = '';
-                loadPostComentarios(pedidoId);
+                productosData = await apiFetch('/productos') || [];
+                persData = await apiFetch('/personalizaciones') || [];
             } catch (e) {
-                showError(e.message);
+                console.error('Error catálogo:', e);
+                showError('Error al cargar catálogo');
             }
-            input.disabled = false;
-        };
+        }
+        await loadCatalog();
 
-        document.getElementById('postNuevoComentario').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') document.getElementById('btnPostAddComment').click();
-        });
-    }
+        function productOptions() {
+            return '<option value="">Seleccionar producto...</option>' +
+                productosData.map(p =>
+                    `<option value="${p.sku}" data-precio="${p.precio_base}" data-costo="${p.costo_material||0}" data-nombre="${p.nombre}" data-dias="${p.tiempo_produccion_dias}">${p.nombre} (RD$${Number(p.precio_base).toLocaleString()})</option>`
+                ).join('');
+        }
 
-    async function loadPostAdjuntos(pedidoId) {
-        const container = document.getElementById('postAdjuntosLista');
-        try {
-            const adjuntos = await apiFetch('/pedidos/' + pedidoId + '/adjuntos');
-            if (!adjuntos || adjuntos.length === 0) { container.innerHTML = '<p style="color:#999;font-size:.9em;">Sin adjuntos</p>'; return; }
-            function ico(m) { if (!m) return 'fa-file'; if (m.includes('image')) return 'fa-image'; if (m.includes('pdf')) return 'fa-file-pdf'; if (m.includes('video')) return 'fa-video'; return 'fa-file'; }
-            function sz(b) { if (!b) return ''; if (b<1024) return b+' B'; if (b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
-            container.innerHTML = adjuntos.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:6px;">
-                <i class="fas ${ico(a.tipo_mime)}" style="color:#667eea;font-size:1.1em;width:18px;text-align:center;"></i>
-                <div style="flex:1;min-width:0;"><div style="font-size:.9em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.nombre_original}</div><div style="font-size:.75em;color:#999;">${sz(a.tamano_bytes)}</div></div>
-                <button onclick="postDescargarAdj('${a.id}')" style="background:none;border:none;cursor:pointer;color:#667eea;" title="Descargar"><i class="fas fa-download"></i></button>
-                <button onclick="postEliminarAdj('${a.id}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.9em;" title="Eliminar"><i class="fas fa-trash"></i></button>
-            </div>`).join('');
-        } catch (e) { container.innerHTML = '<p style="color:#dc3545;font-size:.85em;">Error cargando adjuntos</p>'; }
-    }
+        function persOptions() {
+            return '<option value="ninguna">Ninguna</option>' +
+                persData.map(p => {
+                    const lbl = p.metodo_calculo === 'puntadas'
+                        ? `${p.tipo} (Bordado — RD$${Number(p.costo_por_mil_puntadas||0).toLocaleString()}/1K punt.)`
+                        : `${p.tipo} (+RD$${Number(p.precio).toLocaleString()})`;
+                    return `<option value="${p.codigo}" data-precio="${p.precio}" data-metodo="${p.metodo_calculo||'fijo'}" data-costo-mil="${p.costo_por_mil_puntadas||0}">${lbl}</option>`;
+                }).join('');
+        }
 
-    async function loadPostComentarios(pedidoId) {
-        const container = document.getElementById('postComentariosLista');
-        try {
-            const comentarios = await apiFetch('/pedidos/' + pedidoId + '/comentarios');
-            if (!comentarios || comentarios.length === 0) { container.innerHTML = '<p style="color:#999;font-size:.9em;">Sin comentarios</p>'; return; }
-            container.innerHTML = comentarios.map(c => {
-                const fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-DO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-                return `<div style="padding:10px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:6px;border-left:3px solid #667eea;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                        <span style="font-weight:600;font-size:.85em;color:#667eea;">${c.autor_nombre}</span>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="font-size:.72em;color:#999;">${fecha}</span>
-                            <button onclick="postEliminarCom('${c.id}')" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:.75em;" title="Eliminar"><i class="fas fa-trash"></i></button>
+        // ═══════════════════════════════════════════════════════════════
+        // MULTI-ITEM
+        // ═══════════════════════════════════════════════════════════════
+        let items = [];
+        let nextId = 1;
+
+        function addItem() {
+            const id = nextId++;
+            items.push(id);
+            renderAllItems();
+            setTimeout(() => {
+                const c = document.querySelector(`[data-item-id="${id}"]`);
+                if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function removeItem(id) {
+            if (items.length <= 1) return;
+            items = items.filter(i => i !== id);
+            renderAllItems();
+        }
+        window.removeItemGlobal = removeItem;
+
+        function renderAllItems() {
+            const container = document.getElementById('itemsContainer');
+            const isSingle = items.length === 1;
+
+            container.innerHTML = items.map((id, idx) => `
+                <div class="item-card ${isSingle ? 'single-item' : ''}" data-item-id="${id}">
+                    <div class="item-header">
+                        <div class="item-number">
+                            <span class="badge-num">${idx+1}</span>
+                            Artículo ${idx+1}
+                        </div>
+                        <button type="button" class="item-remove" onclick="removeItemGlobal(${id})" title="Quitar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Producto <span class="required">*</span></label>
+                        <select class="form-control ip" data-id="${id}">${productOptions()}</select>
+                    </div>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label class="form-label">Talla <span class="required">*</span></label>
+                            <select class="form-control it" data-id="${id}">
+                                <option value="">...</option>
+                                <option>XS</option><option>S</option><option>M</option>
+                                <option>L</option><option>XL</option><option>XXL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Color</label>
+                            <input type="text" class="form-control ic" data-id="${id}" placeholder="Negro" list="coloresList">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Precio Venta <span class="required">*</span></label>
+                            <input type="number" class="form-control iv" data-id="${id}" placeholder="1500" min="0">
                         </div>
                     </div>
-                    <div style="font-size:.9em;">${c.texto}</div>
-                </div>`;
-            }).join('');
-        } catch (e) { container.innerHTML = '<p style="color:#dc3545;font-size:.85em;">Error cargando comentarios</p>'; }
-    }
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Personalización</label>
+                            <select class="form-control ipe" data-id="${id}">${persOptions()}</select>
+                        </div>
+                        <div class="form-group ipg" data-id="${id}" style="display:none;">
+                            <label class="form-label">Puntadas</label>
+                            <input type="number" class="form-control ipu" data-id="${id}" placeholder="36000" min="0">
+                            <div class="ipc" data-id="${id}" style="font-size:var(--text-micro);color:var(--accent);margin-top:4px;"></div>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Costos Adicionales</label>
+                            <input type="number" class="form-control ica" data-id="${id}" value="0" min="0">
+                        </div>
+                        <div class="form-group idg" data-id="${id}" style="display:none;">
+                            <label class="form-label">Detalles pers.</label>
+                            <input type="text" class="form-control ide" data-id="${id}" placeholder="Logo frente...">
+                        </div>
+                    </div>
+                    <div class="item-summary ism" data-id="${id}">
+                        <div class="item-summary-row">
+                            <span>Costo: <strong class="isc" data-id="${id}">RD$0</strong></span>
+                            <span>Ganancia: <strong class="isg" data-id="${id}" style="color:var(--success);">RD$0</strong></span>
+                            <span>Margen: <strong class="ism2" data-id="${id}" style="color:var(--purple);">0%</strong></span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
 
-    // Global handlers for formulario
-    window.postDescargarAdj = async (adjId) => {
-        try {
-            const res = await apiFetch('/adjuntos/' + adjId + '/download');
-            if (res && res.url) { window.open(res.url, '_blank'); }
-        } catch (e) { showError(e.message); }
-    };
+            // Bind events
+            container.querySelectorAll('.ip').forEach(el => el.addEventListener('change', () => updateItem(+el.dataset.id)));
+            container.querySelectorAll('.iv,.ica,.ipu').forEach(el => el.addEventListener('input', () => updateItem(+el.dataset.id)));
+            container.querySelectorAll('.ipe').forEach(el => el.addEventListener('change', () => {
+                const id = +el.dataset.id;
+                const opt = el.selectedOptions[0];
+                const met = opt?.dataset?.metodo || 'fijo';
+                const isNone = el.value === 'ninguna';
+                const pg = document.querySelector(`.ipg[data-id="${id}"]`);
+                const dg = document.querySelector(`.idg[data-id="${id}"]`);
+                if (pg) pg.style.display = met === 'puntadas' ? 'block' : 'none';
+                if (dg) dg.style.display = isNone ? 'none' : 'block';
+                updateItem(id);
+            }));
 
-    window.postEliminarAdj = async (adjId) => {
-        if (!confirm('¿Eliminar este archivo?')) return;
-        try {
-            await apiFetch('/adjuntos/' + adjId, { method: 'DELETE' });
-            if (currentPostPedidoId) loadPostAdjuntos(currentPostPedidoId);
-        } catch (e) { showError(e.message); }
-    };
+            document.getElementById('itemCount').textContent = items.length + (items.length === 1 ? ' artículo' : ' artículos');
+            updateGrandTotal();
+        }
 
-    window.postEliminarCom = async (comId) => {
-        if (!confirm('¿Eliminar este comentario?')) return;
-        try {
-            await apiFetch('/comentarios/' + comId, { method: 'DELETE' });
-            if (currentPostPedidoId) loadPostComentarios(currentPostPedidoId);
-        } catch (e) { showError(e.message); }
-    };
-})();
-</script>
+        function updateItem(id) {
+            const card = document.querySelector(`[data-item-id="${id}"]`);
+            if (!card) return;
+
+            const prodOpt = card.querySelector('.ip').selectedOptions[0];
+            const persOpt = card.querySelector('.ipe').selectedOptions[0];
+            const precio = parseFloat(card.querySelector('.iv').value) || 0;
+            const costosAd = parseFloat(card.querySelector('.ica').value) || 0;
+            const punt = parseInt(card.querySelector('.ipu')?.value) || 0;
+            const costoMat = parseFloat(prodOpt?.dataset?.costo || 0);
+            const costoMil = parseFloat(persOpt?.dataset?.costoMil || 0);
+            const met = persOpt?.dataset?.metodo || 'fijo';
+            const mo = (met === 'puntadas' && punt > 0 && costoMil > 0) ? (punt / 1000) * costoMil : 0;
+
+            const calcEl = card.querySelector(`.ipc[data-id="${id}"]`);
+            if (calcEl) calcEl.textContent = (met === 'puntadas' && punt > 0) ? `${(punt/1000).toFixed(1)}K × RD$${costoMil.toLocaleString()} = RD$${mo.toLocaleString()}` : '';
+
+            const costo = costoMat + mo + costosAd;
+            const gan = precio - costo;
+            const mar = precio > 0 ? (gan / precio * 100) : 0;
+
+            const sum = card.querySelector(`.ism[data-id="${id}"]`);
+            if (precio > 0 || costoMat > 0) {
+                sum.classList.add('visible');
+                card.querySelector(`.isc[data-id="${id}"]`).textContent = 'RD$' + costo.toLocaleString();
+                const gEl = card.querySelector(`.isg[data-id="${id}"]`);
+                gEl.textContent = 'RD$' + gan.toLocaleString();
+                gEl.style.color = gan >= 0 ? 'var(--success)' : 'var(--danger)';
+                const mEl = card.querySelector(`.ism2[data-id="${id}"]`);
+                mEl.textContent = mar.toFixed(1) + '%';
+                mEl.style.color = mar >= 0 ? 'var(--purple)' : 'var(--danger)';
+            } else {
+                sum.classList.remove('visible');
+            }
+            updateGrandTotal();
+        }
+
+        function updateGrandTotal() {
+            const envio = parseInt(document.getElementById('costoEnvio').value) || 0;
+            let totalP = 0;
+            items.forEach(id => {
+                const c = document.querySelector(`[data-item-id="${id}"]`);
+                if (c) totalP += parseFloat(c.querySelector('.iv').value) || 0;
+            });
+            const gt = document.getElementById('grandTotal');
+            gt.classList.toggle('visible', totalP > 0 || items.length > 1);
+            document.getElementById('gtValue').textContent = 'RD$' + (totalP + envio).toLocaleString();
+            document.getElementById('gtItems').textContent = items.length + (items.length === 1 ? ' artículo' : ' artículos') + ' + envío RD$' + envio.toLocaleString();
+        }
+
+        document.getElementById('btnAddItem').onclick = () => addItem();
+        document.getElementById('costoEnvio').addEventListener('input', updateGrandTotal);
+        addItem(); // Start with 1
+
+        // ═══════════════════════════════════════════════════════════════
+        // ALERTS
+        // ═══════════════════════════════════════════════════════════════
+        function showSuccess(m) {
+            const e = document.getElementById('alertSuccess');
+            document.getElementById('alertSuccessText').innerHTML = m;
+            e.classList.add('show');
+            document.getElementById('alertError').classList.remove('show');
+        }
+
+        function showError(m) {
+            const e = document.getElementById('alertError');
+            document.getElementById('alertErrorText').innerHTML = m;
+            e.classList.add('show');
+            document.getElementById('alertSuccess').classList.remove('show');
+        }
+
+        function hideAlerts() {
+            document.getElementById('alertSuccess').classList.remove('show');
+            document.getElementById('alertError').classList.remove('show');
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // SUBMIT
+        // ═══════════════════════════════════════════════════════════════
+        document.getElementById('formPedido').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlerts();
+            document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+
+            // Collect items
+            const itemsData = [];
+            for (let idx = 0; idx < items.length; idx++) {
+                const id = items[idx];
+                const card = document.querySelector(`[data-item-id="${id}"]`);
+                if (!card) continue;
+
+                const prodOpt = card.querySelector('.ip').selectedOptions[0];
+                const persOpt = card.querySelector('.ipe').selectedOptions[0];
+
+                if (!prodOpt || !prodOpt.value) {
+                    showError(`Artículo #${idx+1}: Selecciona un producto`);
+                    card.querySelector('.ip').classList.add('field-error');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const talla = card.querySelector('.it').value;
+                if (!talla) {
+                    showError(`Artículo #${idx+1}: Selecciona una talla`);
+                    card.querySelector('.it').classList.add('field-error');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const pv = parseFloat(card.querySelector('.iv').value) || 0;
+                if (pv <= 0) {
+                    showError(`Artículo #${idx+1}: Ingresa el precio de venta`);
+                    card.querySelector('.iv').classList.add('field-error');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                itemsData.push({
+                    producto_sku: prodOpt.value,
+                    producto_nombre: prodOpt.dataset.nombre || '',
+                    talla: talla,
+                    color: (card.querySelector('.ic').value || '').trim(),
+                    personalizacion_tipo: card.querySelector('.ipe').value,
+                    personalizacion_detalles: (card.querySelector('.ide')?.value || '').trim(),
+                    personalizacion_puntadas: parseInt(card.querySelector('.ipu')?.value) || 0,
+                    costo_por_mil_puntadas: parseFloat(persOpt?.dataset?.costoMil || 0),
+                    precio_venta: pv,
+                    costos_adicionales: parseFloat(card.querySelector('.ica').value) || 0,
+                    tiempo_estimado: (prodOpt.dataset.dias || '7') + ' días'
+                });
+            }
+
+            // Shared fields
+            const shared = {
+                nombre_cliente: document.getElementById('cliente').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                canal: document.getElementById('canal').value,
+                banco: document.getElementById('banco').value,
+                estatus_pago: document.getElementById('estatusPago').value,
+                costo_envio: document.getElementById('costoEnvio').value || '200'
+            };
+
+            const req = [
+                {k:'nombre_cliente', e:'cliente', l:'Nombre'},
+                {k:'telefono', e:'telefono', l:'Teléfono'},
+                {k:'direccion', e:'direccion', l:'Dirección'},
+                {k:'canal', e:'canal', l:'Canal'},
+                {k:'banco', e:'banco', l:'Método de pago'}
+            ];
+
+            for (const r of req) {
+                if (!shared[r.k]) {
+                    showError(`Campo requerido: <strong>${r.l}</strong>`);
+                    const el = document.getElementById(r.e);
+                    if (el) {
+                        el.classList.add('field-error');
+                        el.scrollIntoView({behavior:'smooth', block:'center'});
+                        el.focus();
+                    }
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            document.getElementById('loading').classList.add('show');
+
+            try {
+                let result;
+                if (itemsData.length === 1) {
+                    result = await apiFetch('/pedidos', {
+                        method: 'POST',
+                        body: JSON.stringify({...itemsData[0], ...shared})
+                    });
+                    if (result && result.success) {
+                        showSuccess(`<strong>Pedido ${result.pedido_id} creado!</strong>`);
+                        showPost([{id: result.pedido_id, producto: itemsData[0].producto_nombre}], result.pedido_id);
+                    } else throw new Error(result?.error || 'Error');
+                } else {
+                    result = await apiFetch('/pedidos/multi', {
+                        method: 'POST',
+                        body: JSON.stringify({items: itemsData, shared})
+                    });
+                    if (result && result.success) {
+                        const ids = result.pedidos.map(p => `<strong>${p.id}</strong> (${p.producto})`).join(', ');
+                        showSuccess(`<strong>${result.cantidad} pedidos creados!</strong> Grupo ${result.grupo_pedido}<br>${ids}<br>Total: RD$${result.total.toLocaleString()}`);
+                        showPost(result.pedidos, result.grupo_pedido);
+                    } else throw new Error(result?.error || 'Error');
+                }
+
+                document.getElementById('formPedido').reset();
+                items = []; nextId = 1;
+                addItem();
+                document.getElementById('grandTotal').classList.remove('visible');
+                window.scrollTo(0, 0);
+            } catch (error) {
+                showError(`<strong>Error:</strong> ${error.message}`);
+                window.scrollTo(0, 0);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+                btn.disabled = false;
+            }
+        });
+
+        document.addEventListener('input', (e) => e.target.classList?.remove('field-error'));
+        document.addEventListener('change', (e) => e.target.classList?.remove('field-error'));
+
+        // ═══════════════════════════════════════════════════════════════
+        // POST-CREATION
+        // ═══════════════════════════════════════════════════════════════
+        function showPost(pedidos, grupoLabel) {
+            document.getElementById('postGrupoId').textContent = grupoLabel || pedidos[0].id;
+            document.getElementById('postPedidosList').innerHTML = pedidos.map(p =>
+                `<div class="post-pedido-card">
+                    <span><strong>${p.id}</strong> — ${p.producto || ''}</span>
+                    <a href="/backoffice" target="_blank">Ver →</a>
+                </div>`
+            ).join('');
+            document.getElementById('postCreationSection').classList.add('visible');
+            setTimeout(() => document.getElementById('postCreationSection').scrollIntoView({behavior:'smooth'}), 300);
+        }
+    })();
+    </script>
 </body>
 </html>

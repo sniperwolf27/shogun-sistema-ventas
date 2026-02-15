@@ -399,6 +399,7 @@ class PedidosRepository:
         metodo_pago::text as banco,
         estado_produccion::text as estatus_produccion,
         estado_pago::text as estatus_pago,
+        grupo_pedido,
         created_at
     """
 
@@ -518,6 +519,134 @@ class PedidosRepository:
                 'total': float(result['precio_total']),
                 'ganancia': float(result['ganancia'])
             }
+
+    @staticmethod
+    def create_multi(items, shared_data):
+        """
+        Crear múltiples pedidos vinculados por grupo_pedido.
+        items: lista de dicts con producto_sku, talla, color, personalizacion_*, precio_venta, costos_adicionales
+        shared_data: dict con nombre_cliente, telefono, email, direccion, canal, banco, estatus_pago, costo_envio
+        """
+        # Generar grupo_pedido
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute("SELECT generar_grupo_pedido()")
+            grupo_id = cursor.fetchone()[0] if cursor.description else None
+
+        if not grupo_id:
+            # Fallback
+            grupo_id = 'G' + datetime.now().strftime('%Y%m%d%H%M%S')
+
+        resultados = []
+        # Solo el primer artículo lleva el costo de envío
+        envio_total = float(shared_data.get('costo_envio', 200) or 200)
+
+        for idx, item in enumerate(items):
+            # Merge item data with shared data
+            data = {**shared_data, **item}
+            data['costo_envio'] = envio_total if idx == 0 else 0
+
+            # Use existing create logic inline
+            producto = ProductosRepository.get_by_sku(item['producto_sku'])
+            if not producto:
+                raise ValueError(f"Producto no encontrado: {item['producto_sku']}")
+
+            personalizacion_id = None
+            precio_personalizacion = 0
+            costo_personalizacion = 0
+            puntadas = int(item.get('personalizacion_puntadas', 0) or 0)
+
+            if item.get('personalizacion_tipo') and item['personalizacion_tipo'] != 'ninguna':
+                pers = PersonalizacionesRepository.get_by_codigo(item['personalizacion_tipo'])
+                if pers:
+                    personalizacion_id = pers['id']
+                    if pers.get('metodo_calculo') == 'puntadas':
+                        precio_personalizacion = 0
+                        costo_personalizacion = 0
+                    else:
+                        precio_personalizacion = float(pers['precio'])
+                        costo_personalizacion = precio_personalizacion * 0.5
+
+            costo_por_mil = float(item.get('costo_por_mil_puntadas', 0) or 0)
+            costo_mano_obra = (puntadas / 1000) * costo_por_mil if puntadas > 0 and costo_por_mil > 0 else 0
+            costos_adicionales = float(item.get('costos_adicionales', 0) or 0)
+
+            precio_venta = float(item.get('precio_venta', 0) or 0)
+            if precio_venta <= 0:
+                precio_venta = float(producto['precio_base'])
+
+            dias = int(str(item.get('tiempo_estimado', shared_data.get('tiempo_estimado', '7'))).split()[0])
+            fecha_pago = datetime.now().date()
+            fecha_compromiso = fecha_pago + timedelta(days=dias)
+
+            pedido_data = {
+                'cliente_nombre': shared_data['nombre_cliente'],
+                'cliente_telefono': shared_data['telefono'],
+                'cliente_email': shared_data.get('email') or None,
+                'direccion_envio': shared_data['direccion'],
+                'producto_id': producto['id'],
+                'producto_sku': item['producto_sku'],
+                'producto_nombre': item.get('producto_nombre', producto['nombre']),
+                'talla': item['talla'],
+                'color': item.get('color') or None,
+                'personalizacion_id': personalizacion_id,
+                'personalizacion_codigo': item.get('personalizacion_tipo') if personalizacion_id else None,
+                'personalizacion_detalles': item.get('personalizacion_detalles') or None,
+                'personalizacion_puntadas': puntadas,
+                'fecha_pago': fecha_pago,
+                'fecha_compromiso': fecha_compromiso,
+                'precio_producto': precio_venta,
+                'precio_personalizacion': precio_personalizacion,
+                'precio_envio': envio_total if idx == 0 else 0,
+                'costo_producto': float(producto.get('costo_material', 0) or 0),
+                'costo_personalizacion': costo_personalizacion,
+                'costo_mano_obra': costo_mano_obra,
+                'costos_adicionales': costos_adicionales,
+                'canal': shared_data['canal'],
+                'metodo_pago': shared_data['banco'],
+                'estado_pago': shared_data['estatus_pago'],
+                'grupo_pedido': grupo_id
+            }
+
+            query = """
+                INSERT INTO pedidos (
+                    cliente_nombre, cliente_telefono, cliente_email, direccion_envio,
+                    producto_id, producto_sku, producto_nombre, talla_seleccionada, color,
+                    personalizacion_id, personalizacion_codigo, personalizacion_detalles,
+                    personalizacion_puntadas,
+                    fecha_pago, fecha_compromiso,
+                    precio_producto, precio_personalizacion, precio_envio,
+                    costo_producto, costo_personalizacion, costo_mano_obra, costos_adicionales,
+                    canal, metodo_pago, estado_pago, grupo_pedido
+                ) VALUES (
+                    %(cliente_nombre)s, %(cliente_telefono)s, %(cliente_email)s, %(direccion_envio)s,
+                    %(producto_id)s, %(producto_sku)s, %(producto_nombre)s, %(talla)s::talla, %(color)s,
+                    %(personalizacion_id)s, %(personalizacion_codigo)s, %(personalizacion_detalles)s,
+                    %(personalizacion_puntadas)s,
+                    %(fecha_pago)s, %(fecha_compromiso)s,
+                    %(precio_producto)s, %(precio_personalizacion)s, %(precio_envio)s,
+                    %(costo_producto)s, %(costo_personalizacion)s, %(costo_mano_obra)s, %(costos_adicionales)s,
+                    %(canal)s::canal_venta, %(metodo_pago)s::metodo_pago, %(estado_pago)s::estado_pago,
+                    %(grupo_pedido)s
+                )
+                RETURNING numero_pedido, fecha_compromiso, precio_total, ganancia
+            """
+
+            with DatabaseManager.get_cursor() as cursor:
+                cursor.execute(query, pedido_data)
+                result = cursor.fetchone()
+                resultados.append({
+                    'id': result['numero_pedido'],
+                    'producto': item.get('producto_nombre', producto['nombre']),
+                    'total': float(result['precio_total']),
+                    'ganancia': float(result['ganancia'])
+                })
+
+        return {
+            'grupo_pedido': grupo_id,
+            'pedidos': resultados,
+            'total_grupo': sum(r['total'] for r in resultados),
+            'cantidad': len(resultados)
+        }
 
     @staticmethod
     def update(pedido_id, data):
@@ -851,3 +980,49 @@ class AdjuntosRepository:
             if row:
                 return row['storage_path']
             return None
+
+
+# ==============================================================================
+# HISTORIAL (Mejora 9)
+# ==============================================================================
+
+class HistorialRepository:
+
+    @staticmethod
+    def _format(row):
+        if not row:
+            return None
+        h = dict(row)
+        if h.get('id'):
+            h['id'] = str(h['id'])
+        if h.get('created_at') and hasattr(h['created_at'], 'isoformat'):
+            h['created_at'] = h['created_at'].isoformat()
+        return h
+
+    @staticmethod
+    def get_by_pedido(pedido_numero):
+        query = """
+            SELECT id, pedido_numero, campo, valor_anterior, valor_nuevo,
+                   usuario_email, usuario_nombre, created_at
+            FROM pedido_historial
+            WHERE pedido_numero = %s
+            ORDER BY created_at DESC
+            LIMIT 50
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (pedido_numero,))
+            return [HistorialRepository._format(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def registrar_cambio(pedido_numero, campo, valor_anterior, valor_nuevo, usuario_email, usuario_nombre):
+        if str(valor_anterior).strip() == str(valor_nuevo).strip():
+            return None
+        query = """
+            INSERT INTO pedido_historial
+                (pedido_numero, campo, valor_anterior, valor_nuevo, usuario_email, usuario_nombre)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (pedido_numero, campo, str(valor_anterior or ''), str(valor_nuevo or ''), usuario_email, usuario_nombre))
+            return cursor.fetchone()

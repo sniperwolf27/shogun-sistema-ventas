@@ -3,11 +3,26 @@ Routes - Pedido Comentarios y Adjuntos
 """
 import traceback
 from flask import Blueprint, request, jsonify
-from app.models.database import ComentariosRepository, AdjuntosRepository
+from app.models.database import ComentariosRepository, AdjuntosRepository, HistorialRepository
 from app.auth.decorators import require_auth
 from app.auth import storage as supabase_storage
 
 pedido_extras_bp = Blueprint('pedido_extras', __name__)
+
+
+# ========== HISTORIAL (Mejora 9) ==========
+
+@pedido_extras_bp.route('/pedidos/<pedido_numero>/historial', methods=['GET'])
+@require_auth
+def get_historial(user, pedido_numero):
+    try:
+        return jsonify(HistorialRepository.get_by_pedido(pedido_numero)), 200
+    except Exception as e:
+        error_msg = str(e).lower()
+        if 'relation' in error_msg and 'does not exist' in error_msg:
+            return jsonify([]), 200
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 
 # ========== COMENTARIOS ==========

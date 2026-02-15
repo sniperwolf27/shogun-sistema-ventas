@@ -3,124 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Shogun</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Login — Shogun</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-        .login-container{background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:450px;overflow:hidden}
-        .login-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:40px 30px;text-align:center}
-        .login-header h1{font-size:2em;margin-bottom:10px}
-        .login-header p{opacity:.9}
-        .login-body{padding:40px 30px}
-        .form-group{margin-bottom:25px}
-        .form-label{display:block;font-weight:600;margin-bottom:8px}
+        /* ═══════════════════════════════════════════════════════════════
+           SHOGUN — Login v4.0
+           Apple HIG — All 12 Principles
+           ═══════════════════════════════════════════════════════════════ */
+
+        :root {
+            --surface-primary:#FFFFFF; --surface-secondary:#F5F5F7; --surface-tertiary:#E8E8ED;
+            --text-primary:#1D1D1F; --text-secondary:#6E6E73; --text-tertiary:#86868B;
+            --text-inverted:#FFFFFF; --text-placeholder:#AEAEB2;
+            --accent:#0071E3; --accent-hover:#0077ED;
+            --accent-soft:rgba(0,113,227,0.08); --accent-medium:rgba(0,113,227,0.15);
+            --danger:#FF3B30; --danger-soft:rgba(255,59,48,0.08);
+            --border-primary:rgba(0,0,0,0.06);
+            --shadow-glow:0 0 0 4px rgba(0,113,227,0.2);
+            --shadow-xl:0 16px 48px rgba(0,0,0,0.1);
+            --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px; --radius-full:9999px;
+            --font-display:'Satoshi',-apple-system,BlinkMacSystemFont,sans-serif;
+            --font-body:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+            --ease-spring:cubic-bezier(0.22,1,0.36,1);
+        }
+
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{-webkit-font-smoothing:antialiased}
+        body{font-family:var(--font-body);background:var(--surface-secondary);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+
+        @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+        :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+        :focus:not(:focus-visible){outline:none}
+
+        /* Login Card */
+        .login-card{background:var(--surface-primary);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:100%;max-width:400px;overflow:hidden;animation:cardIn 0.6s var(--ease-spring)}
+        @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+        .login-header{padding:48px 36px 32px;text-align:center}
+        .logo-mark{width:56px;height:56px;border-radius:var(--radius-md);background:var(--text-primary);color:var(--surface-primary);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-0.5px;margin:0 auto 20px}
+        .login-header h1{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);margin-bottom:6px}
+        .login-header p{color:var(--text-tertiary);font-size:15px}
+
+        .login-body{padding:0 36px 40px}
+
+        /* Form */
+        .form-group{margin-bottom:20px}
+        .form-label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px}
         .input-wrapper{position:relative}
-        .input-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#999}
-        .form-control{width:100%;padding:14px 16px 14px 45px;border:2px solid #e0e0e0;border-radius:10px;font-size:1em}
-        .form-control:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.1)}
-        .btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:10px;font-size:1.1em;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .3s}
-        .btn-login:hover{opacity:.9}
-        .btn-login:disabled{opacity:.6;cursor:not-allowed}
-        .alert{display:none;padding:14px 16px;border-radius:10px;margin-bottom:20px;align-items:center;gap:10px}
+        .input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-placeholder);font-size:14px;pointer-events:none;transition:color 0.2s}
+        .form-control{width:100%;padding:12px 14px 12px 42px;background:var(--surface-primary);border:1px solid var(--border-primary);border-radius:var(--radius-sm);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;transition:all 0.25s var(--ease-spring)}
+        .form-control::placeholder{color:var(--text-placeholder)}
+        .form-control:focus{border-color:var(--accent);box-shadow:var(--shadow-glow)}
+        .form-control:focus+.input-icon{color:var(--accent)}
+
+        /* Button */
+        .btn-login{width:100%;padding:14px;background:var(--accent);color:var(--text-inverted);border:none;border-radius:var(--radius-full);font-family:var(--font-body);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.25s var(--ease-spring);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+        .btn-login:hover{background:var(--accent-hover);transform:scale(1.01);box-shadow:0 4px 16px rgba(0,113,227,0.35)}
+        .btn-login:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+        /* Alert */
+        .alert{display:none;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13px;font-weight:500;align-items:center;gap:10px}
         .alert.show{display:flex}
-        .alert-error{background:#fee;color:#c33;border-left:4px solid #c33}
-        .loading-spinner{width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite}
+        .alert-error{background:var(--danger-soft);color:var(--danger)}
+        .alert i{font-size:16px}
+
+        /* Loading Spinner */
+        .loading-spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Footer */
+        .login-footer{text-align:center;padding:20px 36px;background:var(--surface-secondary);border-top:1px solid var(--border-primary)}
+        .login-footer p{font-size:12px;color:var(--text-tertiary)}
+
+        /* Responsive */
+        @media(max-width:480px){
+            .login-header{padding:36px 24px 24px}
+            .login-body{padding:0 24px 32px}
+            .login-footer{padding:16px 24px}
+        }
     </style>
 </head>
 <body>
-<div class="login-container">
-    <div class="login-header">
-        <h1>🪡 Shogun Sistema</h1>
-        <p>Gestión de Ventas</p>
-    </div>
-    <div class="login-body">
-        <div id="alert" class="alert alert-error">
-            <i class="fas fa-exclamation-circle"></i>
-            <span id="alertMessage"></span>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo-mark">S</div>
+            <h1>Shogun</h1>
+            <p>Gestión de Ventas</p>
         </div>
-        <form id="loginForm">
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-envelope input-icon"></i>
-                    <input type="email" id="email" class="form-control" placeholder="tu@email.com" required autocomplete="email">
-                </div>
+
+        <div class="login-body">
+            <div id="alert" class="alert alert-error">
+                <i class="fas fa-circle-exclamation"></i>
+                <span id="alertMessage"></span>
             </div>
-            <div class="form-group">
-                <label class="form-label">Contraseña</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-lock input-icon"></i>
-                    <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" class="form-control" placeholder="tu@email.com" required autocomplete="email">
+                        <i class="fas fa-envelope input-icon"></i>
+                    </div>
                 </div>
-            </div>
-            <button type="submit" class="btn-login" id="btnLogin">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Iniciar sesión</span>
-            </button>
-        </form>
+                <div class="form-group">
+                    <label class="form-label">Contraseña</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                        <i class="fas fa-lock input-icon"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login" id="btnLogin">
+                    Iniciar sesión
+                </button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            <p>© 2024 Shogun. Todos los derechos reservados.</p>
+        </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/js/config.js"></script>
-<script>
-(function() {
-    const API_BASE = window.API_BASE;
-    const form = document.getElementById('loginForm');
-    const alertBox = document.getElementById('alert');
-    const alertMsg = document.getElementById('alertMessage');
-    const btn = document.getElementById('btnLogin');
+    <script>
+    (function() {
+        const API_BASE = window.location.origin + '/api';
+        const supabase = window.initSupabase();
 
-    const supabaseClient = window.initSupabase();
+        const alertBox = document.getElementById('alert');
+        const alertMsg = document.getElementById('alertMessage');
+        const btn = document.getElementById('btnLogin');
+        const form = document.getElementById('loginForm');
 
-    // Check existing session
-    (async () => {
-        const token = localStorage.getItem('sb_access_token');
-        if (!token) return;
-        try {
-            const res = await fetch(API_BASE + '/verify', { headers: { 'Authorization': 'Bearer ' + token } });
-            if (res.ok) window.location.href = '/backoffice';
-            else { localStorage.removeItem('sb_access_token'); localStorage.removeItem('sb_refresh_token'); localStorage.removeItem('user'); }
-        } catch(e) {}
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div>';
+            alertBox.classList.remove('show');
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw new Error('Credenciales incorrectas');
+
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${data.session.access_token}`
+                    }
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'No autorizado');
+                }
+
+                localStorage.setItem('sb_access_token', data.session.access_token);
+                if (data.session.refresh_token) {
+                    localStorage.setItem('sb_refresh_token', data.session.refresh_token);
+                }
+                localStorage.setItem('user', JSON.stringify(result.user));
+
+                window.location.href = '/backoffice';
+
+            } catch (err) {
+                alertMsg.textContent = err.message;
+                alertBox.classList.add('show');
+                btn.disabled = false;
+                btn.innerHTML = 'Iniciar sesión';
+            }
+        });
     })();
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        alertBox.classList.remove('show');
-
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        if (!email || !password) { showError('Completa todos los campos.'); return; }
-
-        btn.disabled = true;
-        btn.innerHTML = '<div class="loading-spinner"></div> <span>Verificando...</span>';
-
-        try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Credenciales incorrectas.' : error.message);
-
-            const response = await fetch(API_BASE + '/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.session.access_token }
-            });
-            const result = await response.json();
-            if (!response.ok || !result.success) throw new Error(result.error || 'No autorizado');
-
-            localStorage.setItem('sb_access_token', data.session.access_token);
-            localStorage.setItem('sb_refresh_token', data.session.refresh_token);
-            localStorage.setItem('user', JSON.stringify(result.user));
-            window.location.href = '/backoffice';
-        } catch (err) {
-            showError(err.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> <span>Iniciar sesión</span>';
-        }
-    });
-
-    function showError(msg) { alertMsg.textContent = msg; alertBox.classList.add('show'); }
-})();
-</script>
+    </script>
 </body>
 </html>
