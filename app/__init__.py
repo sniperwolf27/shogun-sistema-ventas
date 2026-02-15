@@ -34,6 +34,7 @@ def create_app(config_name=None):
     from app.routes.productos import productos_bp
     from app.routes.clientes import clientes_bp
     from app.routes.estadisticas import estadisticas_bp
+    from app.routes.pedido_extras import pedido_extras_bp
     from app.routes.pages import pages_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api')
@@ -41,17 +42,8 @@ def create_app(config_name=None):
     app.register_blueprint(productos_bp, url_prefix='/api')
     app.register_blueprint(clientes_bp, url_prefix='/api')
     app.register_blueprint(estadisticas_bp, url_prefix='/api')
+    app.register_blueprint(pedido_extras_bp, url_prefix='/api')
     app.register_blueprint(pages_bp)
-
-    # pedido_extras - safe import (logs error if it fails instead of crashing)
-    try:
-        from app.routes.pedido_extras import pedido_extras_bp
-        app.register_blueprint(pedido_extras_bp, url_prefix='/api')
-        print("[APP] ✅ pedido_extras blueprint registered")
-    except Exception as e:
-        print(f"[APP] ❌ FAILED to import pedido_extras: {e}")
-        import traceback
-        traceback.print_exc()
 
     # Error handlers
     from app.routes.errors import register_error_handlers
