@@ -3,6 +3,94 @@
  * Funciones helper reutilizables
  */
 
+/* ═══════ TEMA (Dark Mode) ═══════ */
+function initTheme() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+}
+
+function toggleDarkMode() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+}
+
+/* ═══════ AUTOFOCUS ═══════ */
+function setupAutofocus() {
+    const search = document.getElementById('searchPedidos');
+    if (search) search.focus();
+}
+
+/* ═══════ NOTIFICACIONES ═══════ */
+function showNotification(message, type = 'info', duration = 3000) {
+    const existing = document.querySelector('.notification-toast');
+    if (existing) existing.remove();
+
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        warning: '#ffc107',
+        info: '#2F5496'
+    };
+
+    const toast = document.createElement('div');
+    toast.className = 'notification-toast';
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        padding: 12px 20px; border-radius: 8px; color: white;
+        background: ${colors[type] || colors.info};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-size: 0.9em; font-weight: 500;
+        animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    if (!document.getElementById('toast-animation')) {
+        const style = document.createElement('style');
+        style.id = 'toast-animation';
+        style.textContent = `
+            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, duration);
+}
+
+/* ═══════ SKELETONS ═══════ */
+function showStatsSkeleton() {
+    ['stat-total','stat-ventas','stat-ganancia','stat-pendientes','stat-entregados','stat-margen'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = '...'; el.style.opacity = '0.5'; }
+    });
+}
+
+function showCardsSkeleton(containerId, count) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = Array.from({ length: count }, () =>
+        '<div class="pendiente-card" style="opacity:0.5;padding:20px;"><div style="background:#e0e0e0;height:16px;border-radius:4px;margin-bottom:8px;width:60%;"></div><div style="background:#e0e0e0;height:12px;border-radius:4px;width:40%;"></div></div>'
+    ).join('');
+}
+
+/* ═══════ EMPTY STATE SVG ═══════ */
+function emptyStateSVG() {
+    return '<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 15h8M9 9h.01M15 9h.01"/></svg>';
+}
+
+/* ═══════ FILTROS PERSISTENTES ═══════ */
+const FilterStore = {
+    save(key, value) { localStorage.setItem('filter_' + key, value); },
+    load(key) { return localStorage.getItem('filter_' + key) || ''; }
+};
+
 /**
  * Formatear nÃºmeros como moneda
  */
