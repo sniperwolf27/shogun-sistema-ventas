@@ -528,9 +528,10 @@ class PedidosRepository:
         shared_data: dict con nombre_cliente, telefono, email, direccion, canal, banco, estatus_pago, costo_envio
         """
         # Generar grupo_pedido
-        with DatabaseManager.get_cursor() as cursor:
+        with DatabaseManager.get_cursor(dict_cursor=False) as cursor:
             cursor.execute("SELECT generar_grupo_pedido()")
-            grupo_id = cursor.fetchone()[0] if cursor.description else None
+            row = cursor.fetchone()
+            grupo_id = row[0] if row else None
 
         if not grupo_id:
             # Fallback
