@@ -4,79 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Backoffice — Shogun</title>
+    <!-- Shared design tokens -->
+    <link rel="stylesheet" href="/css/tokens.css">
+    <!-- Page styles -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/modals.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <!-- P11: Skip to content -->
+    <!-- Accessibility: Skip to content -->
     <a href="#main-content" class="skip-link">Saltar al contenido</a>
 
-    <!-- HEADER — P10: minimal chrome -->
+    <!-- HEADER -->
     <header class="top-bar">
         <div class="top-bar-brand">
-            <div class="logo-mark">S</div>
+            <div class="logo-mark" aria-hidden="true">S</div>
             <h1>Shogun</h1>
         </div>
         <div class="top-bar-actions">
-            <!-- NUEVO: Botón Nuevo Pedido -->
-            <button class="btn btn-primary" onclick="nuevoPedido()" aria-label="Crear nuevo pedido">
-                <i class="fas fa-plus"></i> Nuevo Pedido
+            <button class="btn btn-primary" id="btnNuevoPedido" aria-label="Crear nuevo pedido">
+                <i class="fas fa-plus" aria-hidden="true"></i> <span>Nuevo Pedido</span>
             </button>
             <div class="user-info" id="userInfo">
-                <i class="fas fa-circle-user"></i>
+                <i class="far fa-circle-user" aria-hidden="true"></i>
                 <span>Cargando...</span>
             </div>
-            <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()" aria-label="Cambiar tema">
-                <i class="fas fa-moon"></i>
+            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+                <i class="far fa-moon" aria-hidden="true"></i>
             </button>
-            <button class="btn btn-secondary" onclick="exportarExcel()" aria-label="Exportar pedidos">
-                <i class="fas fa-arrow-down-to-line"></i> Exportar
+            <button class="btn btn-secondary" id="btnExportar" aria-label="Exportar pedidos">
+                <i class="fas fa-download" aria-hidden="true"></i> <span>Exportar</span>
             </button>
-            <button class="btn btn-danger" onclick="Auth.logout()" aria-label="Cerrar sesión">
-                <i class="fas fa-right-from-bracket"></i>
+            <button class="theme-toggle" id="btnLogout" aria-label="Cerrar sesion" title="Cerrar sesion" style="color:var(--danger);">
+                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
             </button>
         </div>
     </header>
 
-    <!-- NAV — P10: text only, no icons -->
-    <nav class="nav-tabs" role="tablist" aria-label="Secciones">
-        <button class="tab-btn active" data-tab="pedidos" role="tab" aria-selected="true">
-            <i class="fas fa-shopping-cart"></i> Pedidos
+    <!-- NAV — Apple HIG: Segmented Control -->
+    <nav class="nav-tabs" role="tablist" aria-label="Secciones principales">
+        <button class="tab-btn active" data-tab="pedidos" role="tab" aria-selected="true" aria-controls="pedidos-section" id="tab-pedidos">
+            <i class="far fa-rectangle-list" aria-hidden="true"></i> Pedidos
         </button>
-        <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false">
-            <i class="fas fa-chart-line"></i> Dashboard
+        <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false" aria-controls="dashboard-section" id="tab-dashboard">
+            <i class="far fa-chart-bar" aria-hidden="true"></i> Dashboard
         </button>
-        <button class="tab-btn" data-tab="pendientes" role="tab" aria-selected="false">
-            <i class="fas fa-triangle-exclamation"></i> Pendientes
+        <button class="tab-btn" data-tab="pendientes" role="tab" aria-selected="false" aria-controls="pendientes-section" id="tab-pendientes">
+            <i class="far fa-clock" aria-hidden="true"></i> Pendientes
         </button>
-        <!-- NUEVO: Tab de Parámetros -->
-        <button class="tab-btn" data-tab="parametros" role="tab" aria-selected="false">
-            <i class="fas fa-cog"></i> Parámetros
+        <button class="tab-btn" data-tab="parametros" role="tab" aria-selected="false" aria-controls="parametros-section" id="tab-parametros">
+            <i class="fas fa-sliders" aria-hidden="true"></i> Parametros
         </button>
     </nav>
 
     <main id="main-content" class="container">
-        <!-- ═══════ PEDIDOS ═══════ -->
-        <div id="pedidos-section" class="tab-content active" role="tabpanel">
+        <!-- PEDIDOS -->
+        <div id="pedidos-section" class="tab-content active" role="tabpanel" aria-labelledby="tab-pedidos">
             <div class="section-header">
                 <h2>Pedidos</h2>
             </div>
 
             <div class="filters">
                 <div class="search-wrapper">
-                    <i class="fas fa-magnifying-glass search-icon"></i>
+                    <i class="fas fa-magnifying-glass search-icon" aria-hidden="true"></i>
                     <input type="text" id="searchPedidos" placeholder="Buscar por ID, cliente, producto..." aria-label="Buscar pedidos">
-                    <div class="kbd-hint"><kbd>⌘</kbd><kbd>K</kbd></div>
+                    <div class="kbd-hint" aria-hidden="true"><kbd>⌘</kbd><kbd>K</kbd></div>
                 </div>
                 <select id="filterEstado" aria-label="Filtrar por estado">
                     <option value="">Estado</option>
-                    <option value="En Producción">En Producción</option>
-                    <option value="Listo para Envío">Listo para Envío</option>
+                    <option value="En Produccion">En Produccion</option>
+                    <option value="Listo para Envio">Listo para Envio</option>
                     <option value="En Camino">En Camino</option>
                     <option value="Entregado">Entregado</option>
-                    <option value="Bloqueado - Sin Dirección">Bloqueado</option>
+                    <option value="Bloqueado - Sin Direccion">Bloqueado</option>
                     <option value="Cancelado">Cancelado</option>
                 </select>
                 <select id="filterCanal" aria-label="Filtrar por canal">
@@ -94,13 +97,13 @@
                     <thead>
                         <tr>
                             <th style="width: 40px;">
-                                <input type="checkbox" class="order-checkbox" id="select-all-checkbox" onchange="toggleSelectAll()" aria-label="Seleccionar todos">
+                                <input type="checkbox" class="order-checkbox" id="select-all-checkbox" aria-label="Seleccionar todos">
                             </th>
-                            <th>Pedido</th>
-                            <th>Cliente</th>
+                            <th data-sortable data-sort-key="id">Pedido</th>
+                            <th data-sortable data-sort-key="cliente">Cliente</th>
                             <th>Producto</th>
-                            <th>Total</th>
-                            <th>Estado</th>
+                            <th data-sortable data-sort-key="total">Total</th>
+                            <th data-sortable data-sort-key="estado">Estado</th>
                             <th><span class="sr-only">Acciones</span></th>
                         </tr>
                     </thead>
@@ -109,44 +112,63 @@
             </div>
         </div>
 
-        <!-- ═══════ DASHBOARD ═══════ -->
-        <div id="dashboard-section" class="tab-content" role="tabpanel">
+        <!-- DASHBOARD -->
+        <div id="dashboard-section" class="tab-content" role="tabpanel" aria-labelledby="tab-dashboard">
             <div class="section-header">
                 <h2>Dashboard</h2>
             </div>
 
             <div class="dashboard-filters">
-                <label>Desde</label>
+                <label for="dashFechaDesde">Desde</label>
                 <input type="date" id="dashFechaDesde" aria-label="Fecha desde">
-                <label>Hasta</label>
+                <label for="dashFechaHasta">Hasta</label>
                 <input type="date" id="dashFechaHasta" aria-label="Fecha hasta">
-                <button class="btn btn-secondary" onclick="cargarDashboard()" aria-label="Aplicar filtro">Aplicar</button>
+                <button class="btn btn-secondary" id="btnAplicarDash" aria-label="Aplicar filtro">Aplicar</button>
             </div>
 
+            <!-- Apple HIG: horizontal stat cards -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="label">Pedidos</div>
-                    <div class="value" id="stat-total">0</div>
+                    <div class="stat-icon accent" aria-hidden="true"><i class="far fa-rectangle-list"></i></div>
+                    <div class="stat-text">
+                        <div class="label">Pedidos</div>
+                        <div class="value" id="stat-total">0</div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">Ventas</div>
-                    <div class="value" id="stat-ventas">RD$0</div>
+                    <div class="stat-icon success" aria-hidden="true"><i class="far fa-credit-card"></i></div>
+                    <div class="stat-text">
+                        <div class="label">Ventas</div>
+                        <div class="value" id="stat-ventas">RD$0</div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">Ganancia</div>
-                    <div class="value" id="stat-ganancia">RD$0</div>
+                    <div class="stat-icon success" aria-hidden="true"><i class="far fa-circle-check"></i></div>
+                    <div class="stat-text">
+                        <div class="label">Ganancia</div>
+                        <div class="value" id="stat-ganancia">RD$0</div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">Pendientes</div>
-                    <div class="value" id="stat-pendientes">0</div>
+                    <div class="stat-icon warning" aria-hidden="true"><i class="far fa-clock"></i></div>
+                    <div class="stat-text">
+                        <div class="label">Pendientes</div>
+                        <div class="value" id="stat-pendientes">0</div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">Entregados</div>
-                    <div class="value" id="stat-entregados">0</div>
+                    <div class="stat-icon accent" aria-hidden="true"><i class="far fa-paper-plane"></i></div>
+                    <div class="stat-text">
+                        <div class="label">Entregados</div>
+                        <div class="value" id="stat-entregados">0</div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">Margen</div>
-                    <div class="value" id="stat-margen">0%</div>
+                    <div class="stat-icon purple" aria-hidden="true"><i class="far fa-chart-bar"></i></div>
+                    <div class="stat-text">
+                        <div class="label">Margen</div>
+                        <div class="value" id="stat-margen">0%</div>
+                    </div>
                 </div>
             </div>
 
@@ -162,58 +184,54 @@
             </div>
         </div>
 
-        <!-- ═══════ PENDIENTES ═══════ -->
-        <div id="pendientes-section" class="tab-content" role="tabpanel">
+        <!-- PENDIENTES -->
+        <div id="pendientes-section" class="tab-content" role="tabpanel" aria-labelledby="tab-pendientes">
             <div class="section-header">
                 <h2>Pedidos Pendientes</h2>
             </div>
             <div id="lista-pendientes"></div>
         </div>
 
-        <!-- ═══════ PARÁMETROS (NUEVO) ═══════ -->
-        <div id="parametros-section" class="tab-content" role="tabpanel">
+        <!-- PARAMETROS -->
+        <div id="parametros-section" class="tab-content" role="tabpanel" aria-labelledby="tab-parametros">
             <div class="section-header">
-                <h2>Parámetros</h2>
+                <h2>Parametros</h2>
             </div>
 
-            <!-- Sub-tabs de Parámetros -->
-            <div class="param-tabs">
-                <button class="param-tab active" data-param-tab="productos">
-                    <i class="fas fa-box"></i> Productos
+            <div class="param-tabs" role="tablist" aria-label="Tipos de parametros">
+                <button class="param-tab active" data-param-tab="productos" role="tab" aria-selected="true">
+                    <i class="fas fa-box" aria-hidden="true"></i> Productos
                 </button>
-                <button class="param-tab" data-param-tab="categorias">
-                    <i class="fas fa-tags"></i> Categorías
+                <button class="param-tab" data-param-tab="categorias" role="tab" aria-selected="false">
+                    <i class="fas fa-tags" aria-hidden="true"></i> Categorias
                 </button>
-                <button class="param-tab" data-param-tab="personalizaciones">
-                    <i class="fas fa-palette"></i> Personalizaciones
+                <button class="param-tab" data-param-tab="personalizaciones" role="tab" aria-selected="false">
+                    <i class="fas fa-palette" aria-hidden="true"></i> Personalizaciones
                 </button>
             </div>
 
-            <!-- Contenido: Productos -->
             <div class="param-content active" data-param-content="productos">
                 <div class="param-header-actions">
-                    <button class="btn btn-primary" onclick="nuevoProducto()">
-                        <i class="fas fa-plus"></i> Nuevo Producto
+                    <button class="btn btn-primary" id="btnNuevoProducto">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nuevo Producto
                     </button>
                 </div>
                 <div class="param-grid" id="productos-grid"></div>
             </div>
 
-            <!-- Contenido: Categorías -->
             <div class="param-content" data-param-content="categorias">
                 <div class="param-header-actions">
-                    <button class="btn btn-primary" onclick="nuevaCategoria()">
-                        <i class="fas fa-plus"></i> Nueva Categoría
+                    <button class="btn btn-primary" id="btnNuevaCategoria">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Categoria
                     </button>
                 </div>
                 <div class="param-grid" id="categorias-grid"></div>
             </div>
 
-            <!-- Contenido: Personalizaciones -->
             <div class="param-content" data-param-content="personalizaciones">
                 <div class="param-header-actions">
-                    <button class="btn btn-primary" onclick="nuevaPersonalizacion()">
-                        <i class="fas fa-plus"></i> Nueva Personalización
+                    <button class="btn btn-primary" id="btnNuevaPersonalizacion">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Personalizacion
                     </button>
                 </div>
                 <div class="param-grid" id="personalizaciones-grid"></div>
@@ -221,7 +239,7 @@
         </div>
     </main>
 
-    <!-- SCRIPTS — load order matters -->
+    <!-- SCRIPTS -->
     <script src="/js/config.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/auth.js"></script>
@@ -231,47 +249,98 @@
     <script src="/js/parametros.js"></script>
 
     <script>
-        // ═══════ INIT ═══════
+        // INIT
         document.addEventListener('DOMContentLoaded', async () => {
             initTheme();
-            setupAutofocus();
+            setupKbdHint();
             restorePersistentFilters();
+
+            // Event delegation — Apple HIG: no inline handlers
+            document.getElementById('btnNuevoPedido').addEventListener('click', nuevoPedido);
+            document.getElementById('btnExportar').addEventListener('click', exportarCSV);
+            document.getElementById('btnLogout').addEventListener('click', () => Auth.logout());
+            document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('select-all-checkbox').addEventListener('change', toggleSelectAll);
+            document.getElementById('btnAplicarDash').addEventListener('click', cargarDashboard);
+
+            // Param buttons
+            const btnProd = document.getElementById('btnNuevoProducto');
+            const btnCat = document.getElementById('btnNuevaCategoria');
+            const btnPers = document.getElementById('btnNuevaPersonalizacion');
+            if (btnProd) btnProd.addEventListener('click', nuevoProducto);
+            if (btnCat) btnCat.addEventListener('click', nuevaCategoria);
+            if (btnPers) btnPers.addEventListener('click', nuevaPersonalizacion);
 
             // User info
             const user = Auth.getUser();
             if (user) {
                 document.getElementById('userInfo').innerHTML = `
-                    <i class="fas fa-circle-user"></i>
+                    <i class="far fa-circle-user" aria-hidden="true"></i>
                     <span><strong>${user.nombre || user.name || ''}</strong> · ${user.rol || user.role || ''}</span>
                 `;
             }
 
-            // Tab system principal
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tab = btn.dataset.tab;
+            // Tab system — event delegation
+            document.querySelector('.nav-tabs').addEventListener('click', (e) => {
+                const btn = e.target.closest('.tab-btn');
+                if (!btn) return;
 
-                    // Actualizar tabs
-                    document.querySelectorAll('.tab-btn').forEach(b => {
-                        b.classList.remove('active');
-                        b.setAttribute('aria-selected', 'false');
+                const tab = btn.dataset.tab;
+
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${tab}-section`).classList.add('active');
+
+                if (tab === 'pedidos') cargarPedidos();
+                else if (tab === 'dashboard') cargarDashboard();
+                else if (tab === 'pendientes') cargarPendientes();
+                else if (tab === 'parametros') cargarProductos();
+            });
+
+            // Param sub-tabs — event delegation
+            document.querySelector('.param-tabs')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('.param-tab');
+                if (!btn) return;
+
+                document.querySelectorAll('.param-tab').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                const tabName = btn.dataset.paramTab;
+                document.querySelectorAll('.param-content').forEach(c => c.classList.remove('active'));
+                document.querySelector(`[data-param-content="${tabName}"]`).classList.add('active');
+            });
+
+            // Column sorting
+            document.querySelectorAll('thead th[data-sortable]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const key = th.dataset.sortKey;
+                    const isAsc = th.classList.contains('sort-asc');
+
+                    document.querySelectorAll('thead th[data-sortable]').forEach(h => {
+                        h.classList.remove('sort-asc', 'sort-desc');
                     });
-                    btn.classList.add('active');
-                    btn.setAttribute('aria-selected', 'true');
 
-                    // Mostrar contenido
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    document.getElementById(`${tab}-section`).classList.add('active');
-
-                    // Cargar datos según el tab
-                    if (tab === 'pedidos') cargarPedidos();
-                    else if (tab === 'dashboard') cargarDashboard();
-                    else if (tab === 'pendientes') cargarPendientes();
-                    else if (tab === 'parametros') cargarProductos();
+                    if (isAsc) {
+                        th.classList.add('sort-desc');
+                        sortPedidos(key, 'desc');
+                    } else {
+                        th.classList.add('sort-asc');
+                        sortPedidos(key, 'asc');
+                    }
                 });
             });
 
-            // Setup persistent filter listeners
+            // Persistent filter listeners
             const searchInput = document.getElementById('searchPedidos');
             const filterEstado = document.getElementById('filterEstado');
             const filterCanal = document.getElementById('filterCanal');
@@ -294,7 +363,14 @@
                 });
             }
 
-            // Load initial data
+            // Keyboard shortcut: Cmd/Ctrl+K to focus search
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    searchInput?.focus();
+                }
+            });
+
             await cargarPedidos();
         });
 
@@ -313,12 +389,56 @@
             if (filterCanal && canal) filterCanal.value = canal;
         }
 
-        // ═══════ NAVEGACIÓN ═══════
+        // Sort pedidos
+        function sortPedidos(key, direction) {
+            if (!pedidosCache || !pedidosCache.length) return;
+
+            const sorted = [...pedidosCache].sort((a, b) => {
+                let va = a[key] || '';
+                let vb = b[key] || '';
+
+                if (key === 'total') {
+                    va = parseFloat(a.precio_total) || 0;
+                    vb = parseFloat(b.precio_total) || 0;
+                } else if (key === 'estado') {
+                    va = a.estatus_produccion || '';
+                    vb = b.estatus_produccion || '';
+                }
+
+                if (typeof va === 'number') {
+                    return direction === 'asc' ? va - vb : vb - va;
+                }
+
+                return direction === 'asc'
+                    ? String(va).localeCompare(String(vb), 'es')
+                    : String(vb).localeCompare(String(va), 'es');
+            });
+
+            renderizarTablaPedidos(sorted);
+        }
+
+        // Export CSV
+        function exportarCSV() {
+            if (!pedidosCache || !pedidosCache.length) {
+                showNotification('No hay pedidos para exportar', 'warning');
+                return;
+            }
+            const headers = ['ID', 'Cliente', 'Producto', 'Talla', 'Color', 'Total', 'Estado', 'Canal', 'Fecha'];
+            const rows = pedidosCache.map(p => [
+                p.id, p.cliente, p.producto, p.talla || '', p.color || '',
+                p.precio_total || 0, p.estatus_produccion || '', p.canal || '', p.fecha_pago || ''
+            ]);
+            const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+            descargarArchivo(csv, 'pedidos_shogun.csv', 'text/csv;charset=utf-8;');
+            showNotification('Exportado correctamente', 'success');
+        }
+
+        // Navigation
         function nuevoPedido() {
             window.open('/formulario', '_blank');
         }
 
-        // ═══════ DASHBOARD ═══════
+        // DASHBOARD
         let chartCanal, chartEstados;
 
         async function cargarDashboard() {
@@ -328,19 +448,16 @@
                 const desde = document.getElementById('dashFechaDesde')?.value;
                 const hasta = document.getElementById('dashFechaHasta')?.value;
 
-                // Llamar a las tres APIs en paralelo
                 const [stats, canales, estados] = await Promise.all([
                     api.getEstadisticas(desde, hasta),
                     api.getVentasPorCanal(desde, hasta),
                     api.getVentasPorEstado()
                 ]);
 
-                // Validar que tenemos datos
                 if (!stats) {
                     throw new Error('No se recibieron datos del servidor');
                 }
 
-                // Actualizar estadísticas con animación
                 animateValue('stat-total', 0, stats.total_pedidos || 0, 800, false);
                 animateValue('stat-ventas', 0, stats.ventas_totales || 0, 800, true);
                 animateValue('stat-ganancia', 0, stats.ganancia_neta || 0, 800, true);
@@ -351,7 +468,6 @@
                 document.getElementById('stat-margen').textContent = margen.toFixed(1) + '%';
                 document.getElementById('stat-margen').style.color = margen >= 0 ? 'var(--success)' : 'var(--danger)';
 
-                // Mapear datos para los gráficos (ajustando nombres de propiedades)
                 const chartData = {
                     ...stats,
                     ventas_por_canal: (canales || []).map(c => ({
@@ -365,14 +481,12 @@
                     }))
                 };
 
-                // Renderizar gráficos
                 renderCharts(chartData);
 
             } catch (e) {
                 console.error('Error dashboard:', e);
-                showNotification('Error cargando estadísticas: ' + e.message, 'error');
+                showNotification('Error cargando estadisticas: ' + e.message, 'error');
 
-                // Mostrar valores en 0 en caso de error
                 ['stat-total', 'stat-ventas', 'stat-ganancia', 'stat-pendientes', 'stat-entregados'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = id === 'stat-margen' ? '0%' : (id.includes('ventas') || id.includes('ganancia') ? 'RD$0' : '0');
@@ -389,7 +503,7 @@
             function update(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const easeProgress = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
 
                 const current = start + (end - start) * easeProgress;
                 el.textContent = isCurrency ? formatearMoneda(current) : Math.round(current).toLocaleString();
@@ -409,31 +523,26 @@
             const warning = style.getPropertyValue('--warning').trim() || '#FF9F0A';
             const danger = style.getPropertyValue('--danger').trim() || '#FF3B30';
             const info = style.getPropertyValue('--info').trim() || '#5AC8FA';
-            const purple = style.getPropertyValue('--purple').trim() || '#AF52DE';
             const textTertiary = style.getPropertyValue('--text-tertiary').trim() || '#86868B';
-            const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#6E6E73';
 
-            // Mapeo de colores por canal (identidad de marca)
             const canalColors = {
-                'WhatsApp': '#25D366E6',      // Verde WhatsApp
-                'Instagram': '#C13584E6',     // Morado Instagram (gradiente central)
-                'Facebook': '#1877F2E6',      // Azul Facebook
-                'Referido': '#8E8E93E6',      // Gris neutro
-                'Tienda': accent + 'E6'       // Accent del sistema
+                'WhatsApp': '#25D366E6',
+                'Instagram': '#C13584E6',
+                'Facebook': '#1877F2E6',
+                'Referido': '#8E8E93E6',
+                'Tienda': accent + 'E6'
             };
 
-            // Mapeo de colores por estado (psicología del color)
             const estadoColors = {
-                'En Producción': accent + 'E6',              // Azul: trabajo en proceso
-                'Listo para Envío': warning + 'E6',         // Naranja: acción necesaria
-                'En Camino': info + 'E6',                   // Azul claro: en tránsito
-                'Entregado': success + 'E6',                // Verde: éxito completado
-                'Bloqueado - Sin Dirección': danger + 'E6', // Rojo: problema crítico
-                'Bloqueado': danger + 'E6',                 // Rojo: problema crítico
-                'Cancelado': textTertiary + '99'            // Gris: inactivo
+                'En Produccion': accent + 'E6',
+                'Listo para Envio': warning + 'E6',
+                'En Camino': info + 'E6',
+                'Entregado': success + 'E6',
+                'Bloqueado - Sin Direccion': danger + 'E6',
+                'Bloqueado': danger + 'E6',
+                'Cancelado': textTertiary + '99'
             };
 
-            // Apple-style Chart.js defaults
             const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
             const labelColor = isDarkMode ? '#D1D1D6' : textTertiary;
 
@@ -450,13 +559,11 @@
             // Canal chart
             const canalCtx = document.getElementById('chartCanal');
             if (!canalCtx) return;
-
             if (chartCanal) chartCanal.destroy();
 
             const canales = stats.ventas_por_canal || [];
 
             if (canales.length === 0) {
-                // Mostrar mensaje cuando no hay datos
                 const ctx = canalCtx.getContext('2d');
                 ctx.clearRect(0, 0, canalCtx.width, canalCtx.height);
                 ctx.font = '500 13px DM Sans, -apple-system, sans-serif';
@@ -471,10 +578,7 @@
                         labels: canales.map(c => c.canal || 'Otro'),
                         datasets: [{
                             data: canales.map(c => c.total_pedidos || 0),
-                            backgroundColor: canales.map(c => {
-                                const canal = c.canal || 'Otro';
-                                return canalColors[canal] || (accent + 'E6'); // Fallback al accent si no está mapeado
-                            }),
+                            backgroundColor: canales.map(c => canalColors[c.canal] || (accent + 'E6')),
                             borderWidth: 0,
                             spacing: 2,
                             offset: 0
@@ -491,18 +595,14 @@
                                     padding: 14,
                                     usePointStyle: true,
                                     pointStyle: 'circle',
-                                    font: {
-                                        size: 12,
-                                        weight: '500'
-                                    },
+                                    font: { size: 12, weight: '500' },
                                     color: labelColor,
                                     boxWidth: 8,
                                     boxHeight: 8,
                                     generateLabels: function(chart) {
-                                        const data = chart.data;
-                                        return data.labels.map((label, i) => ({
+                                        return chart.data.labels.map((label, i) => ({
                                             text: label,
-                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
                                             hidden: false,
                                             index: i,
                                             strokeStyle: 'transparent',
@@ -523,20 +623,14 @@
                                 callbacks: {
                                     label: function(context) {
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const value = context.parsed;
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return context.label + ': ' + value + ' (' + percentage + '%)';
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
                                     }
                                 }
                             }
                         },
                         cutout: '70%',
-                        animation: {
-                            animateRotate: true,
-                            animateScale: false,
-                            duration: 800,
-                            easing: 'easeOutQuart'
-                        }
+                        animation: { animateRotate: true, animateScale: false, duration: 800, easing: 'easeOutQuart' }
                     }
                 });
             }
@@ -544,7 +638,6 @@
             // Estados chart
             const estadosCtx = document.getElementById('chartEstados');
             if (!estadosCtx) return;
-
             if (chartEstados) chartEstados.destroy();
 
             const estados = stats.pedidos_por_estado || [];
@@ -564,10 +657,7 @@
                         labels: estados.map(e => e.estado || ''),
                         datasets: [{
                             data: estados.map(e => e.cantidad || 0),
-                            backgroundColor: estados.map(e => {
-                                const estado = e.estado || '';
-                                return estadoColors[estado] || (textTertiary + '99'); // Fallback a gris si no está mapeado
-                            }),
+                            backgroundColor: estados.map(e => estadoColors[e.estado] || (textTertiary + '99')),
                             borderRadius: 8,
                             borderSkipped: false,
                             barThickness: 24
@@ -577,11 +667,7 @@
                         responsive: true,
                         maintainAspectRatio: true,
                         indexAxis: 'y',
-                        layout: {
-                            padding: {
-                                right: 24
-                            }
-                        },
+                        layout: { padding: { right: 24 } },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -592,56 +678,26 @@
                                 cornerRadius: 8,
                                 displayColors: false,
                                 callbacks: {
-                                    title: function(context) {
-                                        return context[0].label;
-                                    },
-                                    label: function(context) {
-                                        return context.parsed.x + ' pedidos';
-                                    }
+                                    title: (ctx) => ctx[0].label,
+                                    label: (ctx) => ctx.parsed.x + ' pedidos'
                                 }
                             }
                         },
                         scales: {
-                            x: {
-                                grid: {
-                                    display: false,
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    display: false
-                                },
-                                border: {
-                                    display: false
-                                }
-                            },
+                            x: { grid: { display: false }, ticks: { display: false }, border: { display: false } },
                             y: {
-                                grid: {
-                                    display: false,
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    font: {
-                                        size: 12,
-                                        weight: '500'
-                                    },
-                                    color: labelColor,
-                                    padding: 12
-                                },
-                                border: {
-                                    display: false
-                                }
+                                grid: { display: false },
+                                ticks: { font: { size: 12, weight: '500' }, color: labelColor, padding: 12 },
+                                border: { display: false }
                             }
                         },
-                        animation: {
-                            duration: 800,
-                            easing: 'easeOutQuart'
-                        }
+                        animation: { duration: 800, easing: 'easeOutQuart' }
                     }
                 });
             }
         }
 
-        // ═══════ PENDIENTES ═══════
+        // PENDIENTES
         async function cargarPendientes() {
             const container = document.getElementById('lista-pendientes');
             if (!container) return;
@@ -655,7 +711,7 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             ${emptyStateSVG()}
-                            <h3>¡Todo al día!</h3>
+                            <h3>Todo al dia</h3>
                             <p>No hay pedidos pendientes</p>
                         </div>
                     `;
@@ -665,21 +721,27 @@
                 container.innerHTML = pendientes.map(p => `
                     <div class="pendiente-card">
                         <div>
-                            <div style="font-family:var(--font-display);font-weight:700;font-size:var(--text-body);margin-bottom:4px;">
+                            <div class="pendiente-title">
                                 ${p.id || p.numero_pedido} — ${p.cliente || p.cliente_nombre}
                             </div>
-                            <div style="font-size:var(--text-caption);color:var(--text-secondary);">
+                            <div class="pendiente-detail">
                                 ${p.producto || p.producto_nombre} · ${p.talla || p.talla_seleccionada || ''}
                             </div>
-                            <div style="font-size:var(--text-caption);color:var(--danger);margin-top:4px;font-weight:500;">
-                                ${p.motivo_pendiente || p.motivo || 'Revisión pendiente'}
+                            <div class="pendiente-reason">
+                                ${p.motivo_pendiente || p.motivo || 'Revision pendiente'}
                             </div>
                         </div>
-                        <button class="btn btn-primary" onclick="editarPedido('${p.id || p.numero_pedido}')" aria-label="Resolver pedido ${p.id || p.numero_pedido}">
+                        <button class="btn btn-primary" data-action="resolver" data-pedido-id="${p.id || p.numero_pedido}" aria-label="Resolver pedido ${p.id || p.numero_pedido}">
                             Resolver
                         </button>
                     </div>
                 `).join('');
+
+                // Event delegation for resolve buttons
+                container.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-action="resolver"]');
+                    if (btn) editarPedido(btn.dataset.pedidoId);
+                });
 
             } catch (e) {
                 console.error('Error pendientes:', e);

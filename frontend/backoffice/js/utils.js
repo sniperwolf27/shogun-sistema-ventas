@@ -21,47 +21,22 @@ function toggleDarkMode() {
     if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
 }
 
-/* ═══════ AUTOFOCUS ═══════ */
-function setupAutofocus() {
-    const search = document.getElementById('searchPedidos');
-    if (search) search.focus();
+/* ═══════ OS-AWARE KBD HINT ═══════ */
+function setupKbdHint() {
+    const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    const kbdHint = document.querySelector('.kbd-hint');
+    if (kbdHint) {
+        kbdHint.innerHTML = isMac ? '<kbd>⌘</kbd><kbd>K</kbd>' : '<kbd>Ctrl</kbd><kbd>K</kbd>';
+    }
 }
 
 /* ═══════ NOTIFICACIONES ═══════ */
-function showNotification(message, type = 'info', duration = 3000) {
-    const existing = document.querySelector('.notification-toast');
-    if (existing) existing.remove();
-
-    const colors = {
-        success: '#28a745',
-        error: '#dc3545',
-        warning: '#ffc107',
-        info: '#2F5496'
+/* Unified notification system is defined in modals.js.
+   This fallback only runs if modals.js hasn't loaded yet. */
+if (typeof window.showNotification !== 'function') {
+    window.showNotification = function(message, type) {
+        console.log(`[${type}] ${message}`);
     };
-
-    const toast = document.createElement('div');
-    toast.className = 'notification-toast';
-    toast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 10000;
-        padding: 12px 20px; border-radius: 8px; color: white;
-        background: ${colors[type] || colors.info};
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-size: 0.9em; font-weight: 500;
-        animation: slideIn 0.3s ease;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    if (!document.getElementById('toast-animation')) {
-        const style = document.createElement('style');
-        style.id = 'toast-animation';
-        style.textContent = `
-            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        `;
-        document.head.appendChild(style);
-    }
-
-    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, duration);
 }
 
 /* ═══════ SKELETONS ═══════ */
@@ -76,13 +51,13 @@ function showCardsSkeleton(containerId, count) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = Array.from({ length: count }, () =>
-        '<div class="pendiente-card" style="opacity:0.5;padding:20px;"><div style="background:#e0e0e0;height:16px;border-radius:4px;margin-bottom:8px;width:60%;"></div><div style="background:#e0e0e0;height:12px;border-radius:4px;width:40%;"></div></div>'
+        '<div class="pendiente-card" style="opacity:0.5;padding:20px;"><div style="background:#E8E8ED;height:16px;border-radius:4px;margin-bottom:8px;width:60%;"></div><div style="background:#E8E8ED;height:12px;border-radius:4px;width:40%;"></div></div>'
     ).join('');
 }
 
 /* ═══════ EMPTY STATE SVG ═══════ */
 function emptyStateSVG() {
-    return '<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 15h8M9 9h.01M15 9h.01"/></svg>';
+    return '<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 15h8M9 9h.01M15 9h.01"/></svg>';
 }
 
 /* ═══════ FILTROS PERSISTENTES ═══════ */
@@ -209,72 +184,11 @@ function debounce(func, wait) {
 }
 
 /**
- * Mostrar loading spinner
+ * Mostrar loading spinner (legacy - kept for backward compatibility)
+ * Prefer inline skeleton loaders instead of fullscreen blocking.
  */
 function showLoading(show = true) {
-    let spinner = document.getElementById('loading-spinner');
-    
-    if (!spinner) {
-        spinner = document.createElement('div');
-        spinner.id = 'loading-spinner';
-        spinner.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 9999;
-            ">
-                <div style="
-                    background: white;
-                    padding: 30px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                ">
-                    <div style="
-                        border: 4px solid #f3f3f3;
-                        border-top: 4px solid #2F5496;
-                        border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto 15px;
-                    "></div>
-                    <p style="margin: 0; color: #666;">Cargando...</p>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(spinner);
-        
-        // Agregar animaciÃ³n
-        if (!document.getElementById('spinner-animation')) {
-            const style = document.createElement('style');
-            style.id = 'spinner-animation';
-            style.textContent = `
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-    
-    spinner.style.display = show ? 'block' : 'none';
-}
-
-/**
- * Confirmar acciÃ³n
- */
-function confirmar(mensaje, callback) {
-    if (confirm(mensaje)) {
-        callback();
-    }
+    // No-op: replaced by inline skeleton loaders (showTableSkeleton, showStatsSkeleton, etc.)
 }
 
 /**

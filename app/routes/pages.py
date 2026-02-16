@@ -35,6 +35,10 @@ def formulario():
 
 @pages_bp.route('/css/<path:filename>')
 def serve_css(filename):
+    # Check shared css/ first, then backoffice/css/
+    shared = os.path.join(FRONTEND_DIR, 'css')
+    if os.path.isfile(os.path.join(shared, filename)):
+        return send_from_directory(shared, filename)
     return send_from_directory(os.path.join(FRONTEND_DIR, 'backoffice', 'css'), filename)
 
 

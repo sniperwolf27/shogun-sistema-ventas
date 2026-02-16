@@ -85,10 +85,10 @@ function renderProductos(productos) {
             </div>
             <div class="param-actions">
                 <button class="btn btn-sm btn-secondary" onclick="editarProducto('${p.id}')">
-                    <i class="fas fa-pen"></i> Editar
+                    <i class="fas fa-pen-to-square"></i> Editar
                 </button>
                 <button class="btn btn-sm ${p.activo === false ? 'btn-success' : 'btn-danger'}" onclick="toggleProducto('${p.id}', ${p.activo !== false})">
-                    <i class="fas ${p.activo === false ? 'fa-check' : 'fa-ban'}"></i> ${p.activo === false ? 'Activar' : 'Desactivar'}
+                    <i class="fas ${p.activo === false ? 'fa-circle-check' : 'fa-circle-pause'}"></i> ${p.activo === false ? 'Activar' : 'Desactivar'}
                 </button>
             </div>
         </div>
@@ -126,7 +126,7 @@ function abrirModalProducto(producto) {
         <div class="modal-content" style="max-width:520px;">
             <div class="modal-header">
                 <h2 class="modal-title">${isEdit ? 'Editar' : 'Nuevo'} Producto</h2>
-                <button class="modal-close" data-close aria-label="Cerrar"><i class="fas fa-times"></i></button>
+                <button class="modal-close" data-close aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="modal-body">
                 <div id="productoError" class="modal-alert alert-danger" style="display:none;"></div>
@@ -170,7 +170,7 @@ function abrirModalProducto(producto) {
             <div class="modal-footer">
                 <button class="btn-modal btn-secondary" data-close>Cancelar</button>
                 <button class="btn-modal btn-primary" id="btnSaveProducto">
-                    <i class="fas fa-save"></i> Guardar
+                    <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>
         </div>
@@ -200,7 +200,7 @@ function abrirModalProducto(producto) {
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Guardando...';
         errorDiv.style.display = 'none';
 
         const formData = new FormData(form);
@@ -229,7 +229,7 @@ function abrirModalProducto(producto) {
             errorDiv.style.display = 'flex';
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+            btn.innerHTML = '<i class="fas fa-check"></i> Guardar cambios';
         }
     };
 }
@@ -271,10 +271,10 @@ function renderCategorias(categorias) {
             </div>
             <div class="param-actions">
                 <button class="btn btn-sm btn-secondary" onclick="editarCategoria('${c.id}')">
-                    <i class="fas fa-pen"></i> Editar
+                    <i class="fas fa-pen-to-square"></i> Editar
                 </button>
                 <button class="btn btn-sm ${c.activo === false ? 'btn-success' : 'btn-danger'}" onclick="toggleCategoria('${c.id}', ${c.activo !== false})">
-                    <i class="fas ${c.activo === false ? 'fa-check' : 'fa-ban'}"></i> ${c.activo === false ? 'Activar' : 'Desactivar'}
+                    <i class="fas ${c.activo === false ? 'fa-circle-check' : 'fa-circle-pause'}"></i> ${c.activo === false ? 'Activar' : 'Desactivar'}
                 </button>
             </div>
         </div>
@@ -312,7 +312,7 @@ function abrirModalCategoria(categoria) {
         <div class="modal-content" style="max-width:440px;">
             <div class="modal-header">
                 <h2 class="modal-title">${isEdit ? 'Editar' : 'Nueva'} Categoría</h2>
-                <button class="modal-close" data-close aria-label="Cerrar"><i class="fas fa-times"></i></button>
+                <button class="modal-close" data-close aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="modal-body">
                 <div id="categoriaError" class="modal-alert alert-danger" style="display:none;"></div>
@@ -334,7 +334,7 @@ function abrirModalCategoria(categoria) {
             <div class="modal-footer">
                 <button class="btn-modal btn-secondary" data-close>Cancelar</button>
                 <button class="btn-modal btn-primary" id="btnSaveCategoria">
-                    <i class="fas fa-save"></i> Guardar
+                    <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>
         </div>
@@ -362,7 +362,7 @@ function abrirModalCategoria(categoria) {
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Guardando...';
         errorDiv.style.display = 'none';
 
         const formData = new FormData(form);
@@ -387,7 +387,7 @@ function abrirModalCategoria(categoria) {
             errorDiv.style.display = 'flex';
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+            btn.innerHTML = '<i class="fas fa-check"></i> Guardar cambios';
         }
     };
 }
@@ -435,10 +435,10 @@ function renderPersonalizaciones(personalizaciones) {
             </div>
             <div class="param-actions">
                 <button class="btn btn-sm btn-secondary" onclick="editarPersonalizacion('${p.id}')">
-                    <i class="fas fa-pen"></i> Editar
+                    <i class="fas fa-pen-to-square"></i> Editar
                 </button>
                 <button class="btn btn-sm ${p.activo === false ? 'btn-success' : 'btn-danger'}" onclick="togglePersonalizacion('${p.id}', ${p.activo !== false})">
-                    <i class="fas ${p.activo === false ? 'fa-check' : 'fa-ban'}"></i> ${p.activo === false ? 'Activar' : 'Desactivar'}
+                    <i class="fas ${p.activo === false ? 'fa-circle-check' : 'fa-circle-pause'}"></i> ${p.activo === false ? 'Activar' : 'Desactivar'}
                 </button>
             </div>
         </div>
@@ -478,7 +478,7 @@ function abrirModalPersonalizacion(personalizacion) {
         <div class="modal-content" style="max-width:480px;">
             <div class="modal-header">
                 <h2 class="modal-title">${isEdit ? 'Editar' : 'Nueva'} Personalización</h2>
-                <button class="modal-close" data-close aria-label="Cerrar"><i class="fas fa-times"></i></button>
+                <button class="modal-close" data-close aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="modal-body">
                 <div id="personalizacionError" class="modal-alert alert-danger" style="display:none;"></div>
@@ -517,7 +517,7 @@ function abrirModalPersonalizacion(personalizacion) {
             <div class="modal-footer">
                 <button class="btn-modal btn-secondary" data-close>Cancelar</button>
                 <button class="btn-modal btn-primary" id="btnSavePersonalizacion">
-                    <i class="fas fa-save"></i> Guardar
+                    <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>
         </div>
@@ -553,7 +553,7 @@ function abrirModalPersonalizacion(personalizacion) {
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Guardando...';
         errorDiv.style.display = 'none';
 
         const formData = new FormData(form);
@@ -581,7 +581,7 @@ function abrirModalPersonalizacion(personalizacion) {
             errorDiv.style.display = 'flex';
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+            btn.innerHTML = '<i class="fas fa-check"></i> Guardar cambios';
         }
     };
 }
