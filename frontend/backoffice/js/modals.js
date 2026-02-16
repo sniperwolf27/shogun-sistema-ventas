@@ -200,7 +200,7 @@
                     <div class="attachment-name">${esc(a.nombre_original)}</div>
                     <div class="attachment-meta">${fileSize(a.tamano_bytes)} ${a.subido_por_nombre ? '· ' + esc(a.subido_por_nombre) : ''} ${a.created_at ? '· ' + formatDate(a.created_at) : ''}</div>
                 </div>
-                <button class="btn-inline accent" onclick="descargarAdjuntoUI('${a.id}')" title="Descargar"><i class="fas fa-download"></i></button>
+                <button class="btn-inline accent" onclick="descargarAdjuntoUI('${a.id}')" title="Descargar"><i class="fa-solid fa-arrow-down"></i></button>
                 <button class="btn-inline danger" onclick="${deleteHandler}('${a.id}','${pedidoId}')" title="Eliminar"><i class="far fa-trash-can"></i></button>
             </div>
         `).join('');
@@ -449,11 +449,11 @@
                         </form>
 
                         <div class="modal-section-divider">
-                            <div class="modal-section-title"><i class="far fa-paperclip"></i> Adjuntos</div>
+                            <div class="modal-section-title"><i class="fa-solid fa-paperclip"></i> Adjuntos</div>
                             <div id="editAdjuntosLista"><em class="attachment-empty">Cargando...</em></div>
                             <div class="upload-bar">
                                 <input type="file" id="editAdjuntoInput" style="display:none;" multiple>
-                                <button type="button" class="btn-modal btn-primary btn-sm" id="btnEditAddFile"><i class="fas fa-upload"></i> Subir</button>
+                                <button type="button" class="btn-modal btn-primary btn-sm" id="btnEditAddFile"><i class="fa-solid fa-arrow-up"></i> Subir</button>
                                 <span class="upload-status" id="editAdjuntoStatus"></span>
                             </div>
                         </div>
@@ -581,7 +581,7 @@
                 this.modal.innerHTML = `
                 <div class="modal-content" style="max-width:480px;">
                     <div class="modal-header">
-                        <h2 class="modal-title"><i class="far fa-triangle-exclamation"></i> Eliminar Pedido</h2>
+                        <h2 class="modal-title"><i class="fa-solid fa-triangle-exclamation"></i> Eliminar Pedido</h2>
                         <button class="modal-close" data-close><i class="fas fa-xmark"></i></button>
                     </div>
                     <div class="modal-body" style="text-align:center;">
