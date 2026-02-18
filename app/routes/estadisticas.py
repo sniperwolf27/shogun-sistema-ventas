@@ -33,7 +33,9 @@ def ventas_por_canal(user):
 @require_auth
 def ventas_por_estado(user):
     try:
-        return jsonify(EstadisticasRepository.get_ventas_por_estado()), 200
+        return jsonify(EstadisticasRepository.get_ventas_por_estado(
+            request.args.get('desde'), request.args.get('hasta')
+        )), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500

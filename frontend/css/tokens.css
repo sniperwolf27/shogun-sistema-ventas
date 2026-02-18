@@ -29,13 +29,19 @@
 
     /* Semantic */
     --success: #34C759;
+    --success-hover: #2DB84D;
     --success-soft: rgba(52, 199, 89, 0.1);
     --warning: #FF9F0A;
+    --warning-hover: #E08F09;
     --warning-soft: rgba(255, 159, 10, 0.1);
     --danger: #FF3B30;
+    --danger-hover: #E0312B;
     --danger-soft: rgba(255, 59, 48, 0.08);
     --info: #5AC8FA;
+    --info-hover: #4AB4E0;
+    --info-soft: rgba(90, 200, 250, 0.1);
     --purple: #AF52DE;
+    --purple-soft: rgba(175, 82, 222, 0.1);
 
     /* Borders — slightly more visible per Apple HIG */
     --border-primary: rgba(0, 0, 0, 0.12);
@@ -108,6 +114,8 @@
     --success-soft: rgba(52, 199, 89, 0.18);
     --warning-soft: rgba(255, 159, 10, 0.18);
     --danger-soft: rgba(255, 59, 48, 0.18);
+    --info-soft: rgba(90, 200, 250, 0.18);
+    --purple-soft: rgba(175, 82, 222, 0.18);
 
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -131,6 +139,31 @@
 html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Apple HIG: prevent content from hiding behind sticky header + nav (52px + 48px) */
+    scroll-padding-top: 108px;
+}
+
+/* Mobile: nav está en el bottom, solo el header es sticky arriba */
+@media (max-width: 600px) {
+    html {
+        scroll-padding-top: 48px;
+    }
+}
+
+/* Apple HIG: suppress default tap highlight, use custom :active states instead */
+button, a, select, input, textarea, [role="button"], [tabindex] {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Apple HIG: prevent double-tap zoom on interactive elements */
+button, a, [role="button"] {
+    touch-action: manipulation;
+}
+
+/* Lock body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+    overscroll-behavior: none;
 }
 
 body {
@@ -203,6 +236,31 @@ body {
 }
 
 /* ============================================================================
+   TABULAR NUMBERS — Critical for financial data alignment
+   ============================================================================ */
+
+.tabular-nums,
+.stat-card .value,
+td strong,
+.detail-value.highlight,
+.gt-value,
+.summary-chip-value,
+.profit-bar .profit-value {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* ============================================================================
+   MODAL SIZE CLASSES — Replaces inline max-width styles
+   ============================================================================ */
+
+.modal-content.modal-sm { max-width: 400px; }
+.modal-content.modal-md { max-width: 520px; }
+.modal-content.modal-lg { max-width: 660px; }
+.modal-content.modal-xl { max-width: 720px; }
+.modal-content.modal-full { max-width: 800px; }
+
+/* ============================================================================
    THEME TRANSITION — Smooth dark/light switch
    ============================================================================ */
 
@@ -216,7 +274,9 @@ body {
 .modal-content,
 .toast,
 .form-control,
-.filters select {
+.filters select,
+.header-user-dropdown,
+.mobile-menu {
     transition: background var(--duration-normal) var(--ease-spring),
                 color var(--duration-normal) var(--ease-spring),
                 border-color var(--duration-normal) var(--ease-spring),

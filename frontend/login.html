@@ -2,15 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
     <title>Login — Shogun</title>
-    <!-- Shared design tokens -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Shared design system -->
     <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/shared.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/config.js"></script>
+    <script>
+        // Apply theme immediately to prevent flash (respects OS preference on first visit)
+        (function(){var t=localStorage.getItem('theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
 
     <style>
         /* ═══════════════════════════════════════════════════════════════
@@ -18,60 +26,41 @@
            Apple HIG — Tokens from /css/tokens.css
            ═══════════════════════════════════════════════════════════════ */
 
-        body{font-family:var(--font-body);background:var(--surface-secondary);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+        /* Login-specific layout (shared styles from /css/shared.css) */
+        body{font-family:var(--font-body);background:var(--surface-secondary);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
 
-        /* Login Card */
         .login-card{background:var(--surface-primary);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:100%;max-width:400px;overflow:hidden;animation:cardIn 0.6s var(--ease-spring)}
-        @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-
-        .login-header{padding:48px 36px 32px;text-align:center}
-        .logo-mark{width:56px;height:56px;border-radius:var(--radius-md);background:var(--text-primary);color:var(--surface-primary);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-0.5px;margin:0 auto 20px}
-        .login-header h1{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);margin-bottom:6px}
-        .login-header p{color:var(--text-tertiary);font-size:15px}
-
+        .login-header{padding:var(--sp-2xl) 36px var(--sp-xl);text-align:center}
+        .login-header .logo-img{margin:0 auto var(--sp-lg)}
+        .login-header h1{font-family:var(--font-display);font-size:var(--text-title1);font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);margin-bottom:var(--sp-xs)}
+        .login-header p{color:var(--text-tertiary);font-size:var(--text-body)}
         .login-body{padding:0 36px 40px}
 
-        /* Form */
-        .form-group{margin-bottom:20px}
-        .form-label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px}
-        .input-wrapper{position:relative}
-        .input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-placeholder);font-size:14px;pointer-events:none;transition:color 0.2s}
-        .form-control{width:100%;padding:12px 14px 12px 42px;background:var(--surface-primary);border:1px solid var(--border-primary);border-radius:var(--radius-sm);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;transition:all 0.25s var(--ease-spring)}
-        .form-control::placeholder{color:var(--text-placeholder)}
-        .form-control:focus{border-color:var(--accent);box-shadow:var(--shadow-glow)}
-        .form-control:focus+.input-icon{color:var(--accent)}
+        /* Login-specific: override form-control font-size for iOS zoom prevention */
+        .login-body .form-control{font-size:16px}
+        .login-body .form-group{margin-bottom:var(--sp-lg)}
 
-        /* Button */
-        .btn-login{width:100%;padding:14px;background:var(--accent);color:var(--text-inverted);border:none;border-radius:var(--radius-full);font-family:var(--font-body);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.25s var(--ease-spring);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+        /* Login button */
+        .btn-login{width:100%;padding:14px;background:var(--accent);color:var(--text-inverted);border:none;border-radius:var(--radius-full);font-family:var(--font-body);font-size:16px;font-weight:600;cursor:pointer;transition:all var(--duration-normal) var(--ease-spring);display:flex;align-items:center;justify-content:center;gap:var(--sp-sm);margin-top:var(--sp-sm);min-height:var(--touch-min)}
+        .btn-login:active{transform:scale(0.97);transition-duration:0.1s}
         .btn-login:hover{background:var(--accent-hover);opacity:0.85}
         .btn-login:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
 
-        /* Alert */
-        .alert{display:none;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13px;font-weight:500;align-items:center;gap:10px}
-        .alert.show{display:flex}
-        .alert-error{background:var(--danger-soft);color:var(--danger)}
-        .alert i{font-size:16px}
+        .login-footer{text-align:center;padding:var(--sp-lg) 36px;background:var(--surface-secondary);border-top:1px solid var(--border-primary)}
+        .login-footer p{font-size:var(--text-micro);color:var(--text-tertiary)}
 
-        /* Loading Spinner */
-        .loading-spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s ease-in-out infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-
-        /* Footer */
-        .login-footer{text-align:center;padding:20px 36px;background:var(--surface-secondary);border-top:1px solid var(--border-primary)}
-        .login-footer p{font-size:12px;color:var(--text-tertiary)}
-
-        /* Responsive */
         @media(max-width:480px){
-            .login-header{padding:36px 24px 24px}
-            .login-body{padding:0 24px 32px}
-            .login-footer{padding:16px 24px}
+            .login-header{padding:36px 24px var(--sp-lg)}
+            .login-body{padding:0 24px var(--sp-xl)}
+            .login-footer{padding:var(--sp-md) 24px}
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="login-header">
-            <div class="logo-mark">S</div>
+            <img src="/black-shogun-logo.svg" class="logo-img logo-lg logo-img-light" alt="Shogun">
+            <img src="/white-shogun-logo.svg" class="logo-img logo-lg logo-img-dark" alt="Shogun">
             <h1>Shogun</h1>
             <p>Gestión de Ventas</p>
         </div>
@@ -104,7 +93,7 @@
         </div>
 
         <div class="login-footer">
-            <p>&copy; <script>document.write(new Date().getFullYear())</script> Shogun. Todos los derechos reservados.</p>
+            <p>&copy; 2026 Shogun. Todos los derechos reservados.</p>
         </div>
     </div>
 
@@ -125,7 +114,7 @@
             const password = document.getElementById('password').value;
 
             btn.disabled = true;
-            btn.innerHTML = '<div class="loading-spinner"></div>';
+            btn.innerHTML = '<div class="loading-spinner spinner-sm spinner-inverted"></div>';
             alertBox.classList.remove('show');
 
             try {

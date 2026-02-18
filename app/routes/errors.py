@@ -1,13 +1,17 @@
 """Error Handlers"""
-from flask import jsonify
+from flask import jsonify, request, send_from_directory
 from datetime import datetime
+import os
 
 
 def register_error_handlers(app):
 
     @app.errorhandler(404)
     def not_found(error):
-        return jsonify({'error': 'Recurso no encontrado'}), 404
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Recurso no encontrado'}), 404
+        frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'frontend')
+        return send_from_directory(frontend_dir, '404.html'), 404
 
     @app.errorhandler(500)
     def internal_error(error):

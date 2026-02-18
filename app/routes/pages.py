@@ -55,3 +55,13 @@ def serve_formulario_js(filename):
 @pages_bp.route('/formulario/css/<path:filename>')
 def serve_formulario_css(filename):
     return send_from_directory(os.path.join(FRONTEND_DIR, 'formulario', 'css'), filename)
+
+
+@pages_bp.route('/<string:filename>.svg')
+def serve_svg(filename):
+    return send_from_directory(FRONTEND_DIR, f'{filename}.svg')
+
+
+@pages_bp.route('/<string:filename>.png')
+def serve_png(filename):
+    return send_from_directory(FRONTEND_DIR, f'{filename}.png')

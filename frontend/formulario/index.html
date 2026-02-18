@@ -2,15 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
     <title>Nuevo Pedido — Shogun</title>
-    <!-- Shared design tokens -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Shared design system -->
     <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/shared.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/config.js"></script>
+    <script>
+        // Apply theme immediately to prevent flash (respects OS preference on first visit)
+        (function(){var t=localStorage.getItem('theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
 
     <style>
         /* ═══════════════════════════════════════════════════════════════
@@ -18,54 +26,37 @@
            Apple HIG — Tokens from /css/tokens.css
            ═══════════════════════════════════════════════════════════════ */
 
-        body{line-height:1.55;min-height:100vh;padding:20px}
+        /* Formulario-specific layout (shared styles from /css/shared.css) */
+        body{line-height:1.47;min-height:100vh;padding:20px}
 
         /* Header */
         .form-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-xl);max-width:860px;margin-left:auto;margin-right:auto}
-        .form-header-brand{display:flex;align-items:center;gap:12px}
-        .logo-mark{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--text-primary);color:var(--surface-primary);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:-0.5px}
-        .form-header-brand h1{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-0.3px;color:var(--text-primary)}
-        .back-link{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surface-primary);border:1px solid var(--border-primary);border-radius:var(--radius-full);color:var(--text-secondary);text-decoration:none;font-size:var(--text-caption);font-weight:500;transition:all 0.2s var(--ease-spring)}
-        .back-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+        .form-header-brand{display:flex;align-items:center;gap:var(--sp-sm)}
+        .form-header-brand h1{font-family:var(--font-display);font-size:var(--text-title3);font-weight:700;letter-spacing:-0.3px;color:var(--text-primary)}
+        .form-header-actions{display:flex;align-items:center;gap:var(--sp-sm)}
 
         /* Container */
         .container{max-width:860px;margin:0 auto;background:var(--surface-primary);border-radius:var(--radius-xl);padding:var(--sp-xl);box-shadow:var(--shadow-xl)}
 
         /* Page Title */
         .page-title{margin-bottom:var(--sp-lg)}
-        .page-title h2{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);margin-bottom:6px}
+        .page-title h2{font-family:var(--font-display);font-size:var(--text-title1);font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);margin-bottom:var(--sp-xs)}
         .page-title p{color:var(--text-secondary);font-size:var(--text-body)}
 
-        /* Section */
+        /* Sections */
         .form-section{margin-bottom:var(--sp-xl)}
         .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-md);padding-bottom:var(--sp-sm);border-bottom:1px solid var(--border-primary)}
-        .section-title{font-family:var(--font-display);font-size:var(--text-body);font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+        .section-title{font-family:var(--font-display);font-size:var(--text-body);font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:var(--sp-sm)}
         .section-title i{color:var(--accent);font-size:14px}
-        .section-badge{font-size:var(--text-micro);font-weight:600;padding:2px 8px;border-radius:var(--radius-full);background:var(--surface-tertiary);color:var(--text-secondary)}
+        .section-badge{font-size:var(--text-micro);font-weight:600;padding:2px var(--sp-sm);border-radius:var(--radius-full);background:var(--surface-tertiary);color:var(--text-secondary)}
 
-        /* Form Grid */
-        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-md)}
-        .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-md)}
-        .form-group{margin-bottom:var(--sp-md)}
-        .form-group.full-width{grid-column:1/-1}
-
-        .form-label{display:block;font-size:var(--text-caption);font-weight:500;color:var(--text-secondary);margin-bottom:6px}
-        .form-label .required{color:var(--danger);margin-left:2px}
-
-        .form-control{width:100%;padding:12px 14px;background:var(--surface-primary);border:1px solid var(--border-primary);border-radius:var(--radius-sm);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;transition:all 0.2s var(--ease-spring)}
-        .form-control::placeholder{color:var(--text-placeholder)}
-        .form-control:focus{border-color:var(--accent);box-shadow:var(--shadow-glow)}
-        .form-control:hover:not(:focus){border-color:var(--text-tertiary)}
-        .form-control:disabled{background:var(--surface-secondary);color:var(--text-tertiary);cursor:not-allowed}
-
-        select.form-control{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236E6E73' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
-        textarea.form-control{resize:vertical;min-height:80px}
-
-        .field-error{border-color:var(--danger);box-shadow:0 0 0 3px rgba(255,59,48,0.12)}
+        /* iOS zoom prevention */
+        .form-control{font-size:16px}
 
         /* Item Cards */
         .item-card{background:var(--surface-secondary);border:1px solid var(--border-primary);border-radius:var(--radius-lg);padding:var(--sp-lg);margin-bottom:var(--sp-md);position:relative;transition:all 0.2s var(--ease-spring)}
         .item-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm)}
+        .item-card:active{transform:scale(0.99);transition-duration:0.1s}
         .item-card.single-item .item-remove{display:none}
 
         .item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-md)}
@@ -97,27 +88,33 @@
         .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
         .btn-submit i{font-size:18px}
 
-        /* Alerts */
-        .alert{padding:14px 18px;border-radius:var(--radius-sm);margin-bottom:var(--sp-lg);display:none;align-items:center;gap:12px;font-size:var(--text-caption);font-weight:500}
-        .alert.show{display:flex}
-        .alert-success{background:var(--success-soft);color:var(--success);border-left:3px solid var(--success)}
-        .alert-danger{background:var(--danger-soft);color:var(--danger);border-left:3px solid var(--danger)}
-        .alert i{font-size:16px}
-
-        /* Loading */
+        /* Loading overlay */
         .loading{display:none;text-align:center;padding:var(--sp-xl)}
         .loading.show{display:block}
-        .spinner{width:40px;height:40px;border:3px solid var(--surface-tertiary);border-top:3px solid var(--accent);border-radius:50%;animation:spin .8s ease-in-out infinite;margin:0 auto var(--sp-sm)}
-        @keyframes spin{to{transform:rotate(360deg)}}
 
-        /* Post Creation */
-        .post-creation{margin-top:var(--sp-xl);padding-top:var(--sp-xl);border-top:2px solid var(--accent-soft);display:none}
-        .post-creation.visible{display:block}
-        .post-creation h3{font-family:var(--font-display);font-size:var(--text-title);font-weight:600;color:var(--text-primary);margin-bottom:var(--sp-md)}
-        .post-pedido-card{background:var(--success-soft);padding:var(--sp-md);border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);display:flex;justify-content:space-between;align-items:center}
+        /* Post Creation — Success state prominente */
+        .post-creation{margin-top:var(--sp-xl);display:none}
+        .post-creation.visible{display:block;animation:cardIn 0.5s var(--ease-spring)}
+        .post-creation-header{text-align:center;padding:var(--sp-lg) 0 var(--sp-md)}
+        .post-creation-icon{width:56px;height:56px;background:var(--success-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto var(--sp-md);font-size:24px;color:var(--success)}
+        .post-creation h3{font-family:var(--font-display);font-size:var(--text-title2);font-weight:700;color:var(--text-primary);margin-bottom:var(--sp-xs);letter-spacing:-0.3px}
+        .post-creation-sub{font-size:var(--text-body);color:var(--text-secondary);margin-bottom:var(--sp-lg)}
+        .post-pedido-card{background:var(--success-soft);padding:var(--sp-md);border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(52,199,89,0.2)}
         .post-pedido-card strong{color:var(--success)}
-        .post-pedido-card a{color:var(--accent);text-decoration:none;font-weight:500}
+        .post-pedido-card a{color:var(--accent);text-decoration:none;font-weight:600;font-size:var(--text-caption)}
         .post-pedido-card a:hover{text-decoration:underline}
+        .post-creation-actions{display:flex;gap:var(--sp-sm);margin-top:var(--sp-lg)}
+        .post-creation-actions .btn{flex:1;justify-content:center}
+
+        /* Button system (subset from backoffice/styles.css) */
+        .btn{padding:10px 20px;border:none;border-radius:var(--radius-full);font-family:var(--font-body);font-size:var(--text-subhead);font-weight:600;cursor:pointer;transition:all var(--duration-normal) var(--ease-spring);display:inline-flex;align-items:center;gap:8px;min-height:var(--touch-min);text-decoration:none}
+        .btn:hover{opacity:.85}
+        .btn:active{transform:scale(0.97);transition-duration:.1s}
+        .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+        .btn-primary{background:var(--accent);color:#fff}
+        .btn-primary:hover{background:var(--accent-hover);opacity:1;box-shadow:0 2px 8px rgba(0,113,227,.25)}
+        .btn-secondary{background:var(--surface-tertiary);color:var(--text-primary)}
+        .btn-secondary:hover{opacity:1}
 
         /* Access Denied */
         .access-denied{text-align:center;padding:60px 20px}
@@ -125,18 +122,20 @@
         .access-denied h2{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:8px}
         .access-denied p{color:var(--text-secondary);margin-bottom:var(--sp-lg)}
 
-        /* Responsive */
+        /* Responsive — Apple HIG: mobile-first optimizations */
         @media(max-width:600px){
-            body{padding:12px}
-            .container{padding:var(--sp-lg)}
+            body{padding:12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));padding-bottom:0}
+            .container{padding:var(--sp-lg);padding-bottom:calc(var(--sp-lg) + 80px)}
             .form-grid,.form-grid-3{grid-template-columns:1fr}
             .form-header{flex-direction:column;gap:var(--sp-sm);align-items:flex-start}
-            .grand-total{flex-direction:column;text-align:center}
+            .grand-total{flex-direction:column;text-align:center;position:sticky;bottom:80px;z-index:10;box-shadow:var(--shadow-lg)}
             .page-title h2{font-size:24px}
+            .btn-submit{position:sticky;bottom:0;z-index:11;margin:0 calc(-1 * var(--sp-lg));width:auto;border-radius:0;padding:16px 28px;padding-bottom:max(16px,env(safe-area-inset-bottom));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+            .btn-add-item{min-height:var(--touch-min)}
+            .item-remove{width:var(--touch-min);height:var(--touch-min)}
+            .back-link{min-height:var(--touch-min)}
         }
 
-        /* Animations */
-        @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
         .container{animation:cardIn 0.5s var(--ease-spring)}
     </style>
 </head>
@@ -144,12 +143,18 @@
     <!-- Header -->
     <div class="form-header">
         <div class="form-header-brand">
-            <div class="logo-mark">S</div>
+            <img src="/black-shogun-logo.svg" class="logo-img logo-sm logo-img-light" alt="Shogun">
+            <img src="/white-shogun-logo.svg" class="logo-img logo-sm logo-img-dark" alt="Shogun">
             <h1>Shogun</h1>
         </div>
-        <a href="/backoffice" class="back-link">
-            <i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al Backoffice
-        </a>
+        <div class="form-header-actions">
+            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+                <i class="far fa-moon" aria-hidden="true"></i>
+            </button>
+            <a href="/backoffice" class="back-link">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al Backoffice
+            </a>
+        </div>
     </div>
 
     <!-- Access Denied -->
@@ -175,10 +180,18 @@
             <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
             <span id="alertErrorText"></span>
         </div>
+        <div id="dupWarning" class="alert alert-danger" style="display:none;">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            <span id="dupWarningText"></span>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+                <button type="button" class="btn btn-secondary" style="font-size:13px;padding:6px 14px;" id="btnDupCancelar">Cancelar</button>
+                <button type="button" class="btn btn-primary" style="font-size:13px;padding:6px 14px;" id="btnDupConfirmar">Crear de todos modos</button>
+            </div>
+        </div>
 
         <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <p>Guardando pedido...</p>
+            <div class="loading-spinner"></div>
+            <p>Confirmando pedido...</p>
         </div>
 
         <form id="formPedido">
@@ -276,14 +289,31 @@
             </div>
 
             <button type="submit" class="btn-submit" id="btnSubmit">
-                <i class="fas fa-save" aria-hidden="true"></i> Guardar Pedido
+                <i class="fas fa-check" aria-hidden="true"></i> Confirmar Pedido
             </button>
         </form>
 
-        <!-- Post-creation -->
+        <!-- Post-creation success state -->
         <div id="postCreationSection" class="post-creation">
-            <h3>Pedidos Creados — <span id="postGrupoId"></span></h3>
+            <div class="post-creation-header">
+                <div class="post-creation-icon">
+                    <i class="fas fa-check" aria-hidden="true"></i>
+                </div>
+                <h3>¡Pedido Confirmado!</h3>
+                <p class="post-creation-sub">Grupo <strong id="postGrupoId"></strong></p>
+            </div>
             <div id="postPedidosList"></div>
+            <div class="post-creation-actions">
+                <a href="/backoffice" class="btn btn-primary">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Ver en Backoffice
+                </a>
+                <button type="button" class="btn btn-secondary" id="btnCopiarMensaje">
+                    <i class="fas fa-copy" aria-hidden="true"></i> Copiar confirmación
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnNuevoPedidoPost">
+                    <i class="fas fa-plus" aria-hidden="true"></i> Nuevo Pedido
+                </button>
+            </div>
         </div>
     </div>
 
@@ -340,6 +370,12 @@
             if (res.status === 403) throw new Error('Sin permisos');
             return res.json();
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        // STATE
+        // ═══════════════════════════════════════════════════════════════
+        let lastCreatedData = null;
+        let _confirmarDuplicado = false;
 
         // ═══════════════════════════════════════════════════════════════
         // CATÁLOGO
@@ -424,7 +460,7 @@
                         <div class="form-group">
                             <label class="form-label">Talla <span class="required">*</span></label>
                             <select class="form-control it" data-id="${id}">
-                                <option value="">...</option>
+                                <option value="" disabled selected>Seleccionar</option>
                                 <option>XS</option><option>S</option><option>M</option>
                                 <option>L</option><option>XL</option><option>XXL</option>
                             </select>
@@ -446,7 +482,7 @@
                         <div class="form-group ipg" data-id="${id}" style="display:none;">
                             <label class="form-label">Puntadas</label>
                             <input type="number" class="form-control ipu" data-id="${id}" placeholder="36000" min="0">
-                            <div class="ipc" data-id="${id}" style="font-size:var(--text-micro);color:var(--accent);margin-top:4px;"></div>
+                            <div class="ipc field-hint" data-id="${id}"></div>
                         </div>
                     </div>
                     <div class="form-grid">
@@ -463,8 +499,9 @@
                         <div class="item-summary-row">
                             <span>Costo: <strong class="isc" data-id="${id}">RD$0</strong></span>
                             <span>Ganancia: <strong class="isg" data-id="${id}" style="color:var(--success);">RD$0</strong></span>
-                            <span>Margen: <strong class="ism2" data-id="${id}" style="color:var(--purple);">0%</strong></span>
+                            <span>Margen: <strong class="ism2" data-id="${id}" style="color:var(--success);">0%</strong></span>
                         </div>
+                        <div class="imw" data-id="${id}" style="display:none;font-weight:600;margin-top:6px;font-size:13px;"></div>
                     </div>
                 </div>
             `).join('');
@@ -518,7 +555,20 @@
                 gEl.style.color = gan >= 0 ? 'var(--success)' : 'var(--danger)';
                 const mEl = card.querySelector(`.ism2[data-id="${id}"]`);
                 mEl.textContent = mar.toFixed(1) + '%';
-                mEl.style.color = mar >= 0 ? 'var(--purple)' : 'var(--danger)';
+                mEl.style.color = mar < 0 ? 'var(--danger)' : (mar < 15 ? 'var(--warning)' : 'var(--success)');
+                // Mejora 5: Alerta de margen
+                const warnEl = card.querySelector(`.imw[data-id="${id}"]`);
+                if (warnEl) {
+                    if (mar < 0) {
+                        warnEl.textContent = `⚠️ Pérdida de RD$${Math.abs(Math.round(gan)).toLocaleString()} — precio por debajo del costo`;
+                        warnEl.style.cssText = 'display:block;color:var(--danger);font-weight:600;margin-top:6px;font-size:13px;';
+                    } else if (mar < 15 && precio > 0) {
+                        warnEl.textContent = `⚠️ Margen muy bajo (${mar.toFixed(1)}%) — considera revisar el precio`;
+                        warnEl.style.cssText = 'display:block;color:var(--warning);font-weight:600;margin-top:6px;font-size:13px;';
+                    } else {
+                        warnEl.style.display = 'none';
+                    }
+                }
             } else {
                 sum.classList.remove('visible');
             }
@@ -653,8 +703,28 @@
                 }
             }
 
+            // Mejora 1: Detección de duplicados
+            if (!_confirmarDuplicado && shared.telefono) {
+                for (const item of itemsData) {
+                    try {
+                        const dupRes = await apiFetch(`/pedidos/check-duplicado?telefono=${encodeURIComponent(shared.telefono)}&sku=${encodeURIComponent(item.producto_sku)}&talla=${encodeURIComponent(item.talla)}`);
+                        if (dupRes && dupRes.duplicados && dupRes.duplicados.length > 0) {
+                            const dup = dupRes.duplicados[0];
+                            document.getElementById('dupWarningText').innerHTML =
+                                `Ya existe un pedido similar activo: <strong>${dup.id}</strong> — ${dup.producto || ''} ${dup.talla || ''} · Estado: <strong>${dup.estatus_produccion}</strong>. ¿Deseas crear el pedido de todas formas?`;
+                            document.getElementById('dupWarning').style.display = 'block';
+                            document.getElementById('dupWarning').scrollIntoView({behavior:'smooth', block:'center'});
+                            return;
+                        }
+                    } catch(e) { /* silencioso — no bloquear por error en check */ }
+                }
+            }
+            _confirmarDuplicado = false;
+            document.getElementById('dupWarning').style.display = 'none';
+
             const btn = document.getElementById('btnSubmit');
             btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner spinner-sm spinner-inverted"></div> Confirmando...';
             document.getElementById('loading').classList.add('show');
 
             try {
@@ -665,6 +735,12 @@
                         body: JSON.stringify({...itemsData[0], ...shared})
                     });
                     if (result && result.success) {
+                        // Mejora 6: guardar datos para generador de mensaje
+                        lastCreatedData = {
+                            pedidos: [{id: result.pedido_id, producto: itemsData[0].producto_nombre, talla: itemsData[0].talla}],
+                            cliente: shared.nombre_cliente, canal: shared.canal,
+                            fechaEntrega: result.fecha_entrega || null, total: result.total || null
+                        };
                         showSuccess(`<strong>Pedido ${result.pedido_id} creado!</strong>`);
                         showPost([{id: result.pedido_id, producto: itemsData[0].producto_nombre}], result.pedido_id);
                     } else throw new Error(result?.error || 'Error');
@@ -674,6 +750,11 @@
                         body: JSON.stringify({items: itemsData, shared})
                     });
                     if (result && result.success) {
+                        // Mejora 6: guardar datos para generador de mensaje
+                        lastCreatedData = {
+                            pedidos: result.pedidos, cliente: shared.nombre_cliente,
+                            canal: shared.canal, fechaEntrega: null, total: result.total || null
+                        };
                         const ids = result.pedidos.map(p => `<strong>${p.id}</strong> (${p.producto})`).join(', ');
                         showSuccess(`<strong>${result.cantidad} pedidos creados!</strong> Grupo ${result.grupo_pedido}<br>${ids}<br>Total: RD$${result.total.toLocaleString()}`);
                         showPost(result.pedidos, result.grupo_pedido);
@@ -691,6 +772,7 @@
             } finally {
                 document.getElementById('loading').classList.remove('show');
                 btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Confirmar Pedido';
             }
         });
 
@@ -705,12 +787,84 @@
             document.getElementById('postPedidosList').innerHTML = pedidos.map(p =>
                 `<div class="post-pedido-card">
                     <span><strong>${p.id}</strong> — ${p.producto || ''}</span>
-                    <a href="/backoffice" target="_blank">Ver →</a>
+                    <a href="/backoffice" aria-label="Ver pedido ${p.id} en backoffice">Ver →</a>
                 </div>`
             ).join('');
-            document.getElementById('postCreationSection').classList.add('visible');
-            setTimeout(() => document.getElementById('postCreationSection').scrollIntoView({behavior:'smooth'}), 300);
+            const section = document.getElementById('postCreationSection');
+            section.classList.add('visible');
+            setTimeout(() => section.scrollIntoView({behavior:'smooth', block:'start'}), 300);
         }
+
+        // Botón "Nuevo Pedido" en el success state
+        document.getElementById('btnNuevoPedidoPost')?.addEventListener('click', () => {
+            document.getElementById('postCreationSection').classList.remove('visible');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+
+        // Mejora 1: Duplicate warning buttons
+        document.getElementById('btnDupConfirmar')?.addEventListener('click', () => {
+            _confirmarDuplicado = true;
+            document.getElementById('dupWarning').style.display = 'none';
+            document.getElementById('formPedido').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        });
+        document.getElementById('btnDupCancelar')?.addEventListener('click', () => {
+            document.getElementById('dupWarning').style.display = 'none';
+        });
+
+        // Mejora 6: Copiar mensaje de confirmación
+        document.getElementById('btnCopiarMensaje')?.addEventListener('click', async () => {
+            if (!lastCreatedData) return;
+            const { pedidos, cliente, fechaEntrega, total } = lastCreatedData;
+            const lineaPedidos = pedidos.map(p =>
+                `  • ${p.id} — ${p.producto || ''}${p.talla ? ' (' + p.talla + ')' : ''}`
+            ).join('\n');
+            const lineas = [
+                `✅ ¡Pedido confirmado! — Shogun`,
+                ``,
+                `Hola ${cliente}, tu pedido ha sido registrado:`,
+                ``,
+                lineaPedidos,
+                ``,
+                fechaEntrega ? `📅 Entrega estimada: ${fechaEntrega}` : null,
+                total ? `💰 Total: RD$${Number(total).toLocaleString()}` : null,
+                ``,
+                `Cualquier consulta, estamos disponibles. ¡Gracias! 🙏`
+            ].filter(l => l !== null).join('\n').trim();
+
+            const btn = document.getElementById('btnCopiarMensaje');
+            try {
+                await navigator.clipboard.writeText(lineas);
+            } catch (e) {
+                const ta = document.createElement('textarea');
+                ta.value = lineas;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> ¡Copiado!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i> Copiar confirmación';
+                }, 2500);
+            }
+        });
+    })();
+
+    // Theme toggle
+    (function(){
+        function applyThemeIcon(){
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const icon = document.querySelector('#themeToggle i');
+            if(icon) icon.className = isDark ? 'fas fa-sun' : 'far fa-moon';
+        }
+        applyThemeIcon();
+        document.getElementById('themeToggle')?.addEventListener('click', function(){
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            applyThemeIcon();
+        });
     })();
     </script>
 </body>

@@ -48,8 +48,8 @@
         return d ? new Date(d).toLocaleString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
     }
 
-    function modalLoadingHTML(maxWidth) {
-        return `<div class="modal-content" style="max-width:${maxWidth}px;"><div class="modal-body"><div class="modal-loading active"><div class="loading-spinner"></div><p>Cargando...</p></div></div></div>`;
+    function modalLoadingHTML(sizeClass) {
+        return `<div class="modal-content ${sizeClass}"><div class="modal-body"><div class="modal-loading active"><div class="loading-spinner"></div><p>Cargando...</p></div></div></div>`;
     }
 
     // ===== MODAL MANAGER =====
@@ -66,6 +66,7 @@
             let ov = document.querySelector('.modal-overlay');
             if (!ov) { ov = document.createElement('div'); ov.className = 'modal-overlay'; document.body.appendChild(ov); }
             ov.addEventListener('click', () => this.closeActive());
+            ov._modalManager = this;
             return ov;
         }
         open(modal) {
@@ -76,7 +77,7 @@
             modal.setAttribute('aria-modal', 'true');
             this.overlay.classList.add('active');
             modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('modal-open');
             // Focus trap
             this._focusTrapHandler = (e) => {
                 if (e.key !== 'Tab') return;
@@ -110,7 +111,7 @@
                 this.overlay.classList.remove('active', 'closing');
                 modal.removeAttribute('role');
                 modal.removeAttribute('aria-modal');
-                document.body.style.overflow = '';
+                document.body.classList.remove('modal-open');
                 this.activeModal = null;
                 if (this._previousFocus) { this._previousFocus.focus(); this._previousFocus = null; }
             };
@@ -136,7 +137,7 @@
                 const btnClass = type === 'danger' ? 'btn-danger' : 'btn-primary';
 
                 this.modal.innerHTML = `
-                <div class="modal-content" style="max-width:400px;">
+                <div class="modal-content modal-sm">
                     <div class="modal-header">
                         <h2 class="modal-title">${esc(title)}</h2>
                         <button class="modal-close" data-close><i class="fas fa-xmark"></i></button>
@@ -148,8 +149,8 @@
                         <p class="confirm-dialog-message">${message}</p>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" data-cancel>${esc(cancelText)}</button>
-                        <button class="btn-modal ${btnClass}" data-confirm>${esc(confirmText)}</button>
+                        <button class="btn btn-secondary" data-cancel>${esc(cancelText)}</button>
+                        <button class="btn ${btnClass}" data-confirm>${esc(confirmText)}</button>
                     </div>
                 </div>`;
 
@@ -179,7 +180,7 @@
                     <span class="comment-author">${esc(c.autor_nombre)}</span>
                     <div class="comment-meta">
                         <span class="comment-date">${formatDate(c.created_at)}</span>
-                        <button class="btn-inline danger" onclick="${deleteHandler}('${c.id}','${pedidoId}')" title="Eliminar"><i class="far fa-trash-can"></i></button>
+                        <button class="btn-inline danger" data-action="${deleteHandler}" data-id="${c.id}" data-pedido="${pedidoId}" title="Eliminar"><i class="far fa-trash-can"></i></button>
                     </div>
                 </div>
                 <div class="comment-body">${esc(c.texto)}</div>
@@ -200,8 +201,8 @@
                     <div class="attachment-name">${esc(a.nombre_original)}</div>
                     <div class="attachment-meta">${fileSize(a.tamano_bytes)} ${a.subido_por_nombre ? '· ' + esc(a.subido_por_nombre) : ''} ${a.created_at ? '· ' + formatDate(a.created_at) : ''}</div>
                 </div>
-                <button class="btn-inline accent" onclick="descargarAdjuntoUI('${a.id}')" title="Descargar"><i class="fa-solid fa-arrow-down"></i></button>
-                <button class="btn-inline danger" onclick="${deleteHandler}('${a.id}','${pedidoId}')" title="Eliminar"><i class="far fa-trash-can"></i></button>
+                <button class="btn-inline accent" data-action="descargarAdjuntoUI" data-id="${a.id}" title="Descargar"><i class="fa-solid fa-arrow-down"></i></button>
+                <button class="btn-inline danger" data-action="${deleteHandler}" data-id="${a.id}" data-pedido="${pedidoId}" title="Eliminar"><i class="far fa-trash-can"></i></button>
             </div>
         `).join('');
     }
@@ -216,7 +217,7 @@
         }
 
         async open(id) {
-            this.modal.innerHTML = modalLoadingHTML(720);
+            this.modal.innerHTML = modalLoadingHTML('modal-xl');
             modalManager.open(this.modal);
 
             try {
@@ -226,7 +227,7 @@
                 const delayClass = p.dias_retraso > 0 ? ' detail-value danger' : '';
 
                 this.modal.innerHTML = `
-                <div class="modal-content" style="max-width:720px;">
+                <div class="modal-content modal-xl">
                     <div class="modal-header">
                         <h2 class="modal-title"><i class="far fa-file-lines"></i> Pedido ${esc(p.id)}</h2>
                         <button class="modal-close" data-close><i class="fas fa-xmark"></i></button>
@@ -238,7 +239,7 @@
                                 <div class="summary-chip-value">${money(p.precio_total)}</div>
                             </div>
                             <div class="summary-chip success">
-                                <div class="summary-chip-label">Produccion</div>
+                                <div class="summary-chip-label">Producción</div>
                                 <div>${badge(p.estatus_produccion)}</div>
                             </div>
                             <div class="summary-chip warning">
@@ -251,9 +252,9 @@
                             <div class="section-title"><i class="far fa-user"></i> Cliente</div>
                             <div class="detail-grid">
                                 <div class="detail-item"><div class="detail-label">Nombre</div><div class="detail-value">${esc(p.cliente)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Telefono</div><div class="detail-value">${esc(p.telefono)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Teléfono</div><div class="detail-value">${esc(p.telefono)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value">${val(p.email)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Direccion</div><div class="detail-value">${val(p.direccion)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Dirección</div><div class="detail-value">${val(p.direccion)}</div></div>
                             </div>
                         </div>
 
@@ -264,7 +265,7 @@
                                 <div class="detail-item"><div class="detail-label">SKU</div><div class="detail-value">${esc(p.sku)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Talla</div><div class="detail-value">${val(p.talla)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Color</div><div class="detail-value">${val(p.color)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Personalizacion</div><div class="detail-value">${val(p.personalizacion)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Personalización</div><div class="detail-value">${val(p.personalizacion)}</div></div>
                                 ${p.puntadas ? `<div class="detail-item"><div class="detail-label">Puntadas</div><div class="detail-value">${Number(p.puntadas).toLocaleString()}</div></div>` : ''}
                             </div>
                         </div>
@@ -273,8 +274,8 @@
                             <div class="section-title"><i class="far fa-credit-card"></i> Financiero</div>
                             <div class="detail-grid">
                                 <div class="detail-item"><div class="detail-label">Precio Venta</div><div class="detail-value">${money(p.precio_producto)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Personalizacion</div><div class="detail-value">${money(p.precio_person)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Envio</div><div class="detail-value">${money(p.precio_envio)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Personalización</div><div class="detail-value">${money(p.precio_person)}</div></div>
+                                <div class="detail-item"><div class="detail-label">Envío</div><div class="detail-value">${money(p.precio_envio)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Total Cliente</div><div class="detail-value highlight">${money(p.precio_total)}</div></div>
                             </div>
                             <div class="cost-divider">
@@ -283,7 +284,7 @@
                                     <div class="detail-item"><div class="detail-label">Costo Prenda</div><div class="detail-value">${money(p.costo_producto)}</div></div>
                                     <div class="detail-item"><div class="detail-label">Mano de Obra</div><div class="detail-value">${money(p.costo_mano_obra)}</div></div>
                                     ${p.costos_adicionales > 0 ? `<div class="detail-item"><div class="detail-label">Costos Adicionales</div><div class="detail-value">${money(p.costos_adicionales)}</div></div>` : ''}
-                                    <div class="detail-item"><div class="detail-label">Costo Total</div><div class="detail-value" style="font-weight:600;">${money(p.costo_total)}</div></div>
+                                    <div class="detail-item"><div class="detail-label">Costo Total</div><div class="detail-value text-semibold">${money(p.costo_total)}</div></div>
                                 </div>
                             </div>
                             <div class="profit-bar ${p.ganancia >= 0 ? 'positive' : 'negative'}">
@@ -299,16 +300,22 @@
                                 <div class="detail-item"><div class="detail-label">Pago</div><div class="detail-value">${val(p.fecha_pago)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Compromiso</div><div class="detail-value">${val(p.fecha_compromiso)}</div></div>
                                 <div class="detail-item"><div class="detail-label">Entrega Real</div><div class="detail-value">${val(p.fecha_entrega_real)}</div></div>
-                                <div class="detail-item"><div class="detail-label">Retraso</div><div class="${delayClass}">${p.dias_retraso > 0 ? p.dias_retraso + ' dias' : 'Sin retraso'}</div></div>
+                                <div class="detail-item"><div class="detail-label">Retraso</div><div class="${delayClass}">${p.dias_retraso > 0 ? p.dias_retraso + ' días' : 'Sin retraso'}</div></div>
                             </div>
                         </div>
+
+                        ${p.grupo_pedido ? `
+                        <div class="detail-section" id="grupoPedidoSection">
+                            <div class="section-title"><i class="fas fa-layer-group"></i> Grupo <span class="grupo-badge-inline">${esc(p.grupo_pedido)}</span></div>
+                            <div id="grupoPedidoLista"><em class="comment-empty">Cargando pedidos del grupo...</em></div>
+                        </div>` : ''}
 
                         <div class="detail-section">
                             <div class="section-title"><i class="fa-solid fa-paperclip"></i> Adjuntos</div>
                             <div id="adjuntosLista"><em class="attachment-empty">Cargando...</em></div>
                             <div class="upload-bar">
-                                <input type="file" id="adjuntoInput" style="display:none;" multiple>
-                                <button class="btn-modal btn-primary btn-sm" id="btnAddFile"><i class="fa-solid fa-arrow-up"></i> Subir archivo</button>
+                                <input type="file" id="adjuntoInput" class="visually-hidden-input" multiple>
+                                <button class="btn btn-primary btn-sm" id="btnAddFile"><i class="fa-solid fa-arrow-up"></i> Subir archivo</button>
                                 <span class="upload-status" id="adjuntoStatus"></span>
                             </div>
                         </div>
@@ -318,13 +325,13 @@
                             <div id="comentariosLista"><em class="comment-empty">Cargando...</em></div>
                             <div class="comment-input-row">
                                 <input id="nuevoComentario" class="form-control" placeholder="Escribe un comentario...">
-                                <button class="btn-modal btn-primary btn-sm" id="btnAddComment"><i class="far fa-paper-plane"></i></button>
+                                <button class="btn btn-primary btn-sm" id="btnAddComment"><i class="far fa-paper-plane"></i></button>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" data-close>Cerrar</button>
-                        <button class="btn-modal btn-primary" data-edit><i class="far fa-pen-to-square"></i> Editar</button>
+                        <button class="btn btn-secondary" data-close>Cerrar</button>
+                        <button class="btn btn-primary" data-edit><i class="far fa-pen-to-square"></i> Editar</button>
                     </div>
                 </div>`;
 
@@ -333,6 +340,7 @@
 
                 this._loadComentarios(id);
                 this._loadAdjuntos(id);
+                if (p.grupo_pedido) this._loadGrupo(id, p.grupo_pedido);
 
                 document.getElementById('btnAddComment').onclick = async () => {
                     const input = document.getElementById('nuevoComentario');
@@ -363,7 +371,7 @@
                     this._loadAdjuntos(id);
                 };
             } catch (e) {
-                this.modal.innerHTML = `<div class="modal-content"><div class="modal-body"><p class="comment-error">Error: ${esc(e.message)}</p></div><div class="modal-footer"><button class="btn-modal btn-secondary" data-close>Cerrar</button></div></div>`;
+                this.modal.innerHTML = `<div class="modal-content"><div class="modal-body"><p class="comment-error">Error: ${esc(e.message)}</p></div><div class="modal-footer"><button class="btn btn-secondary" data-close>Cerrar</button></div></div>`;
                 this.modal.querySelector('[data-close]').onclick = () => closeModal(this.modal);
             }
         }
@@ -389,6 +397,30 @@
                 container.innerHTML = '<p class="attachment-error">Error cargando adjuntos</p>';
             }
         }
+
+        async _loadGrupo(pedidoId, grupoId) {
+            const container = document.getElementById('grupoPedidoLista');
+            if (!container) return;
+            try {
+                const pedidos = await api.getPedidosByGrupo(grupoId);
+                if (!pedidos || pedidos.length <= 1) {
+                    const section = document.getElementById('grupoPedidoSection');
+                    if (section) section.style.display = 'none';
+                    return;
+                }
+                container.innerHTML = pedidos.map(p => `
+                    <div class="grupo-pedido-item ${p.id === pedidoId ? 'grupo-current' : ''}">
+                        <div class="grupo-pedido-info">
+                            <strong>${esc(p.id)}</strong>
+                            <span>${esc(p.producto || '')}${p.talla ? ' · ' + esc(p.talla) : ''}</span>
+                            ${badge(p.estatus_produccion)}
+                        </div>
+                        ${p.id !== pedidoId ? `<button class="btn-inline accent" data-action="abrirDetallesPedido" data-id="${esc(p.id)}" title="Ver pedido">Ver →</button>` : '<span class="grupo-current-tag">Este pedido</span>'}
+                    </div>`).join('');
+            } catch (e) {
+                container.innerHTML = '<p class="comment-error">Error cargando grupo</p>';
+            }
+        }
     }
 
     // ===== EDITAR PEDIDO =====
@@ -401,20 +433,30 @@
         }
 
         async open(id) {
-            this.modal.innerHTML = modalLoadingHTML(660);
+            this.modal.innerHTML = modalLoadingHTML('modal-lg');
             modalManager.open(this.modal);
 
             try {
                 const p = await api.getPedido(id);
                 if (!p) return;
 
-                const estadosProd = ['En Produccion', 'Listo para Envio', 'En Camino', 'Entregado', 'Bloqueado - Sin Direccion', 'Cancelado'];
+                // Mejora 7: Transiciones de estado válidas
+                const VALID_TRANSITIONS = {
+                    'En Producción':          ['En Producción', 'Listo para Envío', 'Bloqueado - Sin Dirección', 'Cancelado'],
+                    'Listo para Envío':       ['Listo para Envío', 'En Camino', 'En Producción', 'Cancelado'],
+                    'En Camino':              ['En Camino', 'Entregado', 'Listo para Envío', 'Cancelado'],
+                    'Entregado':              ['Entregado'],
+                    'Bloqueado - Sin Dirección': ['Bloqueado - Sin Dirección', 'En Producción', 'Cancelado'],
+                    'Cancelado':              ['Cancelado', 'En Producción']
+                };
+                const allEstados = ['En Producción', 'Listo para Envío', 'En Camino', 'Entregado', 'Bloqueado - Sin Dirección', 'Cancelado'];
+                const estadosProd = VALID_TRANSITIONS[p.estatus_produccion] || allEstados;
                 const estadosPago = ['Recibido', 'Pendiente', 'Parcial', 'Reembolsado'];
                 const bancos = ['Popular', 'Banreservas', 'BHD', 'Efectivo', 'Transferencia'];
                 const canales = ['WhatsApp', 'Instagram', 'Facebook', 'Referido', 'Tienda'];
 
                 this.modal.innerHTML = `
-                <div class="modal-content" style="max-width:660px;">
+                <div class="modal-content modal-lg">
                     <div class="modal-header">
                         <h2 class="modal-title"><i class="far fa-pen-to-square"></i> Editar ${esc(id)}</h2>
                         <button class="modal-close" data-close><i class="fas fa-xmark"></i></button>
@@ -423,26 +465,26 @@
                         <div id="editError" class="edit-error"></div>
                         <form id="editForm">
                             <div class="edit-grid-2">
-                                <div><label class="edit-label">Estado Produccion</label><select name="estatus_produccion" class="form-control">${selectOpts(estadosProd, p.estatus_produccion)}</select></div>
+                                <div><label class="edit-label">Estado Producción</label><select name="estatus_produccion" class="form-control">${selectOpts(estadosProd, p.estatus_produccion)}</select></div>
                                 <div><label class="edit-label">Estado Pago</label><select name="estatus_pago" class="form-control">${selectOpts(estadosPago, p.estatus_pago)}</select></div>
                             </div>
                             <div class="edit-grid-2">
                                 <div><label class="edit-label">Cliente</label><input name="cliente" class="form-control" value="${esc(p.cliente)}"></div>
-                                <div><label class="edit-label">Telefono</label><input name="telefono" class="form-control" value="${esc(p.telefono)}"></div>
+                                <div><label class="edit-label">Teléfono</label><input name="telefono" class="form-control" value="${esc(p.telefono)}"></div>
                             </div>
                             <div class="edit-grid-2">
                                 <div><label class="edit-label">Email <span class="optional">(opcional)</span></label><input name="email" class="form-control" value="${esc(p.email || '')}" placeholder="No requerido"></div>
                                 <div><label class="edit-label">Color</label><input name="color" class="form-control" value="${esc(p.color || '')}" placeholder="Ej: Negro, Blanco, Rojo"></div>
                             </div>
-                            <div class="edit-row"><label class="edit-label">Direccion</label><textarea name="direccion" class="form-control" rows="2">${esc(p.direccion || '')}</textarea></div>
-                            <div class="edit-row"><label class="edit-label">Detalles Personalizacion</label><textarea name="personalizacion" class="form-control" rows="2" placeholder="Detalles del bordado/diseno...">${esc(p.personalizacion || '')}</textarea></div>
+                            <div class="edit-row"><label class="edit-label">Dirección</label><textarea name="direccion" class="form-control" rows="2">${esc(p.direccion || '')}</textarea></div>
+                            <div class="edit-row"><label class="edit-label">Detalles Personalización</label><textarea name="personalizacion" class="form-control" rows="2" placeholder="Detalles del bordado/diseño...">${esc(p.personalizacion || '')}</textarea></div>
                             <div class="edit-grid-3">
                                 <div><label class="edit-label">Precio Venta (RD$)</label><input name="precio_producto" type="number" step="0.01" class="form-control" value="${p.precio_producto || 0}"></div>
                                 <div><label class="edit-label">Costos Adicionales</label><input name="costos_adicionales" type="number" step="0.01" class="form-control" value="${p.costos_adicionales || 0}"></div>
-                                <div><label class="edit-label">Envio</label><input name="precio_envio" type="number" step="0.01" class="form-control" value="${p.precio_envio || 0}"></div>
+                                <div><label class="edit-label">Envío</label><input name="precio_envio" type="number" step="0.01" class="form-control" value="${p.precio_envio || 0}"></div>
                             </div>
                             <div class="edit-grid-2">
-                                <div><label class="edit-label">Metodo Pago</label><select name="banco" class="form-control">${selectOpts(bancos, p.banco)}</select></div>
+                                <div><label class="edit-label">Método Pago</label><select name="banco" class="form-control">${selectOpts(bancos, p.banco)}</select></div>
                                 <div><label class="edit-label">Canal</label><select name="canal" class="form-control">${selectOpts(canales, p.canal)}</select></div>
                             </div>
                             <div><label class="edit-label">Fecha Entrega Real</label><input type="date" name="fecha_entrega_real" class="form-control" value="${ddmmToIso(p.fecha_entrega_real)}"></div>
@@ -452,8 +494,8 @@
                             <div class="modal-section-title"><i class="fa-solid fa-paperclip"></i> Adjuntos</div>
                             <div id="editAdjuntosLista"><em class="attachment-empty">Cargando...</em></div>
                             <div class="upload-bar">
-                                <input type="file" id="editAdjuntoInput" style="display:none;" multiple>
-                                <button type="button" class="btn-modal btn-primary btn-sm" id="btnEditAddFile"><i class="fa-solid fa-arrow-up"></i> Subir</button>
+                                <input type="file" id="editAdjuntoInput" class="visually-hidden-input" multiple>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnEditAddFile"><i class="fa-solid fa-arrow-up"></i> Subir</button>
                                 <span class="upload-status" id="editAdjuntoStatus"></span>
                             </div>
                         </div>
@@ -463,13 +505,13 @@
                             <div id="editComentariosLista"><em class="comment-empty">Cargando...</em></div>
                             <div class="comment-input-row">
                                 <input id="editNuevoComentario" class="form-control" placeholder="Escribe un comentario...">
-                                <button type="button" class="btn-modal btn-primary btn-sm" id="btnEditAddComment"><i class="far fa-paper-plane"></i></button>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnEditAddComment"><i class="far fa-paper-plane"></i></button>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" data-close>Cancelar</button>
-                        <button class="btn-modal btn-success" id="btnSaveEdit"><i class="fas fa-check"></i> Guardar</button>
+                        <button class="btn btn-secondary" data-close>Cancelar</button>
+                        <button class="btn btn-success" id="btnSaveEdit"><i class="fas fa-check"></i> Guardar</button>
                     </div>
                 </div>`;
 
@@ -571,7 +613,7 @@
         }
 
         async open(id) {
-            this.modal.innerHTML = modalLoadingHTML(480);
+            this.modal.innerHTML = modalLoadingHTML('modal-md');
             modalManager.open(this.modal);
 
             try {
@@ -579,26 +621,26 @@
                 if (!p) return;
 
                 this.modal.innerHTML = `
-                <div class="modal-content" style="max-width:480px;">
+                <div class="modal-content modal-md">
                     <div class="modal-header">
                         <h2 class="modal-title"><i class="fa-solid fa-triangle-exclamation"></i> Eliminar Pedido</h2>
                         <button class="modal-close" data-close><i class="fas fa-xmark"></i></button>
                     </div>
-                    <div class="modal-body" style="text-align:center;">
+                    <div class="modal-body text-center">
                         <div class="delete-icon-circle">
                             <i class="fas fa-trash"></i>
                         </div>
-                        <p class="confirm-dialog-message">Estas seguro de eliminar este pedido?<br><strong>Esta accion no se puede deshacer.</strong></p>
+                        <p class="confirm-dialog-message">¿Estás seguro de eliminar este pedido?<br><strong>Esta acción no se puede deshacer.</strong></p>
                         <table class="delete-summary">
-                            <tr><td class="label-cell">Pedido</td><td class="value-cell" style="font-weight:600;">${esc(p.id)}</td></tr>
+                            <tr><td class="label-cell">Pedido</td><td class="value-cell text-semibold">${esc(p.id)}</td></tr>
                             <tr><td class="label-cell">Cliente</td><td class="value-cell">${esc(p.cliente)}</td></tr>
                             <tr><td class="label-cell">Producto</td><td class="value-cell">${esc(p.producto)}</td></tr>
-                            <tr><td class="label-cell">Total</td><td class="value-cell" style="font-weight:700;">${money(p.precio_total)}</td></tr>
+                            <tr><td class="label-cell">Total</td><td class="value-cell text-bold">${money(p.precio_total)}</td></tr>
                         </table>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" data-close>Cancelar</button>
-                        <button class="btn-modal btn-danger" id="btnConfirmDelete"><i class="fas fa-trash-can"></i> Eliminar</button>
+                        <button class="btn btn-secondary" data-close>Cancelar</button>
+                        <button class="btn btn-danger" id="btnConfirmDelete"><i class="fas fa-trash-can"></i> Eliminar</button>
                     </div>
                 </div>`;
 
@@ -628,6 +670,88 @@
             } catch (e) {
                 closeModal(this.modal);
                 showNotification(e.message, 'error');
+            }
+        }
+    }
+
+    // ===== CLIENTE PROFILE PANEL (Mejora 2) =====
+
+    class ClienteProfileModal {
+        constructor() {
+            this.modal = document.createElement('div');
+            this.modal.className = 'modal';
+            document.body.appendChild(this.modal);
+        }
+
+        async open(telefono) {
+            this.modal.innerHTML = modalLoadingHTML('modal-lg');
+            modalManager.open(this.modal);
+
+            try {
+                const perfil = await api.getClientePerfil(telefono);
+                if (!perfil) {
+                    this.modal.innerHTML = `<div class="modal-content modal-lg"><div class="modal-body"><p class="comment-error">Cliente no encontrado</p></div><div class="modal-footer"><button class="btn btn-secondary" data-close>Cerrar</button></div></div>`;
+                    this.modal.querySelector('[data-close]').onclick = () => closeModal(this.modal);
+                    return;
+                }
+
+                this.modal.innerHTML = `
+                <div class="modal-content modal-lg">
+                    <div class="modal-header">
+                        <h2 class="modal-title"><i class="far fa-user"></i> ${esc(perfil.nombre || telefono)}</h2>
+                        <button class="modal-close" data-close><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="summary-strip">
+                            <div class="summary-chip accent">
+                                <div class="summary-chip-label">Pedidos</div>
+                                <div class="summary-chip-value">${perfil.pedidos || 0}</div>
+                            </div>
+                            <div class="summary-chip success">
+                                <div class="summary-chip-label">Total gastado</div>
+                                <div class="summary-chip-value">${money(perfil.total_gastado)}</div>
+                            </div>
+                            <div class="summary-chip warning">
+                                <div class="summary-chip-label">Tipo</div>
+                                <div class="summary-chip-value">${esc(perfil.tipo || 'Regular')}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <div class="section-title"><i class="far fa-address-card"></i> Contacto</div>
+                            <div class="detail-grid">
+                                <div class="detail-item"><div class="detail-label">Teléfono</div><div class="detail-value">${esc(perfil.telefono || telefono)}</div></div>
+                                ${perfil.email ? `<div class="detail-item"><div class="detail-label">Email</div><div class="detail-value">${esc(perfil.email)}</div></div>` : ''}
+                                ${perfil.ultimo_pedido ? `<div class="detail-item"><div class="detail-label">Último pedido</div><div class="detail-value">${esc(perfil.ultimo_pedido)}</div></div>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <div class="section-title"><i class="far fa-rectangle-list"></i> Últimos pedidos</div>
+                            <div class="cliente-pedidos-lista">
+                                ${(perfil.pedidos_recientes || []).length === 0
+                                    ? '<p class="comment-empty">Sin pedidos registrados</p>'
+                                    : (perfil.pedidos_recientes || []).map(p => `
+                                        <div class="grupo-pedido-item">
+                                            <div class="grupo-pedido-info">
+                                                <strong>${esc(p.id)}</strong>
+                                                <span>${esc(p.producto || '')}${p.talla ? ' · ' + esc(p.talla) : ''}</span>
+                                                ${badge(p.estatus_produccion)}
+                                            </div>
+                                            <button class="btn-inline accent" data-action="abrirDetallesPedido" data-id="${esc(p.id)}" title="Ver pedido">Ver →</button>
+                                        </div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-close>Cerrar</button>
+                    </div>
+                </div>`;
+
+                this.modal.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeModal(this.modal));
+            } catch (e) {
+                this.modal.innerHTML = `<div class="modal-content modal-lg"><div class="modal-body"><p class="comment-error">Error: ${esc(e.message)}</p></div><div class="modal-footer"><button class="btn btn-secondary" data-close>Cerrar</button></div></div>`;
+                this.modal.querySelector('[data-close]').onclick = () => closeModal(this.modal);
             }
         }
     }
@@ -670,7 +794,7 @@
 
     // ===== INIT =====
 
-    let verPedidoModal, editarPedidoModal, eliminarPedidoModal, confirmDialog;
+    let verPedidoModal, editarPedidoModal, eliminarPedidoModal, confirmDialog, clienteProfileModal;
 
     document.addEventListener('DOMContentLoaded', () => {
         modalManager = new ModalManager();
@@ -678,17 +802,19 @@
         editarPedidoModal = new EditarPedidoModal();
         eliminarPedidoModal = new EliminarPedidoModal();
         confirmDialog = new ConfirmDialog();
+        clienteProfileModal = new ClienteProfileModal();
 
         window.abrirDetallesPedido = (id) => verPedidoModal.open(id);
         window.abrirEdicionPedido = (id) => editarPedidoModal.open(id);
         window.abrirEliminarPedido = (id) => eliminarPedidoModal.open(id);
+        window.abrirPerfilCliente = (telefono) => clienteProfileModal.open(telefono);
 
         // Expose confirmDialog globally
         window.showConfirm = (opts) => confirmDialog.show(opts);
 
         // Global helpers - VER modal
         window.eliminarComentarioUI = async (commentId, pedidoId) => {
-            const ok = await confirmDialog.show({ title: 'Eliminar comentario', message: 'Se eliminara este comentario permanentemente.', confirmText: 'Eliminar', type: 'danger' });
+            const ok = await confirmDialog.show({ title: 'Eliminar comentario', message: 'Se eliminará este comentario permanentemente.', confirmText: 'Eliminar', type: 'danger' });
             if (!ok) return;
             try { await api.eliminarComentario(commentId); verPedidoModal._loadComentarios(pedidoId); showNotification('Comentario eliminado', 'success'); }
             catch (e) { showNotification(e.message, 'error'); }
@@ -706,7 +832,7 @@
         };
 
         window.eliminarAdjuntoUI = async (adjuntoId, pedidoId) => {
-            const ok = await confirmDialog.show({ title: 'Eliminar archivo', message: 'Se eliminara este archivo permanentemente.', confirmText: 'Eliminar', type: 'danger' });
+            const ok = await confirmDialog.show({ title: 'Eliminar archivo', message: 'Se eliminará este archivo permanentemente.', confirmText: 'Eliminar', type: 'danger' });
             if (!ok) return;
             try { await api.eliminarAdjunto(adjuntoId); verPedidoModal._loadAdjuntos(pedidoId); showNotification('Archivo eliminado', 'success'); }
             catch (e) { showNotification(e.message, 'error'); }
@@ -714,17 +840,29 @@
 
         // Global helpers - EDITAR modal
         window.eliminarComentarioEditUI = async (commentId, pedidoId) => {
-            const ok = await confirmDialog.show({ title: 'Eliminar comentario', message: 'Se eliminara este comentario permanentemente.', confirmText: 'Eliminar', type: 'danger' });
+            const ok = await confirmDialog.show({ title: 'Eliminar comentario', message: 'Se eliminará este comentario permanentemente.', confirmText: 'Eliminar', type: 'danger' });
             if (!ok) return;
             try { await api.eliminarComentario(commentId); editarPedidoModal._loadComentarios(pedidoId); showNotification('Comentario eliminado', 'success'); }
             catch (e) { showNotification(e.message, 'error'); }
         };
 
         window.eliminarAdjuntoEditUI = async (adjuntoId, pedidoId) => {
-            const ok = await confirmDialog.show({ title: 'Eliminar archivo', message: 'Se eliminara este archivo permanentemente.', confirmText: 'Eliminar', type: 'danger' });
+            const ok = await confirmDialog.show({ title: 'Eliminar archivo', message: 'Se eliminará este archivo permanentemente.', confirmText: 'Eliminar', type: 'danger' });
             if (!ok) return;
             try { await api.eliminarAdjunto(adjuntoId); editarPedidoModal._loadAdjuntos(pedidoId); showNotification('Archivo eliminado', 'success'); }
             catch (e) { showNotification(e.message, 'error'); }
         };
+
+        // Event delegation for dynamically rendered comment/attachment actions
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const fn = window[action];
+            if (typeof fn !== 'function') return;
+            const id = btn.dataset.id;
+            const pedidoId = btn.dataset.pedido;
+            fn(id, pedidoId);
+        });
     });
 })();

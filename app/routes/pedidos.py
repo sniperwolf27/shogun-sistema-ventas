@@ -10,7 +10,64 @@ pedidos_bp = Blueprint('pedidos', __name__)
 @require_auth
 def obtener_pedidos(user):
     try:
-        return jsonify(PedidosRepository.get_all()), 200
+        page = max(1, int(request.args.get('page', 1)))
+        limit = min(max(1, int(request.args.get('limit', 25))), 500)
+        q = request.args.get('q', '').strip() or None
+        estado = request.args.get('estado', '').strip() or None
+        canal = request.args.get('canal', '').strip() or None
+        return jsonify(PedidosRepository.get_all(page=page, limit=limit, q=q, estado=estado, canal=canal)), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@pedidos_bp.route('/pedidos/check-duplicado', methods=['GET'])
+@require_auth
+def check_duplicado(user):
+    telefono = request.args.get('telefono', '').strip()
+    sku = request.args.get('sku', '').strip()
+    talla = request.args.get('talla', '').strip()
+    if not all([telefono, sku, talla]):
+        return jsonify({'duplicados': []}), 200
+    try:
+        duplicados = PedidosRepository.check_duplicado(telefono, sku, talla)
+        return jsonify({'duplicados': duplicados}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@pedidos_bp.route('/pedidos/alertas', methods=['GET'])
+@require_auth
+def obtener_alertas_retraso(user):
+    try:
+        return jsonify(PedidosRepository.get_alertas_retraso()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@pedidos_bp.route('/pedidos/bulk', methods=['PATCH'])
+@require_auth
+def bulk_update_pedidos(user):
+    data = request.json or {}
+    ids = data.get('ids', [])
+    nuevo_estado = data.get('estatus_produccion', '')
+    if not ids:
+        return jsonify({'success': False, 'error': 'IDs requeridos'}), 400
+    if not nuevo_estado:
+        return jsonify({'success': False, 'error': 'Estado requerido'}), 400
+    if len(ids) > 100:
+        return jsonify({'success': False, 'error': 'Máximo 100 pedidos por operación'}), 400
+    try:
+        updated = PedidosRepository.bulk_update_estado(ids, nuevo_estado)
+        return jsonify({'success': True, 'updated': updated}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@pedidos_bp.route('/pedidos/por-grupo/<grupo_id>', methods=['GET'])
+@require_auth
+def pedidos_por_grupo(user, grupo_id):
+    try:
+        return jsonify(PedidosRepository.get_by_grupo(grupo_id)), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

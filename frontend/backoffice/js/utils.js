@@ -3,22 +3,46 @@
  * Funciones helper reutilizables
  */
 
-/* ═══════ TEMA (Dark Mode) ═══════ */
+/* ═══════ TEMA (Dark Mode + prefers-color-scheme) ═══════ */
 function initTheme() {
     const saved = localStorage.getItem('theme');
-    if (saved === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        const icon = document.querySelector('#themeToggle i');
-        if (icon) icon.className = 'fas fa-sun';
+    let theme;
+
+    if (saved) {
+        // Manual override persists
+        theme = saved;
+    } else {
+        // First visit: respect OS preference
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
+
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'far fa-moon';
+
+    // Listen for OS theme changes (only applies if user hasn't set a manual override)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (localStorage.getItem('theme')) return; // manual override active
+        const newTheme = e.matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        const ic = document.querySelector('#themeToggle i');
+        if (ic) ic.className = newTheme === 'dark' ? 'fas fa-sun' : 'far fa-moon';
+        if (typeof updateChartsTheme === 'function') updateChartsTheme();
+    });
 }
 
 function toggleDarkMode() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    const icon = document.querySelector('#themeToggle i');
-    if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+    const newTheme = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    const iconClass = isDark ? 'far fa-moon' : 'fas fa-sun';
+    // Update all theme toggle icons (header, dropdown, mobile menu)
+    document.querySelectorAll('#themeToggle i, #dropdownThemeToggle i, #mobileThemeToggle i').forEach(icon => {
+        icon.className = iconClass;
+    });
+
+    if (typeof updateChartsTheme === 'function') updateChartsTheme();
 }
 
 /* ═══════ OS-AWARE KBD HINT ═══════ */
@@ -41,9 +65,9 @@ if (typeof window.showNotification !== 'function') {
 
 /* ═══════ SKELETONS ═══════ */
 function showStatsSkeleton() {
-    ['stat-total','stat-ventas','stat-ganancia','stat-pendientes','stat-entregados','stat-margen'].forEach(id => {
+    ['stat-total','stat-ventas','stat-ganancia','stat-pendientes'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.textContent = '...'; el.style.opacity = '0.5'; }
+        if (el) { el.textContent = '...'; el.classList.add('skeleton-loading'); }
     });
 }
 
@@ -51,13 +75,18 @@ function showCardsSkeleton(containerId, count) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = Array.from({ length: count }, () =>
-        '<div class="pendiente-card" style="opacity:0.5;padding:20px;"><div style="background:#E8E8ED;height:16px;border-radius:4px;margin-bottom:8px;width:60%;"></div><div style="background:#E8E8ED;height:12px;border-radius:4px;width:40%;"></div></div>'
+        '<div class="pendiente-card skeleton-card-placeholder"><div class="skeleton-bar skeleton-bar-lg"></div><div class="skeleton-bar skeleton-bar-sm"></div></div>'
     ).join('');
 }
 
 /* ═══════ EMPTY STATE SVG ═══════ */
 function emptyStateSVG() {
-    return '<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 15h8M9 9h.01M15 9h.01"/></svg>';
+    return `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="20" stroke="var(--text-quaternary)" stroke-width="2" fill="none"/>
+        <path d="M30 46c2-3 6-4 10-4s8 1 10 4" stroke="var(--text-quaternary)" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="35" r="2" fill="var(--text-quaternary)"/>
+        <circle cx="46" cy="35" r="2" fill="var(--text-quaternary)"/>
+    </svg>`;
 }
 
 /* ═══════ FILTROS PERSISTENTES ═══════ */
@@ -67,7 +96,7 @@ const FilterStore = {
 };
 
 /**
- * Formatear nÃºmeros como moneda
+ * Formatear numeros como moneda
  */
 function formatearMoneda(valor) {
     if (!valor && valor !== 0) return 'RD$0';
@@ -90,18 +119,21 @@ function getEstadoBadge(estado) {
         'Recibido': 'success',
         'Entregado': 'success',
         'En Camino': 'info',
-        'Listo para EnvÃ­o': 'warning',
-        'En ProducciÃ³n': 'primary',
+        'Listo para Envio': 'warning',
+        'Listo para Envío': 'warning',
+        'En Produccion': 'primary',
+        'En Producción': 'primary',
         'Pendiente': 'warning',
         'Parcial': 'warning',
-        'Bloqueado - Sin DirecciÃ³n': 'danger',
+        'Bloqueado - Sin Direccion': 'danger',
+        'Bloqueado - Sin Dirección': 'danger',
         'Bloqueado': 'danger',
         'Cancelado': 'danger',
         'Reembolsado': 'danger'
     };
-    
+
     const color = colores[estado] || 'secondary';
-    
+
     return `<span class="badge badge-${color}">${estado}</span>`;
 }
 
@@ -130,7 +162,7 @@ function formatearFecha(fecha) {
 }
 
 /**
- * Calcular dÃ­as entre dos fechas
+ * Calcular dias entre dos fechas
  */
 function calcularDias(fecha1, fecha2) {
     const f1 = new Date(fecha1);
@@ -151,7 +183,7 @@ function validarEmail(email) {
 }
 
 /**
- * Validar telÃ©fono dominicano
+ * Validar telefono dominicano
  */
 function validarTelefono(telefono) {
     // Formato: 809-555-0000 o 8095550000
@@ -169,7 +201,7 @@ function sanitizarTexto(texto) {
 }
 
 /**
- * Debounce para bÃºsquedas
+ * Debounce para busquedas
  */
 function debounce(func, wait) {
     let timeout;

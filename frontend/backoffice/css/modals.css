@@ -133,6 +133,7 @@
     padding: var(--sp-xl, 32px);
     overflow-y: auto;
     flex: 1;
+    overscroll-behavior: contain;
 }
 
 /* Custom scrollbar — Apple style */
@@ -229,177 +230,9 @@
 .detail-value.warning { color: var(--warning, #FF9F0A); }
 .detail-value.danger { color: var(--danger, #FF3B30); }
 
-/* ==================== FORM ELEMENTS ==================== */
+/* Form elements: inherited from /css/shared.css — no duplication */
 
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--sp-md, 16px);
-    margin-bottom: var(--sp-md, 16px);
-}
-
-.form-group {
-    margin-bottom: var(--sp-md, 16px);
-}
-
-.form-group.full-width {
-    grid-column: 1 / -1;
-}
-
-.form-label {
-    display: block;
-    font-size: var(--text-caption, 13px);
-    font-weight: 500;
-    color: var(--text-secondary, #6E6E73);
-    margin-bottom: 6px;
-}
-
-.form-label .required {
-    color: var(--danger, #FF3B30);
-    margin-left: 2px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--border-primary, rgba(0,0,0,0.12));
-    border-radius: var(--radius-sm, 8px);
-    font-family: var(--font-body, 'DM Sans', sans-serif);
-    font-size: var(--text-subhead, 14px);
-    color: var(--text-primary, #1D1D1F);
-    background: var(--surface-primary, #FFFFFF);
-    outline: none;
-    transition: all var(--duration-fast, 0.15s) var(--ease-spring, ease);
-}
-
-.form-control::placeholder {
-    color: var(--text-placeholder, #AEAEB2);
-}
-
-/* Apple HIG: 3px focus ring */
-.form-control:focus {
-    border-color: var(--accent, #0071E3);
-    box-shadow: var(--shadow-glow, 0 0 0 3px rgba(0,113,227,0.25));
-}
-
-.form-control:hover:not(:focus) {
-    border-color: var(--text-tertiary, #86868B);
-}
-
-.form-control:disabled {
-    background: var(--surface-secondary, #F5F5F7);
-    color: var(--text-tertiary, #86868B);
-    cursor: not-allowed;
-}
-
-/* Field error — no !important needed */
-.form-control.field-error {
-    border-color: var(--danger, #FF3B30);
-    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.12);
-}
-
-.form-control.field-error:focus {
-    border-color: var(--danger, #FF3B30);
-    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.2);
-}
-
-select.form-control {
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236E6E73' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 36px;
-}
-
-textarea.form-control {
-    resize: vertical;
-    min-height: 80px;
-}
-
-/* ==================== BUTTONS ==================== */
-
-.btn-modal {
-    padding: 12px 24px;
-    border: none;
-    border-radius: var(--radius-full, 9999px);
-    font-family: var(--font-body, 'DM Sans', sans-serif);
-    font-size: var(--text-subhead, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal, 0.25s) var(--ease-spring, ease);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--touch-min, 44px);
-}
-
-/* Apple HIG: opacity hover, not translateY */
-.btn-modal:hover {
-    opacity: 0.85;
-}
-
-.btn-modal:active {
-    transform: scale(0.97);
-    transition-duration: 0.1s;
-}
-
-.btn-modal.btn-sm {
-    padding: 8px 14px;
-    font-size: var(--text-caption, 13px);
-    min-height: 32px;
-}
-
-.btn-modal.btn-primary {
-    background: var(--accent, #0071E3);
-    color: var(--text-inverted, white);
-}
-
-.btn-modal.btn-primary:hover {
-    background: var(--accent-hover, #0077ED);
-    opacity: 1;
-    box-shadow: 0 2px 8px rgba(0,113,227,0.25);
-}
-
-.btn-modal.btn-success {
-    background: var(--success, #34C759);
-    color: var(--text-inverted, white);
-}
-
-.btn-modal.btn-success:hover {
-    background: #2DB84D;
-    opacity: 1;
-    box-shadow: 0 2px 8px rgba(52,199,89,0.25);
-}
-
-.btn-modal.btn-secondary {
-    background: var(--surface-tertiary, #E8E8ED);
-    color: var(--text-primary, #1D1D1F);
-}
-
-.btn-modal.btn-secondary:hover {
-    background: #DCDCE2;
-    opacity: 1;
-    box-shadow: none;
-}
-
-.btn-modal.btn-danger {
-    background: var(--danger, #FF3B30);
-    color: var(--text-inverted, white);
-}
-
-.btn-modal.btn-danger:hover {
-    background: #E0312B;
-    opacity: 1;
-    box-shadow: 0 2px 8px rgba(255,59,48,0.25);
-}
-
-.btn-modal:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
+/* Buttons: inherited from styles.css .btn system — no duplication */
 
 /* ==================== ALERTS ==================== */
 
@@ -501,32 +334,58 @@ textarea.form-control {
     }
 }
 
-/* ==================== RESPONSIVE ==================== */
+/* ==================== RESPONSIVE — Apple HIG: Bottom Sheet on iPhone ==================== */
 
 @media (max-width: 600px) {
+    /* Apple HIG: Modals become bottom sheets on compact widths */
     .modal {
-        padding: var(--sp-md, 16px);
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .modal.active {
+        align-items: flex-end;
     }
 
     .modal-content {
-        max-height: 95vh;
-        border-radius: var(--radius-lg, 16px);
+        max-height: 92vh;
+        max-width: 100%;
+        border-radius: var(--radius-xl, 20px) var(--radius-xl, 20px) 0 0;
+        animation: sheetUp var(--duration-slow, 0.4s) var(--ease-spring, ease);
+    }
+
+    .modal.closing .modal-content {
+        animation: sheetDown var(--duration-normal, 0.25s) var(--ease-out, ease) forwards;
+    }
+
+    /* Drag handle indicator — Apple HIG sheet pattern */
+    .modal-content::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 5px;
+        background: var(--surface-tertiary, #E8E8ED);
+        border-radius: var(--radius-full, 9999px);
+        margin: var(--sp-sm, 8px) auto;
+        flex-shrink: 0;
     }
 
     .modal-header {
-        padding: var(--sp-md, 16px) var(--sp-lg, 24px);
+        padding: var(--sp-sm, 8px) var(--sp-lg, 24px) var(--sp-md, 16px);
     }
 
     .modal-body {
-        padding: var(--sp-lg, 24px);
+        padding: var(--sp-md, 16px) var(--sp-lg, 24px);
     }
 
+    /* Apple HIG: primary action on top (closest to thumb) */
     .modal-footer {
         padding: var(--sp-md, 16px) var(--sp-lg, 24px);
-        flex-direction: column;
+        padding-bottom: max(var(--sp-md, 16px), env(safe-area-inset-bottom));
+        flex-direction: column-reverse;
     }
 
-    .btn-modal {
+    .modal-footer .btn {
         width: 100%;
         justify-content: center;
     }
@@ -539,6 +398,31 @@ textarea.form-control {
 
     .detail-item {
         padding: var(--sp-md, 16px);
+    }
+
+    /* Apple HIG: 16px font on inputs to prevent iOS zoom */
+    .form-control {
+        font-size: 16px;
+        min-height: var(--touch-min, 44px);
+    }
+
+    /* Comment & upload areas: stack vertically */
+    .comment-input-row {
+        flex-direction: column;
+    }
+
+    .comment-input-row .btn {
+        width: 100%;
+    }
+
+    .upload-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .upload-bar .btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 
@@ -938,6 +822,7 @@ textarea.form-control {
 }
 
 /* Dismiss button */
+/* Apple HIG: 44px minimum touch target */
 .toast-dismiss {
     background: none;
     border: none;
@@ -946,8 +831,8 @@ textarea.form-control {
     padding: 4px;
     font-size: 12px;
     border-radius: var(--radius-sm, 8px);
-    width: 28px;
-    height: 28px;
+    min-width: var(--touch-min, 44px);
+    min-height: var(--touch-min, 44px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -975,6 +860,30 @@ textarea.form-control {
 .toast.error .toast-progress { background: var(--danger, #FF3B30); }
 .toast.warning .toast-progress { background: var(--warning, #FF9F0A); }
 
+/* Undo button in toast (Apple HIG: prominent destructive action reversal) */
+.toast-undo-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: var(--text-footnote);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    transition: background var(--duration-fast) ease;
+    min-height: 32px;
+}
+
+.toast-undo-btn:hover {
+    background: var(--accent-soft);
+}
+
+.toast-undo-btn:active {
+    opacity: 0.7;
+}
+
 @keyframes toastProgress {
     from { width: 100%; }
     to { width: 0%; }
@@ -999,6 +908,13 @@ textarea.form-control {
 [data-theme="dark"] .toast {
     background: rgba(44, 44, 46, 0.9);
 }
+
+/* ==================== UTILITY CLASSES ==================== */
+
+.text-center { text-align: center; }
+.text-semibold { font-weight: 600; }
+.text-bold { font-weight: 700; }
+.visually-hidden-input { display: none; }
 
 /* ==================== TABLE SKELETON ==================== */
 
@@ -1029,13 +945,37 @@ textarea.form-control {
     outline-offset: 2px;
 }
 
+/* ==================== BOTTOM SHEET ANIMATIONS ==================== */
+
+@keyframes sheetUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes sheetDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
 /* ==================== MOBILE RESPONSIVE ==================== */
 
 @media (max-width: 600px) {
     .toast-container {
-        top: 12px;
-        right: 12px;
-        left: 12px;
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        left: max(12px, env(safe-area-inset-left));
         width: auto;
         max-width: none;
     }

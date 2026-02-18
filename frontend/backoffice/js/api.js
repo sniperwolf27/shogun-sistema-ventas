@@ -25,13 +25,30 @@ const api = {
     },
 
     // --- Pedidos ---
-    getPedidos() { return this.request('/pedidos'); },
+    getPedidos(params = {}) {
+        const p = new URLSearchParams();
+        if (params.page) p.set('page', params.page);
+        if (params.limit) p.set('limit', params.limit);
+        if (params.q) p.set('q', params.q);
+        if (params.estado) p.set('estado', params.estado);
+        if (params.canal) p.set('canal', params.canal);
+        const qs = p.toString();
+        return this.request('/pedidos' + (qs ? '?' + qs : ''));
+    },
     getPedido(id) { return this.request('/pedidos/' + id); },
     createPedido(data) { return this.request('/pedidos', { method: 'POST', body: JSON.stringify(data) }); },
     updatePedido(id, data) { return this.request('/pedidos/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
     deletePedido(id) { return this.request('/pedidos/' + id, { method: 'DELETE' }); },
     getPedidosPendientes() { return this.request('/pedidos/pendientes'); },
     buscarPedidos(q) { return this.request('/pedidos/buscar?q=' + encodeURIComponent(q)); },
+    checkDuplicado(telefono, sku, talla) {
+        return this.request(`/pedidos/check-duplicado?telefono=${encodeURIComponent(telefono)}&sku=${encodeURIComponent(sku)}&talla=${encodeURIComponent(talla)}`);
+    },
+    getAlertasRetraso() { return this.request('/pedidos/alertas'); },
+    bulkUpdateEstado(ids, estatus_produccion) {
+        return this.request('/pedidos/bulk', { method: 'PATCH', body: JSON.stringify({ ids, estatus_produccion }) });
+    },
+    getPedidosByGrupo(grupoId) { return this.request('/pedidos/por-grupo/' + encodeURIComponent(grupoId)); },
 
     // --- Productos ---
     getProductos(all) { return this.request('/productos' + (all ? '?all=true' : '')); },
@@ -58,6 +75,7 @@ const api = {
 
     // --- Clientes ---
     getClientes() { return this.request('/clientes'); },
+    getClientePerfil(telefono) { return this.request('/clientes/perfil?telefono=' + encodeURIComponent(telefono)); },
 
     // --- Estadísticas ---
     getEstadisticas(desde, hasta) {
@@ -80,7 +98,16 @@ const api = {
         }
         return this.request('/estadisticas/canales' + params);
     },
-    getVentasPorEstado() { return this.request('/estadisticas/estados'); },
+    getVentasPorEstado(desde, hasta) {
+        let params = '';
+        if (desde || hasta) {
+            const p = new URLSearchParams();
+            if (desde) p.set('desde', desde);
+            if (hasta) p.set('hasta', hasta);
+            params = '?' + p.toString();
+        }
+        return this.request('/estadisticas/estados' + params);
+    },
 
     // --- Comentarios ---
     getComentarios(pedidoId) { return this.request('/pedidos/' + pedidoId + '/comentarios'); },

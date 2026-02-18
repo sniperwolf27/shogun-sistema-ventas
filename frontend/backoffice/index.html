@@ -2,10 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
     <title>Backoffice — Shogun</title>
-    <!-- Shared design tokens -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Shared design system -->
     <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/shared.css">
     <!-- Page styles -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/modals.css">
@@ -13,54 +17,143 @@
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Apply theme immediately to prevent flash (respects OS preference on first visit)
+        (function(){var t=localStorage.getItem('theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
 </head>
 <body>
     <!-- Accessibility: Skip to content -->
     <a href="#main-content" class="skip-link">Saltar al contenido</a>
 
-    <!-- HEADER -->
-    <header class="top-bar">
+    <!-- HEADER — Apple HIG: Three-zone layout (Brand | Primary CTA | Utilities + User) -->
+    <header class="top-bar" role="banner">
         <div class="top-bar-brand">
-            <div class="logo-mark" aria-hidden="true">S</div>
+            <img src="/black-shogun-logo.svg" class="logo-img logo-sm logo-img-light" alt="Shogun">
+            <img src="/white-shogun-logo.svg" class="logo-img logo-sm logo-img-dark" alt="Shogun">
             <h1>Shogun</h1>
         </div>
+
         <div class="top-bar-actions">
+            <!-- Primary CTA — always visible -->
             <button class="btn btn-primary" id="btnNuevoPedido" aria-label="Crear nuevo pedido">
                 <i class="fas fa-plus" aria-hidden="true"></i> <span>Nuevo Pedido</span>
             </button>
-            <div class="user-info" id="userInfo">
-                <i class="far fa-circle-user" aria-hidden="true"></i>
-                <span>Cargando...</span>
+
+            <!-- Utility icons — desktop only -->
+            <div class="header-utilities">
+                <button class="header-icon-btn" id="btnExportar" aria-label="Exportar pedidos" title="Exportar pedidos">
+                    <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                </button>
+                <button class="header-icon-btn" id="themeToggle" aria-label="Cambiar tema" title="Cambiar tema">
+                    <i class="far fa-moon" aria-hidden="true"></i>
+                </button>
             </div>
-            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
-                <i class="far fa-moon" aria-hidden="true"></i>
+
+            <!-- User menu — avatar trigger with dropdown -->
+            <div class="header-user-menu" id="headerUserMenu">
+                <button class="header-user-trigger" id="userMenuTrigger" aria-label="Menú de usuario" aria-expanded="false" aria-haspopup="true">
+                    <div class="header-avatar" id="userAvatar" aria-hidden="true">
+                        <i class="far fa-user"></i>
+                    </div>
+                    <span class="header-user-name" id="userNameDisplay">Cargando...</span>
+                    <i class="fas fa-chevron-down header-user-chevron" aria-hidden="true"></i>
+                </button>
+                <div class="header-user-dropdown" id="userDropdown" role="menu" aria-label="Opciones de usuario">
+                    <div class="dropdown-user-info" id="dropdownUserInfo" role="none">
+                        <div class="dropdown-avatar" aria-hidden="true"><i class="far fa-user"></i></div>
+                        <div class="dropdown-user-details">
+                            <span class="dropdown-user-name" id="dropdownUserName">Cargando...</span>
+                            <span class="dropdown-user-role" id="dropdownUserRole"></span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider" role="separator"></div>
+                    <button class="dropdown-item" id="dropdownThemeToggle" role="menuitem">
+                        <i class="far fa-moon" aria-hidden="true"></i>
+                        <span>Cambiar tema</span>
+                    </button>
+                    <button class="dropdown-item" id="dropdownExportar" role="menuitem">
+                        <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                        <span>Exportar pedidos</span>
+                    </button>
+                    <div class="dropdown-divider" role="separator"></div>
+                    <button class="dropdown-item dropdown-item-danger" id="btnLogout" role="menuitem">
+                        <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile menu toggle -->
+            <button class="header-menu-toggle" id="mobileMenuToggle" aria-label="Menú" aria-expanded="false">
+                <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
             </button>
-            <button class="btn btn-secondary" id="btnExportar" aria-label="Exportar pedidos">
-                <i class="fa-solid fa-arrow-down" aria-hidden="true"></i> <span>Exportar</span>
-            </button>
-            <button class="theme-toggle" id="btnLogout" aria-label="Cerrar sesion" title="Cerrar sesion" style="color:var(--danger);">
-                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
-            </button>
+        </div>
+
+        <!-- Mobile dropdown menu — structured with sections -->
+        <div class="mobile-menu" id="mobileMenu" role="menu" aria-label="Menú principal">
+            <div class="mobile-menu-section">
+                <div class="mobile-user-info" id="mobileUserInfo">
+                    <div class="mobile-user-avatar" aria-hidden="true"><i class="far fa-user"></i></div>
+                    <div class="mobile-user-details">
+                        <span class="mobile-user-name" id="mobileUserName">Cargando...</span>
+                        <span class="mobile-user-role" id="mobileUserRole"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-menu-divider" role="separator"></div>
+            <div class="mobile-menu-section">
+                <button class="mobile-menu-item" id="mobileThemeToggle" role="menuitem">
+                    <i class="far fa-moon" aria-hidden="true"></i>
+                    <span>Cambiar tema</span>
+                </button>
+                <button class="mobile-menu-item" id="mobileExportar" role="menuitem">
+                    <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                    <span>Exportar pedidos</span>
+                </button>
+            </div>
+            <div class="mobile-menu-divider" role="separator"></div>
+            <div class="mobile-menu-section">
+                <button class="mobile-menu-item mobile-menu-item-danger" id="mobileLogout" role="menuitem">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                    <span>Cerrar sesión</span>
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- NAV — Apple HIG: Segmented Control -->
+    <!-- NAV — Apple HIG: Segmented Control (desktop) / Tab Bar (mobile) -->
     <nav class="nav-tabs" role="tablist" aria-label="Secciones principales">
         <button class="tab-btn active" data-tab="pedidos" role="tab" aria-selected="true" aria-controls="pedidos-section" id="tab-pedidos">
-            <i class="far fa-rectangle-list" aria-hidden="true"></i> Pedidos
+            <i class="far fa-rectangle-list" aria-hidden="true"></i>
+            <span class="tab-label">Pedidos</span>
         </button>
         <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false" aria-controls="dashboard-section" id="tab-dashboard">
-            <i class="far fa-chart-bar" aria-hidden="true"></i> Dashboard
+            <i class="far fa-chart-bar" aria-hidden="true"></i>
+            <span class="tab-label">Dashboard</span>
         </button>
-        <button class="tab-btn" data-tab="pendientes" role="tab" aria-selected="false" aria-controls="pendientes-section" id="tab-pendientes">
-            <i class="far fa-clock" aria-hidden="true"></i> Pendientes
+        <button class="tab-btn tab-btn-pendientes" data-tab="pendientes" role="tab" aria-selected="false" aria-controls="pendientes-section" id="tab-pendientes">
+            <div class="tab-icon-wrap">
+                <i class="far fa-clock" aria-hidden="true"></i>
+                <span class="tab-badge" id="tabPendientesBadge" aria-label="pedidos pendientes" style="display:none;"></span>
+            </div>
+            <span class="tab-label">Pendientes</span>
         </button>
         <button class="tab-btn" data-tab="parametros" role="tab" aria-selected="false" aria-controls="parametros-section" id="tab-parametros">
-            <i class="fas fa-sliders" aria-hidden="true"></i> Parametros
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span class="tab-label">Catálogo</span>
         </button>
     </nav>
 
     <main id="main-content" class="container">
+        <!-- Mejora 8: Alerta de retraso proactiva -->
+        <div id="alertaRetrasoBar" class="alerta-retraso-bar" style="display:none;" role="alert" aria-live="polite">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            <span id="alertaRetrasoText"></span>
+            <button class="alerta-retraso-link" id="btnVerAlertas">Ver pedidos →</button>
+            <button class="alerta-close" id="btnCerrarAlerta" aria-label="Cerrar alerta"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+        </div>
+
         <!-- PEDIDOS -->
         <div id="pedidos-section" class="tab-content active" role="tabpanel" aria-labelledby="tab-pedidos">
             <div class="section-header">
@@ -70,20 +163,20 @@
             <div class="filters">
                 <div class="search-wrapper">
                     <i class="fas fa-magnifying-glass search-icon" aria-hidden="true"></i>
-                    <input type="text" id="searchPedidos" placeholder="Buscar por ID, cliente, producto..." aria-label="Buscar pedidos">
+                    <input type="text" id="searchPedidos" placeholder="Buscar por ID, cliente, producto..." aria-label="Buscar pedidos" autocomplete="off" spellcheck="false">
                     <div class="kbd-hint" aria-hidden="true"><kbd>⌘</kbd><kbd>K</kbd></div>
                 </div>
                 <select id="filterEstado" aria-label="Filtrar por estado">
-                    <option value="">Estado</option>
-                    <option value="En Produccion">En Produccion</option>
-                    <option value="Listo para Envio">Listo para Envio</option>
+                    <option value="">Todos los estados</option>
+                    <option value="En Producción">En Producción</option>
+                    <option value="Listo para Envío">Listo para Envío</option>
                     <option value="En Camino">En Camino</option>
                     <option value="Entregado">Entregado</option>
-                    <option value="Bloqueado - Sin Direccion">Bloqueado</option>
+                    <option value="Bloqueado - Sin Dirección">Bloqueado</option>
                     <option value="Cancelado">Cancelado</option>
                 </select>
                 <select id="filterCanal" aria-label="Filtrar por canal">
-                    <option value="">Canal</option>
+                    <option value="">Todos los canales</option>
                     <option value="WhatsApp">WhatsApp</option>
                     <option value="Instagram">Instagram</option>
                     <option value="Facebook">Facebook</option>
@@ -92,12 +185,27 @@
                 </select>
             </div>
 
+            <!-- Mejora 4: Bulk action bar -->
+            <div class="bulk-action-bar" id="bulkActionBar" style="display:none;" role="toolbar" aria-label="Acciones masivas">
+                <span class="bulk-count" id="bulkCount">0 seleccionados</span>
+                <select id="bulkEstadoSelect" class="form-control form-control-sm" aria-label="Nuevo estado para los pedidos seleccionados">
+                    <option value="">Cambiar estado...</option>
+                    <option value="En Producción">En Producción</option>
+                    <option value="Listo para Envío">Listo para Envío</option>
+                    <option value="En Camino">En Camino</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="btnBulkApply"><i class="fas fa-check" aria-hidden="true"></i> Aplicar</button>
+                <button class="btn btn-secondary btn-sm" id="btnBulkDeselect">Deseleccionar</button>
+            </div>
+
             <div class="table-container">
                 <table id="tabla-pedidos" aria-label="Lista de pedidos">
                     <thead>
                         <tr>
-                            <th style="width: 40px;">
-                                <input type="checkbox" class="order-checkbox" id="select-all-checkbox" aria-label="Seleccionar todos">
+                            <th style="width: 44px;">
+                                <label class="checkbox-touch-target"><input type="checkbox" class="order-checkbox" id="select-all-checkbox" aria-label="Seleccionar todos"></label>
                             </th>
                             <th data-sortable data-sort-key="id">Pedido</th>
                             <th data-sortable data-sort-key="cliente">Cliente</th>
@@ -109,6 +217,18 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+                <div class="table-footer" id="tablePagination">
+                    <div id="table-result-count"></div>
+                    <div class="pagination" id="paginationControls"></div>
+                    <div class="pagination-per-page">
+                        <span>Mostrar</span>
+                        <select id="perPageSelect" aria-label="Pedidos por página">
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -119,20 +239,28 @@
             </div>
 
             <div class="dashboard-filters">
-                <label for="dashFechaDesde">Desde</label>
-                <input type="date" id="dashFechaDesde" aria-label="Fecha desde">
-                <label for="dashFechaHasta">Hasta</label>
-                <input type="date" id="dashFechaHasta" aria-label="Fecha hasta">
-                <button class="btn btn-secondary" id="btnAplicarDash" aria-label="Aplicar filtro">Aplicar</button>
+                <div class="date-presets" role="group" aria-label="Período">
+                    <button class="preset-btn active" data-preset="7">7 días</button>
+                    <button class="preset-btn" data-preset="30">30 días</button>
+                    <button class="preset-btn" data-preset="90">90 días</button>
+                    <button class="preset-btn" data-preset="custom">Personalizado</button>
+                </div>
+                <div class="date-custom-range" id="dateCustomRange">
+                    <input type="date" id="dashFechaDesde" aria-label="Fecha desde">
+                    <span>—</span>
+                    <input type="date" id="dashFechaHasta" aria-label="Fecha hasta">
+                    <button class="btn btn-sm btn-secondary" id="btnAplicarDash" aria-label="Aplicar filtro">Aplicar</button>
+                </div>
             </div>
 
-            <!-- Apple HIG: horizontal stat cards -->
+            <!-- Apple HIG: 4 key stat cards with trend -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon accent" aria-hidden="true"><i class="far fa-rectangle-list"></i></div>
                     <div class="stat-text">
                         <div class="label">Pedidos</div>
                         <div class="value" id="stat-total">0</div>
+                        <div class="stat-sub" id="stat-entregados-sub"></div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -147,6 +275,7 @@
                     <div class="stat-text">
                         <div class="label">Ganancia</div>
                         <div class="value" id="stat-ganancia">RD$0</div>
+                        <div class="stat-sub" id="stat-margen-sub"></div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -154,20 +283,6 @@
                     <div class="stat-text">
                         <div class="label">Pendientes</div>
                         <div class="value" id="stat-pendientes">0</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon accent" aria-hidden="true"><i class="far fa-paper-plane"></i></div>
-                    <div class="stat-text">
-                        <div class="label">Entregados</div>
-                        <div class="value" id="stat-entregados">0</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon purple" aria-hidden="true"><i class="far fa-chart-bar"></i></div>
-                    <div class="stat-text">
-                        <div class="label">Margen</div>
-                        <div class="value" id="stat-margen">0%</div>
                     </div>
                 </div>
             </div>
@@ -192,10 +307,10 @@
             <div id="lista-pendientes"></div>
         </div>
 
-        <!-- PARAMETROS -->
+        <!-- CATÁLOGO -->
         <div id="parametros-section" class="tab-content" role="tabpanel" aria-labelledby="tab-parametros">
             <div class="section-header">
-                <h2>Parametros</h2>
+                <h2>Catálogo</h2>
             </div>
 
             <div class="param-tabs" role="tablist" aria-label="Tipos de parametros">
@@ -203,7 +318,7 @@
                     <i class="fas fa-box" aria-hidden="true"></i> Productos
                 </button>
                 <button class="param-tab" data-param-tab="categorias" role="tab" aria-selected="false">
-                    <i class="fas fa-tags" aria-hidden="true"></i> Categorias
+                    <i class="fas fa-tags" aria-hidden="true"></i> Categorías
                 </button>
                 <button class="param-tab" data-param-tab="personalizaciones" role="tab" aria-selected="false">
                     <i class="fas fa-palette" aria-hidden="true"></i> Personalizaciones
@@ -222,7 +337,7 @@
             <div class="param-content" data-param-content="categorias">
                 <div class="param-header-actions">
                     <button class="btn btn-primary" id="btnNuevaCategoria">
-                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Categoria
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Categoría
                     </button>
                 </div>
                 <div class="param-grid" id="categorias-grid"></div>
@@ -231,7 +346,7 @@
             <div class="param-content" data-param-content="personalizaciones">
                 <div class="param-header-actions">
                     <button class="btn btn-primary" id="btnNuevaPersonalizacion">
-                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Personalizacion
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Personalización
                     </button>
                 </div>
                 <div class="param-grid" id="personalizaciones-grid"></div>
@@ -263,6 +378,118 @@
             document.getElementById('select-all-checkbox').addEventListener('change', toggleSelectAll);
             document.getElementById('btnAplicarDash').addEventListener('click', cargarDashboard);
 
+            // Dropdown duplicates (user dropdown + mobile menu)
+            document.getElementById('dropdownThemeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('dropdownExportar').addEventListener('click', exportarCSV);
+            document.getElementById('mobileThemeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('mobileExportar').addEventListener('click', exportarCSV);
+            document.getElementById('mobileLogout').addEventListener('click', () => Auth.logout());
+
+            // Date presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const preset = btn.dataset.preset;
+                    const customRange = document.getElementById('dateCustomRange');
+                    if (preset === 'custom') {
+                        customRange.classList.add('visible');
+                        return;
+                    }
+                    customRange.classList.remove('visible');
+                    const hasta = new Date();
+                    const desde = new Date();
+                    desde.setDate(desde.getDate() - parseInt(preset));
+                    document.getElementById('dashFechaDesde').value = desde.toISOString().split('T')[0];
+                    document.getElementById('dashFechaHasta').value = hasta.toISOString().split('T')[0];
+                    cargarDashboard();
+                });
+            });
+            // Initialize default preset (7 days)
+            const defaultPreset = document.querySelector('.preset-btn[data-preset="7"]');
+            if (defaultPreset) defaultPreset.click();
+
+            // ── User dropdown (desktop) ──
+            const userMenuTrigger = document.getElementById('userMenuTrigger');
+            const userDropdown = document.getElementById('userDropdown');
+            if (userMenuTrigger && userDropdown) {
+                userMenuTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = userDropdown.classList.toggle('active');
+                    userMenuTrigger.setAttribute('aria-expanded', isOpen);
+                });
+                // Close on click outside
+                document.addEventListener('click', (e) => {
+                    if (!userDropdown.contains(e.target) && !userMenuTrigger.contains(e.target)) {
+                        userDropdown.classList.remove('active');
+                        userMenuTrigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                // Close after action click
+                userDropdown.addEventListener('click', (e) => {
+                    if (e.target.closest('.dropdown-item')) {
+                        userDropdown.classList.remove('active');
+                        userMenuTrigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                // Keyboard: Escape to close
+                userDropdown.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        userDropdown.classList.remove('active');
+                        userMenuTrigger.setAttribute('aria-expanded', 'false');
+                        userMenuTrigger.focus();
+                    }
+                });
+            }
+
+            // ── Mobile menu (hamburger) ──
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenuToggle && mobileMenu) {
+                // Create backdrop element
+                const backdrop = document.createElement('div');
+                backdrop.className = 'mobile-menu-backdrop';
+                document.querySelector('.top-bar').appendChild(backdrop);
+
+                const closeMobileMenu = () => {
+                    mobileMenu.classList.remove('active');
+                    backdrop.classList.remove('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                };
+
+                const openMobileMenu = () => {
+                    mobileMenu.classList.add('active');
+                    backdrop.classList.add('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'true');
+                };
+
+                mobileMenuToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (mobileMenu.classList.contains('active')) {
+                        closeMobileMenu();
+                    } else {
+                        openMobileMenu();
+                    }
+                });
+
+                backdrop.addEventListener('click', closeMobileMenu);
+
+                // Close after action click
+                mobileMenu.addEventListener('click', (e) => {
+                    if (e.target.closest('.mobile-menu-item')) {
+                        closeMobileMenu();
+                    }
+                });
+
+                // Keyboard: Escape to close
+                mobileMenu.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeMobileMenu();
+                        mobileMenuToggle.focus();
+                    }
+                });
+            }
+
             // Param buttons
             const btnProd = document.getElementById('btnNuevoProducto');
             const btnCat = document.getElementById('btnNuevaCategoria');
@@ -271,13 +498,36 @@
             if (btnCat) btnCat.addEventListener('click', nuevaCategoria);
             if (btnPers) btnPers.addEventListener('click', nuevaPersonalizacion);
 
-            // User info
+            // User info — populate all user display zones
             const user = Auth.getUser();
             if (user) {
-                document.getElementById('userInfo').innerHTML = `
-                    <i class="far fa-circle-user" aria-hidden="true"></i>
-                    <span><strong>${user.nombre || user.name || ''}</strong> · ${user.rol || user.role || ''}</span>
-                `;
+                const userName = user.nombre || user.name || '';
+                const userRole = user.rol || user.role || '';
+                const userInitial = userName.charAt(0).toUpperCase() || 'U';
+
+                // Header avatar (initial letter)
+                const avatarEl = document.getElementById('userAvatar');
+                if (avatarEl) avatarEl.textContent = userInitial;
+
+                // Header trigger name
+                const nameEl = document.getElementById('userNameDisplay');
+                if (nameEl) nameEl.textContent = userName;
+
+                // Desktop dropdown info
+                const dropdownAvatar = document.querySelector('.dropdown-avatar');
+                if (dropdownAvatar) dropdownAvatar.textContent = userInitial;
+                const dropdownName = document.getElementById('dropdownUserName');
+                if (dropdownName) dropdownName.textContent = userName;
+                const dropdownRole = document.getElementById('dropdownUserRole');
+                if (dropdownRole) dropdownRole.textContent = userRole;
+
+                // Mobile menu info
+                const mobileAvatar = document.querySelector('.mobile-user-avatar');
+                if (mobileAvatar) mobileAvatar.textContent = userInitial;
+                const mobileName = document.getElementById('mobileUserName');
+                if (mobileName) mobileName.textContent = userName;
+                const mobileRole = document.getElementById('mobileUserRole');
+                if (mobileRole) mobileRole.textContent = userRole;
             }
 
             // Tab system — event delegation
@@ -372,6 +622,17 @@
             });
 
             await cargarPedidos();
+            cargarAlertasRetraso();
+            actualizarBadgePendientes();
+
+            // Mejora 8: Alert bar listeners
+            document.getElementById('btnCerrarAlerta')?.addEventListener('click', () => {
+                document.getElementById('alertaRetrasoBar').style.display = 'none';
+            });
+            document.getElementById('btnVerAlertas')?.addEventListener('click', () => {
+                document.getElementById('alertaRetrasoBar').style.display = 'none';
+                document.querySelector('.tab-btn[data-tab="pendientes"]')?.click();
+            });
         });
 
         // Restore persistent filters
@@ -389,11 +650,11 @@
             if (filterCanal && canal) filterCanal.value = canal;
         }
 
-        // Sort pedidos
+        // Sort pedidos — sorts current page (pedidosCache) client-side
         function sortPedidos(key, direction) {
             if (!pedidosCache || !pedidosCache.length) return;
 
-            const sorted = [...pedidosCache].sort((a, b) => {
+            pedidosCache.sort((a, b) => {
                 let va = a[key] || '';
                 let vb = b[key] || '';
 
@@ -414,28 +675,55 @@
                     : String(vb).localeCompare(String(va), 'es');
             });
 
-            renderizarTablaPedidos(sorted);
+            renderizarTablaPedidos({ pedidos: pedidosCache, total: totalPedidos, page: currentPage, pages: totalPages });
         }
 
-        // Export CSV
-        function exportarCSV() {
-            if (!pedidosCache || !pedidosCache.length) {
+        // Export CSV — fetches all filtered pedidos server-side
+        async function exportarCSV() {
+            if (!totalPedidos) {
                 showNotification('No hay pedidos para exportar', 'warning');
                 return;
             }
-            const headers = ['ID', 'Cliente', 'Producto', 'Talla', 'Color', 'Total', 'Estado', 'Canal', 'Fecha'];
-            const rows = pedidosCache.map(p => [
-                p.id, p.cliente, p.producto, p.talla || '', p.color || '',
-                p.precio_total || 0, p.estatus_produccion || '', p.canal || '', p.fecha_pago || ''
-            ]);
-            const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
-            descargarArchivo(csv, 'pedidos_shogun.csv', 'text/csv;charset=utf-8;');
-            showNotification('Exportado correctamente', 'success');
+            try {
+                showNotification('Preparando exportación...', 'info', 2000);
+                const result = await api.getPedidos({ ...currentFilters, limit: 5000, page: 1 });
+                const allPedidos = result.pedidos || [];
+                if (!allPedidos.length) { showNotification('No hay pedidos para exportar', 'warning'); return; }
+                const headers = ['ID', 'Cliente', 'Producto', 'Talla', 'Color', 'Total', 'Estado', 'Canal', 'Fecha'];
+                const rows = allPedidos.map(p => [
+                    p.id, p.cliente, p.producto, p.talla || '', p.color || '',
+                    p.precio_total || 0, p.estatus_produccion || '', p.canal || '', p.fecha_pago || ''
+                ]);
+                const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+                descargarArchivo(csv, 'pedidos_shogun.csv', 'text/csv;charset=utf-8;');
+                showNotification('Exportado correctamente', 'success');
+            } catch (e) {
+                showNotification('Error al exportar: ' + e.message, 'error');
+            }
         }
 
         // Navigation
         function nuevoPedido() {
-            window.open('/formulario', '_blank');
+            window.location.href = '/formulario';
+        }
+
+        // Mejora 8: Alerta de retraso proactiva
+        async function cargarAlertasRetraso() {
+            try {
+                const alertas = await api.getAlertasRetraso();
+                if (!alertas || alertas.length === 0) return;
+                const vencidos = alertas.filter(a => a.urgencia === 'vencido').length;
+                const hoy = alertas.filter(a => a.urgencia === 'hoy').length;
+                const proximos = alertas.filter(a => a.urgencia === 'proximo').length;
+                let partes = [];
+                if (vencidos > 0) partes.push(`${vencidos} vencido${vencidos > 1 ? 's' : ''}`);
+                if (hoy > 0) partes.push(`${hoy} para hoy`);
+                if (proximos > 0) partes.push(`${proximos} próximo${proximos > 1 ? 's' : ''}`);
+                const textEl = document.getElementById('alertaRetrasoText');
+                const bar = document.getElementById('alertaRetrasoBar');
+                if (textEl) textEl.textContent = partes.join(', ') + ' — pedidos en riesgo de retraso';
+                if (bar) bar.style.display = 'flex';
+            } catch (e) { /* silencioso */ }
         }
 
         // DASHBOARD
@@ -451,7 +739,7 @@
                 const [stats, canales, estados] = await Promise.all([
                     api.getEstadisticas(desde, hasta),
                     api.getVentasPorCanal(desde, hasta),
-                    api.getVentasPorEstado()
+                    api.getVentasPorEstado(desde, hasta)
                 ]);
 
                 if (!stats) {
@@ -462,11 +750,18 @@
                 animateValue('stat-ventas', 0, stats.ventas_totales || 0, 800, true);
                 animateValue('stat-ganancia', 0, stats.ganancia_neta || 0, 800, true);
                 animateValue('stat-pendientes', 0, stats.pedidos_pendientes || 0, 800, false);
-                animateValue('stat-entregados', 0, stats.pedidos_entregados || 0, 800, false);
+
+                // Sub-stats
+                const entregados = stats.pedidos_entregados || 0;
+                const entregadosSub = document.getElementById('stat-entregados-sub');
+                if (entregadosSub) entregadosSub.textContent = entregados + ' entregados';
 
                 const margen = stats.margen_promedio || 0;
-                document.getElementById('stat-margen').textContent = margen.toFixed(1) + '%';
-                document.getElementById('stat-margen').style.color = margen >= 0 ? 'var(--success)' : 'var(--danger)';
+                const margenSub = document.getElementById('stat-margen-sub');
+                if (margenSub) {
+                    margenSub.textContent = 'Margen ' + margen.toFixed(1) + '%';
+                    margenSub.style.color = margen >= 0 ? 'var(--success)' : 'var(--danger)';
+                }
 
                 const chartData = {
                     ...stats,
@@ -485,11 +780,11 @@
 
             } catch (e) {
                 console.error('Error dashboard:', e);
-                showNotification('Error cargando estadisticas: ' + e.message, 'error');
+                showNotification('Error cargando estadísticas: ' + e.message, 'error');
 
-                ['stat-total', 'stat-ventas', 'stat-ganancia', 'stat-pendientes', 'stat-entregados'].forEach(id => {
+                ['stat-total', 'stat-ventas', 'stat-ganancia', 'stat-pendientes'].forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) el.textContent = id === 'stat-margen' ? '0%' : (id.includes('ventas') || id.includes('ganancia') ? 'RD$0' : '0');
+                    if (el) el.textContent = (id.includes('ventas') || id.includes('ganancia')) ? 'RD$0' : '0';
                 });
             }
         }
@@ -534,13 +829,17 @@
             };
 
             const estadoColors = {
-                'En Produccion': accent + 'E6',
-                'Listo para Envio': warning + 'E6',
+                'En Producción': accent + 'E6',
+                'Listo para Envío': warning + 'E6',
                 'En Camino': info + 'E6',
                 'Entregado': success + 'E6',
-                'Bloqueado - Sin Direccion': danger + 'E6',
+                'Recibido': success + 'E6',
+                'Pendiente': warning + 'E6',
+                'Parcial': warning + 'E6',
+                'Bloqueado - Sin Dirección': danger + 'E6',
                 'Bloqueado': danger + 'E6',
-                'Cancelado': textTertiary + '99'
+                'Cancelado': danger + 'E6',
+                'Reembolsado': danger + 'E6'
             };
 
             const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -600,8 +899,10 @@
                                     boxWidth: 8,
                                     boxHeight: 8,
                                     generateLabels: function(chart) {
+                                        const legendColor = chart.options.plugins.legend.labels.color || Chart.defaults.color;
                                         return chart.data.labels.map((label, i) => ({
                                             text: label,
+                                            fontColor: legendColor,
                                             fillStyle: chart.data.datasets[0].backgroundColor[i],
                                             hidden: false,
                                             index: i,
@@ -697,6 +998,44 @@
             }
         }
 
+        function updateChartsTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const style = getComputedStyle(document.documentElement);
+            const textTertiary = style.getPropertyValue('--text-tertiary').trim() || '#86868B';
+            const newColor = isDark ? '#D1D1D6' : textTertiary;
+
+            Chart.defaults.color = newColor;
+
+            [chartCanal, chartEstados].forEach(chart => {
+                if (!chart) return;
+                if (chart.options.plugins?.legend?.labels) {
+                    chart.options.plugins.legend.labels.color = newColor;
+                }
+                if (chart.options.scales?.y?.ticks) {
+                    chart.options.scales.y.ticks.color = newColor;
+                }
+                chart.update();
+            });
+        }
+
+        // Actualizar badge de pendientes en el tab
+        async function actualizarBadgePendientes() {
+            try {
+                const pendientes = await api.getPedidosPendientes();
+                const badge = document.getElementById('tabPendientesBadge');
+                if (!badge) return;
+                const count = (pendientes || []).length;
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) {
+                // Silently fail — badge is non-critical
+            }
+        }
+
         // PENDIENTES
         async function cargarPendientes() {
             const container = document.getElementById('lista-pendientes');
@@ -711,7 +1050,7 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             ${emptyStateSVG()}
-                            <h3>Todo al dia</h3>
+                            <h3>Todo al día</h3>
                             <p>No hay pedidos pendientes</p>
                         </div>
                     `;
@@ -728,7 +1067,7 @@
                                 ${p.producto || p.producto_nombre} · ${p.talla || p.talla_seleccionada || ''}
                             </div>
                             <div class="pendiente-reason">
-                                ${p.motivo_pendiente || p.motivo || 'Revision pendiente'}
+                                ${p.motivo_pendiente || p.motivo || 'Revisión pendiente'}
                             </div>
                         </div>
                         <button class="btn btn-primary" data-action="resolver" data-pedido-id="${p.id || p.numero_pedido}" aria-label="Resolver pedido ${p.id || p.numero_pedido}">

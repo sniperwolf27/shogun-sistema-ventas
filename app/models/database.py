@@ -404,11 +404,30 @@ class PedidosRepository:
     """
 
     @staticmethod
-    def get_all():
-        query = f"SELECT {PedidosRepository._SELECT_FIELDS} FROM pedidos ORDER BY created_at DESC"
+    def get_all(page=1, limit=25, q=None, estado=None, canal=None):
+        conditions = []
+        filter_params = {}
+        if q:
+            conditions.append("(cliente_nombre ILIKE %(q)s OR numero_pedido ILIKE %(q)s OR producto_nombre ILIKE %(q)s OR cliente_telefono ILIKE %(q)s)")
+            filter_params['q'] = f'%{q}%'
+        if estado:
+            conditions.append("estado_produccion::text = %(estado)s")
+            filter_params['estado'] = estado
+        if canal:
+            conditions.append("canal::text = %(canal)s")
+            filter_params['canal'] = canal
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        offset = (page - 1) * limit
+        page_params = {**filter_params, 'limit': limit, 'offset': offset}
         with DatabaseManager.get_cursor() as cursor:
-            cursor.execute(query)
-            return [PedidosRepository._format_pedido(row) for row in cursor.fetchall()]
+            cursor.execute(f"SELECT COUNT(*) as total FROM pedidos {where}", filter_params)
+            total = cursor.fetchone()['total']
+            cursor.execute(
+                f"SELECT {PedidosRepository._SELECT_FIELDS} FROM pedidos {where} ORDER BY created_at DESC LIMIT %(limit)s OFFSET %(offset)s",
+                page_params
+            )
+            pedidos = [PedidosRepository._format_pedido(row) for row in cursor.fetchall()]
+        return {'pedidos': pedidos, 'total': total, 'page': page, 'limit': limit, 'pages': max(1, -(-total // limit))}
 
     @staticmethod
     def get_by_id(pedido_id):
@@ -773,6 +792,73 @@ class PedidosRepository:
             cursor.execute(query, {'q': f'%{query_text}%'})
             return [PedidosRepository._format_pedido(row) for row in cursor.fetchall()]
 
+    @staticmethod
+    def check_duplicado(telefono, sku, talla, days=7):
+        fecha_limite = datetime.now() - timedelta(days=days)
+        query = f"""
+            SELECT {PedidosRepository._SELECT_FIELDS}
+            FROM pedidos
+            WHERE cliente_telefono = %(telefono)s
+              AND producto_sku = %(sku)s
+              AND talla_seleccionada::text = %(talla)s
+              AND estado_produccion NOT IN ('Entregado', 'Cancelado')
+              AND created_at >= %(fecha_limite)s
+            ORDER BY created_at DESC LIMIT 3
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, {'telefono': telefono, 'sku': sku, 'talla': talla, 'fecha_limite': fecha_limite})
+            return [PedidosRepository._format_pedido(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def get_alertas_retraso(dias_antes=2):
+        fecha_hasta = date.today() + timedelta(days=dias_antes)
+        fecha_desde = date.today() - timedelta(days=7)
+        query = """
+            SELECT numero_pedido as id, cliente_nombre as cliente, producto_nombre as producto,
+                   talla_seleccionada::text as talla, fecha_compromiso,
+                   estado_produccion::text as estatus_produccion, cliente_telefono as telefono,
+                   CASE WHEN fecha_compromiso < CURRENT_DATE THEN 'vencido'
+                        WHEN fecha_compromiso = CURRENT_DATE THEN 'hoy'
+                        ELSE 'proximo' END as urgencia
+            FROM pedidos
+            WHERE estado_produccion NOT IN ('Entregado', 'Cancelado')
+              AND fecha_compromiso IS NOT NULL
+              AND fecha_compromiso BETWEEN %(desde)s AND %(hasta)s
+            ORDER BY fecha_compromiso ASC LIMIT 20
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, {'desde': fecha_desde, 'hasta': fecha_hasta})
+            results = []
+            for row in cursor.fetchall():
+                r = dict(row)
+                if r.get('fecha_compromiso') and isinstance(r['fecha_compromiso'], date):
+                    r['fecha_compromiso'] = r['fecha_compromiso'].strftime('%d/%m/%Y')
+                results.append(r)
+            return results
+
+    @staticmethod
+    def bulk_update_estado(ids, nuevo_estado):
+        if not ids:
+            return 0
+        placeholders = ','.join(['%s'] * len(ids))
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(
+                f"UPDATE pedidos SET estado_produccion = %s::estado_produccion WHERE numero_pedido IN ({placeholders}) RETURNING numero_pedido",
+                [nuevo_estado] + list(ids)
+            )
+            return len(cursor.fetchall())
+
+    @staticmethod
+    def get_by_grupo(grupo_id):
+        query = f"""
+            SELECT {PedidosRepository._SELECT_FIELDS}
+            FROM pedidos WHERE grupo_pedido = %s
+            ORDER BY created_at ASC
+        """
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(query, (grupo_id,))
+            return [PedidosRepository._format_pedido(row) for row in cursor.fetchall()]
+
 
 # ==============================================================================
 # CLIENTES
@@ -798,6 +884,33 @@ class ClientesRepository:
                     c['ultimo_pedido'] = c['ultimo_pedido'].strftime('%d/%m/%Y')
                 clientes.append(c)
             return clientes
+
+    @staticmethod
+    def get_perfil(telefono):
+        perfil = None
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute("""
+                SELECT nombre, telefono, email, total_pedidos as pedidos,
+                       total_gastado, ultimo_pedido, tipo_cliente as tipo
+                FROM vista_clientes WHERE telefono = %s
+            """, (telefono,))
+            row = cursor.fetchone()
+            if row:
+                perfil = dict(row)
+                if perfil.get('total_gastado'):
+                    perfil['total_gastado'] = float(perfil['total_gastado'])
+                if perfil.get('ultimo_pedido') and isinstance(perfil['ultimo_pedido'], date):
+                    perfil['ultimo_pedido'] = perfil['ultimo_pedido'].strftime('%d/%m/%Y')
+        if not perfil:
+            return None
+        with DatabaseManager.get_cursor() as cursor:
+            cursor.execute(f"""
+                SELECT {PedidosRepository._SELECT_FIELDS}
+                FROM pedidos WHERE cliente_telefono = %s
+                ORDER BY created_at DESC LIMIT 20
+            """, (telefono,))
+            perfil['pedidos_recientes'] = [PedidosRepository._format_pedido(r) for r in cursor.fetchall()]
+        return perfil
 
 
 # ==============================================================================
@@ -862,13 +975,22 @@ class EstadisticasRepository:
             return [{'canal': r['canal'], 'total': r['total'], 'ventas': round(float(r['ventas']), 2)} for r in cursor.fetchall()]
 
     @staticmethod
-    def get_ventas_por_estado():
-        query = """
+    def get_ventas_por_estado(fecha_desde=None, fecha_hasta=None):
+        conditions = []
+        params = {}
+        if fecha_desde:
+            conditions.append("fecha_pago >= %(desde)s")
+            params['desde'] = fecha_desde
+        if fecha_hasta:
+            conditions.append("fecha_pago <= %(hasta)s")
+            params['hasta'] = fecha_hasta
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        query = f"""
             SELECT estado_produccion::text as estado, COUNT(*) as total
-            FROM pedidos GROUP BY estado_produccion
+            FROM pedidos {where} GROUP BY estado_produccion
         """
         with DatabaseManager.get_cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(query, params)
             return [{'estado': r['estado'], 'total': r['total']} for r in cursor.fetchall()]
 
 
