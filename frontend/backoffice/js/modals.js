@@ -445,7 +445,7 @@
                     'En Producción':          ['En Producción', 'Listo para Envío', 'Bloqueado - Sin Dirección', 'Cancelado'],
                     'Listo para Envío':       ['Listo para Envío', 'En Camino', 'En Producción', 'Cancelado'],
                     'En Camino':              ['En Camino', 'Entregado', 'Listo para Envío', 'Cancelado'],
-                    'Entregado':              ['Entregado'],
+                    'Entregado':              ['Entregado', 'En Camino'],
                     'Bloqueado - Sin Dirección': ['Bloqueado - Sin Dirección', 'En Producción', 'Cancelado'],
                     'Cancelado':              ['Cancelado', 'En Producción']
                 };
@@ -465,9 +465,14 @@
                         <div id="editError" class="edit-error"></div>
                         <form id="editForm">
                             <div class="edit-grid-2">
-                                <div><label class="edit-label">Estado Producción</label><select name="estatus_produccion" class="form-control">${selectOpts(estadosProd, p.estatus_produccion)}</select></div>
+                                <div><label class="edit-label">Estado Producción</label><select name="estatus_produccion" class="form-control" id="editEstadoProd">${selectOpts(estadosProd, p.estatus_produccion)}</select></div>
                                 <div><label class="edit-label">Estado Pago</label><select name="estatus_pago" class="form-control">${selectOpts(estadosPago, p.estatus_pago)}</select></div>
                             </div>
+                            ${p.estatus_produccion === 'Entregado' ? `
+                            <div id="motivoDevolucionRow" class="edit-row" style="display:none;">
+                                <label class="edit-label">Motivo de devolución <span style="color:var(--danger);font-size:12px;">(requerido para revertir entrega)</span></label>
+                                <textarea name="motivo_devolucion" class="form-control" rows="2" placeholder="Ej: Cliente rechazó el paquete, paquete extraviado en tránsito..."></textarea>
+                            </div>` : ''}
                             <div class="edit-grid-2">
                                 <div><label class="edit-label">Cliente</label><input name="cliente" class="form-control" value="${esc(p.cliente)}"></div>
                                 <div><label class="edit-label">Teléfono</label><input name="telefono" class="form-control" value="${esc(p.telefono)}"></div>
@@ -517,6 +522,17 @@
 
                 this.modal.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeModal(this.modal));
 
+                // M4: Mostrar campo de motivo al revertir Entregado → En Camino
+                if (p.estatus_produccion === 'Entregado') {
+                    const estadoSel = document.getElementById('editEstadoProd');
+                    const motivoRow = document.getElementById('motivoDevolucionRow');
+                    if (estadoSel && motivoRow) {
+                        estadoSel.addEventListener('change', () => {
+                            motivoRow.style.display = estadoSel.value === 'En Camino' ? 'block' : 'none';
+                        });
+                    }
+                }
+
                 this._loadComentarios(id);
                 this._loadAdjuntos(id);
 
@@ -561,8 +577,25 @@
                     if (obj.fecha_entrega_real) { obj.fecha_entrega_real = isoToDdmm(obj.fecha_entrega_real); }
 
                     try {
+                        // M4: Validar y registrar motivo de devolución
+                        const motivoDevolucion = obj.motivo_devolucion || '';
+                        delete obj.motivo_devolucion;
+                        if (p.estatus_produccion === 'Entregado' && obj.estatus_produccion === 'En Camino') {
+                            if (!motivoDevolucion.trim()) {
+                                document.getElementById('editError').style.display = 'block';
+                                document.getElementById('editError').textContent = 'Se requiere un motivo para revertir la entrega';
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="fas fa-check"></i> Guardar';
+                                return;
+                            }
+                        }
+
                         const res = await api.updatePedido(id, obj);
                         if (res && res.success) {
+                            // Registrar motivo de devolución como comentario
+                            if (motivoDevolucion.trim()) {
+                                await api.crearComentario(id, `🔄 Devolución registrada: ${motivoDevolucion.trim()}`);
+                            }
                             closeModal(this.modal);
                             showNotification('Pedido actualizado', 'success');
                             await cargarPedidos();

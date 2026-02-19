@@ -160,6 +160,41 @@
                 <h2>Pedidos</h2>
             </div>
 
+            <!-- M10: Onboarding panel — shown on first visit when no orders exist -->
+            <div id="onboardingPanel" class="onboarding-panel" style="display:none;" role="region" aria-label="Guía de inicio">
+                <div class="onboarding-header">
+                    <div class="onboarding-icon"><i class="fas fa-rocket" aria-hidden="true"></i></div>
+                    <h2 class="onboarding-title">Bienvenido a Shogun</h2>
+                    <p class="onboarding-sub">Sigue estos pasos para empezar a gestionar tus pedidos.</p>
+                </div>
+                <ol class="onboarding-steps">
+                    <li class="onboarding-step">
+                        <div class="ob-step-icon"><i class="fas fa-boxes-stacked" aria-hidden="true"></i></div>
+                        <div class="ob-step-body">
+                            <strong>Configura tu catálogo</strong>
+                            <span>Agrega los productos que vendes en la pestaña Catálogo.</span>
+                        </div>
+                        <button class="btn btn-sm btn-secondary ob-step-action" id="obGoToCatalog">Ir al Catálogo →</button>
+                    </li>
+                    <li class="onboarding-step">
+                        <div class="ob-step-icon"><i class="fas fa-cart-plus" aria-hidden="true"></i></div>
+                        <div class="ob-step-body">
+                            <strong>Crea tu primer pedido</strong>
+                            <span>Haz clic en <em>Nuevo Pedido</em> en la barra superior para registrar el primero.</span>
+                        </div>
+                        <button class="btn btn-sm btn-primary ob-step-action" id="obNuevoPedido">Nuevo Pedido →</button>
+                    </li>
+                    <li class="onboarding-step">
+                        <div class="ob-step-icon"><i class="fas fa-arrows-rotate" aria-hidden="true"></i></div>
+                        <div class="ob-step-body">
+                            <strong>Actualiza los estados</strong>
+                            <span>Selecciona pedidos y usa las acciones en lote para moverlos entre estados.</span>
+                        </div>
+                    </li>
+                </ol>
+                <button class="onboarding-dismiss" id="btnDismissOnboarding">Ya lo entendí, no mostrar de nuevo</button>
+            </div>
+
             <div class="filters">
                 <div class="search-wrapper">
                     <i class="fas fa-magnifying-glass search-icon" aria-hidden="true"></i>
@@ -625,6 +660,35 @@
             cargarAlertasRetraso();
             actualizarBadgePendientes();
 
+            // M1: Drawer setup
+            const drawerEl = document.getElementById('quickAddDrawer');
+            document.getElementById('drawerClose').addEventListener('click', cerrarDrawer);
+            document.getElementById('drawerOverlay').addEventListener('click', cerrarDrawer);
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawerEl?.classList.contains('open')) cerrarDrawer(); });
+            window.addEventListener('message', (ev) => {
+                if (ev.data?.type === 'pedido-creado') {
+                    cerrarDrawer();
+                    cargarPedidos();
+                    showNotification('¡Pedido creado! La lista fue actualizada.', 'success');
+                }
+            });
+
+            // M10: Onboarding — show on first visit with zero orders
+            function dismissOnboarding() {
+                localStorage.setItem('shogun_ob_done', '1');
+                const p = document.getElementById('onboardingPanel');
+                if (p) p.style.display = 'none';
+            }
+            if (!localStorage.getItem('shogun_ob_done') && totalPedidos === 0) {
+                const panel = document.getElementById('onboardingPanel');
+                if (panel) panel.style.display = 'block';
+            }
+            document.getElementById('btnDismissOnboarding').addEventListener('click', dismissOnboarding);
+            document.getElementById('obGoToCatalog').addEventListener('click', () => {
+                document.querySelector('.tab-btn[data-tab="parametros"]')?.click();
+            });
+            document.getElementById('obNuevoPedido').addEventListener('click', nuevoPedido);
+
             // Mejora 8: Alert bar listeners
             document.getElementById('btnCerrarAlerta')?.addEventListener('click', () => {
                 document.getElementById('alertaRetrasoBar').style.display = 'none';
@@ -678,12 +742,20 @@
             renderizarTablaPedidos({ pedidos: pedidosCache, total: totalPedidos, page: currentPage, pages: totalPages });
         }
 
-        // Export CSV — fetches all filtered pedidos server-side
+        // Export CSV — M7: confirm dialog shows scope before download
         async function exportarCSV() {
             if (!totalPedidos) {
                 showNotification('No hay pedidos para exportar', 'warning');
                 return;
             }
+            const n = totalPedidos.toLocaleString('es');
+            const ok = await showConfirm({
+                title: 'Exportar a CSV',
+                message: `Se exportarán <strong>${n} pedido${totalPedidos !== 1 ? 's' : ''}</strong> con los filtros activos.<br><small style="color:var(--text-secondary);margin-top:6px;display:block;">Columnas: ID, Cliente, Producto, Talla, Color, Total, Estado, Canal, Fecha.</small>`,
+                confirmText: 'Exportar',
+                cancelText: 'Cancelar'
+            });
+            if (!ok) return;
             try {
                 showNotification('Preparando exportación...', 'info', 2000);
                 const result = await api.getPedidos({ ...currentFilters, limit: 5000, page: 1 });
@@ -696,15 +768,39 @@
                 ]);
                 const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
                 descargarArchivo(csv, 'pedidos_shogun.csv', 'text/csv;charset=utf-8;');
-                showNotification('Exportado correctamente', 'success');
+                showNotification(`${allPedidos.length} pedidos exportados`, 'success');
             } catch (e) {
                 showNotification('Error al exportar: ' + e.message, 'error');
             }
         }
 
-        // Navigation
+        // Navigation — M1: slide-over drawer, falls back to full navigation
         function nuevoPedido() {
-            window.location.href = '/formulario';
+            const drawer = document.getElementById('quickAddDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const frame = document.getElementById('drawerFrame');
+            if (!drawer) { window.location.href = '/formulario'; return; }
+            drawer.removeAttribute('hidden');
+            frame.src = '/formulario';
+            // rAF ensures display is applied before transition
+            requestAnimationFrame(() => {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            });
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cerrarDrawer() {
+            const drawer = document.getElementById('quickAddDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const frame = document.getElementById('drawerFrame');
+            drawer?.classList.remove('open');
+            overlay?.classList.remove('open');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                if (frame) frame.src = '';
+                drawer?.setAttribute('hidden', '');
+            }, 300);
         }
 
         // Mejora 8: Alerta de retraso proactiva
@@ -1092,5 +1188,17 @@
             }
         }
     </script>
+
+    <!-- M1: Quick-Add Drawer -->
+    <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
+    <aside id="quickAddDrawer" class="quick-add-drawer" role="dialog" aria-modal="true" aria-label="Nuevo pedido" hidden>
+        <div class="drawer-header">
+            <span class="drawer-title"><i class="fas fa-plus" aria-hidden="true"></i> Nuevo Pedido</span>
+            <button class="drawer-close" id="drawerClose" aria-label="Cerrar panel">
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+        <iframe id="drawerFrame" class="drawer-frame" src="" allow="clipboard-write" title="Formulario de nuevo pedido"></iframe>
+    </aside>
 </body>
 </html>

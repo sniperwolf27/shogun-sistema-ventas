@@ -309,8 +309,8 @@ function abrirModalProducto(producto) {
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-modal btn-secondary" data-close>Cancelar</button>
-                <button class="btn-modal btn-primary" id="btnSaveProducto">
+                <button class="btn btn-secondary" data-close>Cancelar</button>
+                <button class="btn btn-primary" id="btnSaveProducto">
                     <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>
@@ -461,8 +461,8 @@ function abrirModalCategoria(categoria) {
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-modal btn-secondary" data-close>Cancelar</button>
-                <button class="btn-modal btn-primary" id="btnSaveCategoria">
+                <button class="btn btn-secondary" data-close>Cancelar</button>
+                <button class="btn btn-primary" id="btnSaveCategoria">
                     <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>
@@ -633,8 +633,8 @@ function abrirModalPersonalizacion(personalizacion) {
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-modal btn-secondary" data-close>Cancelar</button>
-                <button class="btn-modal btn-primary" id="btnSavePersonalizacion">
+                <button class="btn btn-secondary" data-close>Cancelar</button>
+                <button class="btn btn-primary" id="btnSavePersonalizacion">
                     <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>

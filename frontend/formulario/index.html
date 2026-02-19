@@ -82,10 +82,8 @@
         .grand-total .gt-value{font-family:var(--font-display);font-size:24px;font-weight:700}
         .grand-total .gt-items{font-size:var(--text-micro);opacity:.8}
 
-        /* Submit Button */
-        .btn-submit{width:100%;padding:16px 28px;border:none;border-radius:var(--radius-full);font-family:var(--font-body);font-size:16px;font-weight:600;cursor:pointer;transition:all 0.25s var(--ease-spring);background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;gap:10px}
-        .btn-submit:hover{background:var(--accent-hover);opacity:0.85}
-        .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+        /* Submit Button — extends .btn .btn-primary with full-width layout */
+        .btn-submit{width:100%;justify-content:center;padding:16px 28px}
         .btn-submit i{font-size:18px}
 
         /* Loading overlay */
@@ -130,13 +128,28 @@
             .form-header{flex-direction:column;gap:var(--sp-sm);align-items:flex-start}
             .grand-total{flex-direction:column;text-align:center;position:sticky;bottom:80px;z-index:10;box-shadow:var(--shadow-lg)}
             .page-title h2{font-size:24px}
-            .btn-submit{position:sticky;bottom:0;z-index:11;margin:0 calc(-1 * var(--sp-lg));width:auto;border-radius:0;padding:16px 28px;padding-bottom:max(16px,env(safe-area-inset-bottom));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+            .btn-submit{position:sticky;bottom:0;z-index:11;margin:0 calc(-1 * var(--sp-lg));width:auto;padding:16px 28px;padding-bottom:max(16px,env(safe-area-inset-bottom));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
             .btn-add-item{min-height:var(--touch-min)}
             .item-remove{width:var(--touch-min);height:var(--touch-min)}
             .back-link{min-height:var(--touch-min)}
         }
 
         .container{animation:cardIn 0.5s var(--ease-spring)}
+
+        /* M8: Draft recovery banner */
+        .draft-banner{background:var(--warning-soft,#fff8e6);border:1px solid var(--warning);border-radius:var(--radius-md);padding:var(--sp-sm) var(--sp-md);display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-lg);font-size:var(--text-caption);color:var(--text-primary)}
+        .draft-banner i{color:var(--warning);flex-shrink:0}
+        .draft-banner-actions{margin-left:auto;display:flex;gap:var(--sp-xs)}
+        .btn-sm{padding:6px 14px;font-size:var(--text-caption);gap:6px;min-height:32px}
+
+        /* M2+M6: Cliente encontrado banner */
+        .cliente-found-banner{background:var(--success-soft,#e8faef);border:1px solid var(--success);border-radius:var(--radius-md);padding:var(--sp-sm) var(--sp-md);margin-top:var(--sp-sm);display:none;font-size:var(--text-caption);color:var(--text-primary)}
+        .cliente-found-banner.show{display:block}
+        .cf-top{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-sm);flex-wrap:wrap}
+        .cf-name{font-weight:700;font-size:var(--text-body);color:var(--text-primary)}
+        .cf-meta{color:var(--text-secondary);font-size:var(--text-caption);margin-top:2px}
+        .btn-prefill{display:inline-flex;align-items:center;gap:6px;margin-top:var(--sp-xs);background:var(--success);color:white;border:none;border-radius:var(--radius-sm);padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+        .btn-prefill:hover{opacity:.85}
     </style>
 </head>
 <body>
@@ -189,6 +202,16 @@
             </div>
         </div>
 
+        <!-- M8: Draft recovery banner -->
+        <div id="draftBanner" class="draft-banner" style="display:none;" role="alert">
+            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+            <span>Borrador guardado <span id="draftAgo"></span> — ¿Restaurar?</span>
+            <div class="draft-banner-actions">
+                <button id="btnRestoreDraft" class="btn btn-sm btn-secondary" type="button">Restaurar</button>
+                <button id="btnDiscardDraft" class="btn btn-sm btn-secondary" type="button">Descartar</button>
+            </div>
+        </div>
+
         <div id="loading" class="loading">
             <div class="loading-spinner"></div>
             <p>Confirmando pedido...</p>
@@ -231,6 +254,18 @@
                     <div class="form-group">
                         <label class="form-label">Teléfono <span class="required">*</span></label>
                         <input type="tel" id="telefono" class="form-control" required placeholder="809-555-0000">
+                        <!-- M2+M6: Cliente encontrado — auto-fill desde historial -->
+                        <div id="clienteFoundBanner" class="cliente-found-banner" aria-live="polite">
+                            <div class="cf-top">
+                                <div>
+                                    <div class="cf-name" id="cfNombre"></div>
+                                    <div class="cf-meta" id="cfMeta"></div>
+                                </div>
+                                <button id="btnPrefill" class="btn-prefill" type="button">
+                                    <i class="fas fa-user-check" aria-hidden="true"></i> Usar datos
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
@@ -288,7 +323,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit" id="btnSubmit">
+            <button type="submit" class="btn btn-primary btn-submit" id="btnSubmit">
                 <i class="fas fa-check" aria-hidden="true"></i> Confirmar Pedido
             </button>
         </form>
@@ -376,6 +411,70 @@
         // ═══════════════════════════════════════════════════════════════
         let lastCreatedData = null;
         let _confirmarDuplicado = false;
+
+        // ═══════════════════════════════════════════════════════════════
+        // M8: AUTOSAVE — persist cliente fields to localStorage (30s)
+        // ═══════════════════════════════════════════════════════════════
+        const DRAFT_KEY = 'shogun_form_draft';
+        let _autosaveTimer = null;
+
+        function _serializeDraft() {
+            return {
+                cliente: document.getElementById('cliente').value,
+                telefono: document.getElementById('telefono').value,
+                email: document.getElementById('email').value,
+                direccion: document.getElementById('direccion').value,
+                canal: document.getElementById('canal').value,
+                banco: document.getElementById('banco').value,
+                estatusPago: document.getElementById('estatusPago').value,
+                costoEnvio: document.getElementById('costoEnvio').value,
+                savedAt: Date.now()
+            };
+        }
+
+        function saveDraft() {
+            try { localStorage.setItem(DRAFT_KEY, JSON.stringify(_serializeDraft())); } catch(e) { /* storage full */ }
+        }
+
+        function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+
+        function scheduleAutosave() {
+            clearTimeout(_autosaveTimer);
+            _autosaveTimer = setTimeout(saveDraft, 30000);
+        }
+
+        // Check for existing draft on load
+        const _savedDraft = (() => {
+            try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch(e) { return null; }
+        })();
+
+        if (_savedDraft && _savedDraft.savedAt && (Date.now() - _savedDraft.savedAt < 86400000)) {
+            const draftBanner = document.getElementById('draftBanner');
+            if (draftBanner) {
+                const minsAgo = Math.round((Date.now() - _savedDraft.savedAt) / 60000);
+                document.getElementById('draftAgo').textContent = minsAgo < 2 ? 'hace un momento' : `hace ${minsAgo} min`;
+                draftBanner.style.display = 'flex';
+            }
+        }
+
+        document.getElementById('btnRestoreDraft')?.addEventListener('click', () => {
+            if (!_savedDraft) return;
+            const fields = { cliente: 'cliente', telefono: 'telefono', email: 'email', direccion: 'direccion', canal: 'canal', banco: 'banco', estatusPago: 'estatusPago', costoEnvio: 'costoEnvio' };
+            Object.entries(fields).forEach(([k, id]) => {
+                if (_savedDraft[k]) document.getElementById(id).value = _savedDraft[k];
+            });
+            document.getElementById('draftBanner').style.display = 'none';
+            showSuccess('Borrador restaurado');
+        });
+
+        document.getElementById('btnDiscardDraft')?.addEventListener('click', () => {
+            clearDraft();
+            document.getElementById('draftBanner').style.display = 'none';
+        });
+
+        // Hook autosave to form inputs
+        document.getElementById('formPedido').addEventListener('input', scheduleAutosave);
+        document.getElementById('formPedido').addEventListener('change', scheduleAutosave);
 
         // ═══════════════════════════════════════════════════════════════
         // CATÁLOGO
@@ -542,7 +641,8 @@
             const calcEl = card.querySelector(`.ipc[data-id="${id}"]`);
             if (calcEl) calcEl.textContent = (met === 'puntadas' && punt > 0) ? `${(punt/1000).toFixed(1)}K × RD$${costoMil.toLocaleString()} = RD$${mo.toLocaleString()}` : '';
 
-            const costo = costoMat + mo + costosAd;
+            const envioProItem = (parseInt(document.getElementById('costoEnvio')?.value) || 0) / Math.max(items.length, 1);
+            const costo = costoMat + mo + costosAd + envioProItem;
             const gan = precio - costo;
             const mar = precio > 0 ? (gan / precio * 100) : 0;
 
@@ -584,13 +684,60 @@
             });
             const gt = document.getElementById('grandTotal');
             gt.classList.toggle('visible', totalP > 0 || items.length > 1);
-            document.getElementById('gtValue').textContent = 'RD$' + (totalP + envio).toLocaleString();
-            document.getElementById('gtItems').textContent = items.length + (items.length === 1 ? ' artículo' : ' artículos') + ' + envío RD$' + envio.toLocaleString();
+            document.getElementById('gtValue').textContent = 'RD$' + totalP.toLocaleString();
+            const envioLabel = envio > 0 ? ` · Envío (tu costo): RD$${envio.toLocaleString()}` : '';
+            document.getElementById('gtItems').textContent = items.length + (items.length === 1 ? ' artículo' : ' artículos') + envioLabel;
         }
 
         document.getElementById('btnAddItem').onclick = () => addItem();
-        document.getElementById('costoEnvio').addEventListener('input', updateGrandTotal);
+        document.getElementById('costoEnvio').addEventListener('input', () => {
+            items.forEach(id => updateItem(id));
+            updateGrandTotal();
+        });
         addItem(); // Start with 1
+
+        // ═══════════════════════════════════════════════════════════════
+        // M2+M6: Phone lookup — auto-fill cliente from order history
+        // ═══════════════════════════════════════════════════════════════
+        let _phoneTimer = null;
+        let _lastPhone = '';
+
+        document.getElementById('telefono').addEventListener('input', () => {
+            const phone = document.getElementById('telefono').value.trim();
+            clearTimeout(_phoneTimer);
+            const banner = document.getElementById('clienteFoundBanner');
+            if (phone.replace(/\D/g, '').length < 7) {
+                banner?.classList.remove('show');
+                _lastPhone = '';
+                return;
+            }
+            if (phone === _lastPhone) return;
+            _phoneTimer = setTimeout(() => _lookupCliente(phone), 600);
+        });
+
+        async function _lookupCliente(phone) {
+            _lastPhone = phone;
+            try {
+                const data = await apiFetch(`/clientes/perfil?telefono=${encodeURIComponent(phone)}`);
+                const banner = document.getElementById('clienteFoundBanner');
+                if (!data || !data.nombre) { banner?.classList.remove('show'); return; }
+                if (banner) {
+                    document.getElementById('cfNombre').textContent = data.nombre;
+                    document.getElementById('cfMeta').textContent = data.total_pedidos
+                        ? `${data.total_pedidos} pedido${data.total_pedidos !== 1 ? 's' : ''} anteriores`
+                        : 'Cliente registrado';
+                    banner.classList.add('show');
+                    document.getElementById('btnPrefill').onclick = () => {
+                        if (data.nombre) document.getElementById('cliente').value = data.nombre;
+                        if (data.email) document.getElementById('email').value = data.email;
+                        if (data.direccion) document.getElementById('direccion').value = data.direccion;
+                        if (data.canal) document.getElementById('canal').value = data.canal;
+                        banner.classList.remove('show');
+                        document.getElementById('canal').focus();
+                    };
+                }
+            } catch(e) { /* silencioso — no bloquear flujo por fallo de lookup */ }
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // ALERTS
@@ -761,11 +908,16 @@
                     } else throw new Error(result?.error || 'Error');
                 }
 
+                clearDraft();
                 document.getElementById('formPedido').reset();
                 items = []; nextId = 1;
                 addItem();
                 document.getElementById('grandTotal').classList.remove('visible');
                 window.scrollTo(0, 0);
+                // M1: notify parent backoffice when rendered inside quick-add drawer
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'pedido-creado' }, '*');
+                }
             } catch (error) {
                 showError(`<strong>Error:</strong> ${error.message}`);
                 window.scrollTo(0, 0);

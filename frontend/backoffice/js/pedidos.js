@@ -108,6 +108,18 @@ function renderizarTablaPedidos(data) {
 
     const isAdmin = Auth.isAdmin();
     tbody.innerHTML = pedidos.map(p => crearFilaPedido(p, isAdmin)).join('');
+
+    // M5: Resaltar visualmente filas del mismo grupo
+    const grupoCount = {};
+    pedidos.forEach(p => { if (p.grupo_pedido) grupoCount[p.grupo_pedido] = (grupoCount[p.grupo_pedido] || 0) + 1; });
+    tbody.querySelectorAll('tr[data-pedido-id]').forEach(row => {
+        const id = row.dataset.pedidoId;
+        const pedido = pedidos.find(p => String(p.id) === String(id));
+        if (pedido && pedido.grupo_pedido && grupoCount[pedido.grupo_pedido] > 1) {
+            row.classList.add('grupo-row');
+        }
+    });
+
     renderPagination(total, pages, page);
 }
 
@@ -369,9 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await api.bulkUpdateEstado(ids, estado);
                 if (res && res.success) {
+                    // M9: Feedback enriquecido con lista de IDs afectados
+                    const idsTexto = ids.length <= 6
+                        ? ids.join(', ')
+                        : ids.slice(0, 5).join(', ') + ` +${ids.length - 5} más`;
                     if (typeof showNotification === 'function')
-                        showNotification(`${res.updated} pedido${res.updated !== 1 ? 's' : ''} actualizado${res.updated !== 1 ? 's' : ''}`, 'success');
+                        showNotification(
+                            `${res.updated} pedido${res.updated !== 1 ? 's' : ''} → <strong>${estado}</strong><br><small style="opacity:.8">${idsTexto}</small>`,
+                            'success',
+                            5000
+                        );
                     document.getElementById('bulkEstadoSelect').value = '';
+                    document.querySelectorAll('#tabla-pedidos .order-checkbox').forEach(cb => { cb.checked = false; });
+                    updateBulkSelection();
                     cargarPedidos(currentPage);
                 } else {
                     if (typeof showNotification === 'function') showNotification(res?.error || 'Error al actualizar', 'error');
