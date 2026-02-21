@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+    <title>Backoffice — Shogun</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Shared design system -->
+    <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/shared.css">
+    <!-- Page styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/modals.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Apply theme immediately to prevent flash (respects OS preference on first visit)
+        (function(){var t=localStorage.getItem('theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+</head>
+<body>
+    <!-- Accessibility: Skip to content -->
+    <a href="#main-content" class="skip-link">Saltar al contenido</a>
+
+    <!-- HEADER — Apple HIG: Three-zone layout (Brand | Primary CTA | Utilities + User) -->
+    <header class="top-bar" role="banner">
+        <div class="top-bar-brand">
+            <img src="/black-shogun-logo.svg" class="logo-img logo-sm logo-img-light" alt="Shogun">
+            <img src="/white-shogun-logo.svg" class="logo-img logo-sm logo-img-dark" alt="Shogun">
+            <h1>Shogun</h1>
+        </div>
+
+        <div class="top-bar-actions">
+            <!-- Primary CTA — always visible -->
+            <button class="btn btn-primary" id="btnNuevoPedido" aria-label="Crear nuevo pedido">
+                <i class="fas fa-plus" aria-hidden="true"></i> <span>Nuevo Pedido</span>
+            </button>
+
+            <!-- Utility icons — desktop only -->
+            <div class="header-utilities">
+                <button class="header-icon-btn" id="btnExportar" aria-label="Exportar pedidos" title="Exportar pedidos">
+                    <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                </button>
+                <button class="header-icon-btn" id="themeToggle" aria-label="Cambiar tema" title="Cambiar tema">
+                    <i class="far fa-moon" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- User menu — avatar trigger with dropdown -->
+            <div class="header-user-menu" id="headerUserMenu">
+                <button class="header-user-trigger" id="userMenuTrigger" aria-label="Menú de usuario" aria-expanded="false" aria-haspopup="true">
+                    <div class="header-avatar" id="userAvatar" aria-hidden="true">
+                        <i class="far fa-user"></i>
+                    </div>
+                    <span class="header-user-name" id="userNameDisplay">Cargando...</span>
+                    <i class="fas fa-chevron-down header-user-chevron" aria-hidden="true"></i>
+                </button>
+                <div class="header-user-dropdown" id="userDropdown" role="menu" aria-label="Opciones de usuario">
+                    <div class="dropdown-user-info" id="dropdownUserInfo" role="none">
+                        <div class="dropdown-avatar" aria-hidden="true"><i class="far fa-user"></i></div>
+                        <div class="dropdown-user-details">
+                            <span class="dropdown-user-name" id="dropdownUserName">Cargando...</span>
+                            <span class="dropdown-user-role" id="dropdownUserRole"></span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider" role="separator"></div>
+                    <button class="dropdown-item" id="dropdownThemeToggle" role="menuitem">
+                        <i class="far fa-moon" aria-hidden="true"></i>
+                        <span>Cambiar tema</span>
+                    </button>
+                    <button class="dropdown-item" id="dropdownExportar" role="menuitem">
+                        <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                        <span>Exportar pedidos</span>
+                    </button>
+                    <div class="dropdown-divider" role="separator"></div>
+                    <button class="dropdown-item dropdown-item-danger" id="btnLogout" role="menuitem">
+                        <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile menu toggle -->
+            <button class="header-menu-toggle" id="mobileMenuToggle" aria-label="Menú" aria-expanded="false">
+                <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- Mobile dropdown menu — structured with sections -->
+        <div class="mobile-menu" id="mobileMenu" role="menu" aria-label="Menú principal">
+            <div class="mobile-menu-section">
+                <div class="mobile-user-info" id="mobileUserInfo">
+                    <div class="mobile-user-avatar" aria-hidden="true"><i class="far fa-user"></i></div>
+                    <div class="mobile-user-details">
+                        <span class="mobile-user-name" id="mobileUserName">Cargando...</span>
+                        <span class="mobile-user-role" id="mobileUserRole"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-menu-divider" role="separator"></div>
+            <div class="mobile-menu-section">
+                <button class="mobile-menu-item" id="mobileThemeToggle" role="menuitem">
+                    <i class="far fa-moon" aria-hidden="true"></i>
+                    <span>Cambiar tema</span>
+                </button>
+                <button class="mobile-menu-item" id="mobileExportar" role="menuitem">
+                    <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+                    <span>Exportar pedidos</span>
+                </button>
+            </div>
+            <div class="mobile-menu-divider" role="separator"></div>
+            <div class="mobile-menu-section">
+                <button class="mobile-menu-item mobile-menu-item-danger" id="mobileLogout" role="menuitem">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                    <span>Cerrar sesión</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAV — Apple HIG: Segmented Control (desktop) / Tab Bar (mobile) -->
+    <nav class="nav-tabs" role="tablist" aria-label="Secciones principales">
+        <button class="tab-btn active" data-tab="pedidos" role="tab" aria-selected="true" aria-controls="pedidos-section" id="tab-pedidos">
+            <i class="far fa-rectangle-list" aria-hidden="true"></i>
+            <span class="tab-label">Pedidos</span>
+        </button>
+        <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false" aria-controls="dashboard-section" id="tab-dashboard">
+            <i class="far fa-chart-bar" aria-hidden="true"></i>
+            <span class="tab-label">Dashboard</span>
+        </button>
+        <button class="tab-btn tab-btn-pendientes" data-tab="pendientes" role="tab" aria-selected="false" aria-controls="pendientes-section" id="tab-pendientes">
+            <div class="tab-icon-wrap">
+                <i class="far fa-clock" aria-hidden="true"></i>
+                <span class="tab-badge" id="tabPendientesBadge" role="status" aria-label="pedidos pendientes" style="display:none;"></span>
+            </div>
+            <span class="tab-label">Pendientes</span>
+        </button>
+        <button class="tab-btn" data-tab="parametros" role="tab" aria-selected="false" aria-controls="parametros-section" id="tab-parametros">
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span class="tab-label">Catálogo</span>
+        </button>
+    </nav>
+
+    <main id="main-content" class="container">
+        <!-- Mejora 8: Alerta de retraso proactiva -->
+        <div id="alertaRetrasoBar" class="alerta-retraso-bar" style="display:none;" role="alert" aria-live="polite">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            <span id="alertaRetrasoText"></span>
+            <button class="alerta-retraso-link" id="btnVerAlertas">Ver pedidos →</button>
+            <button class="alerta-close" id="btnCerrarAlerta" aria-label="Cerrar alerta"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+        </div>
+
+        <!-- PEDIDOS -->
+        <div id="pedidos-section" class="tab-content active" role="tabpanel" aria-labelledby="tab-pedidos">
+
+            <!-- Onboarding panel — shown on first visit when no orders exist -->
+            <div id="onboardingPanel" class="onboarding-panel" style="display:none;" role="region" aria-label="Guía de inicio">
+                <div class="onboarding-header">
+                    <div class="onboarding-icon"><i class="fas fa-rocket" aria-hidden="true"></i></div>
+                    <h2 class="onboarding-title">Bienvenido a Shogun</h2>
+                    <p class="onboarding-sub">Sigue estos pasos para empezar a gestionar tus pedidos.</p>
+                </div>
+                <ol class="onboarding-steps">
+                    <li class="onboarding-step">
+                        <div class="ob-step-icon"><i class="fas fa-boxes-stacked" aria-hidden="true"></i></div>
+                        <div class="ob-step-body">
+                            <strong>Configura tu catálogo</strong>
+                            <span>Agrega los productos que vendes en la pestaña Catálogo.</span>
+                        </div>
+                        <button class="btn btn-sm btn-secondary ob-step-action" id="obGoToCatalog">Ir al Catálogo →</button>
+                    </li>
+                    <li class="onboarding-step">
+                        <div class="ob-step-icon"><i class="fas fa-cart-plus" aria-hidden="true"></i></div>
+                        <div class="ob-step-body">
+                            <strong>Crea tu primer pedido</strong>
+                            <span>Haz clic en <em>Nuevo Pedido</em> en la barra superior para registrar el primero.</span>
+                        </div>
+                        <button class="btn btn-sm btn-primary ob-step-action" id="obNuevoPedido">Nuevo Pedido →</button>
+                    </li>
+                    <li class="onboarding-step">
+                        <div class="ob-step-icon"><i class="fas fa-arrows-rotate" aria-hidden="true"></i></div>
+                        <div class="ob-step-body">
+                            <strong>Actualiza los estados</strong>
+                            <span>Selecciona pedidos y usa las acciones en lote para moverlos entre estados.</span>
+                        </div>
+                    </li>
+                </ol>
+                <button class="onboarding-dismiss" id="btnDismissOnboarding">Ya lo entendí, no mostrar de nuevo</button>
+            </div>
+
+            <!-- ── CONTEXT BAR — 4 live operative KPIs ── -->
+            <div class="pedidos-context-bar" id="pedidosContextBar" role="region" aria-label="Resumen operativo">
+                <button class="context-kpi-card" data-urgencia="activos" aria-label="Ver pedidos activos">
+                    <span class="ck-value" id="ck-activos">—</span>
+                    <span class="ck-label">Activos</span>
+                </button>
+                <button class="context-kpi-card ck-success" data-urgencia="listos" aria-label="Ver pedidos listos para envío">
+                    <span class="ck-value" id="ck-listos">—</span>
+                    <span class="ck-label">Listos para Envío</span>
+                </button>
+                <button class="context-kpi-card ck-danger" data-urgencia="atrasados" aria-label="Ver pedidos atrasados">
+                    <span class="ck-value" id="ck-atrasados">—</span>
+                    <span class="ck-label">Atrasados</span>
+                </button>
+                <button class="context-kpi-card ck-warning" data-urgencia="sin-cobrar" aria-label="Ver pedidos sin cobrar">
+                    <span class="ck-value" id="ck-sin-cobrar">—</span>
+                    <span class="ck-label">Sin cobrar</span>
+                </button>
+            </div>
+
+            <!-- ── FILTER AREA ── -->
+            <!-- Row 1: Search -->
+            <div class="pedidos-search-row">
+                <div class="search-wrapper">
+                    <i class="fas fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                    <input type="text" id="searchPedidos" placeholder="Buscar por ID, cliente, producto..." aria-label="Buscar pedidos" autocomplete="off" spellcheck="false">
+                    <button class="search-clear" id="searchClear" aria-label="Limpiar búsqueda" style="display:none;"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+                    <div class="kbd-hint" aria-hidden="true"><kbd>⌘</kbd><kbd>K</kbd></div>
+                </div>
+                <select id="filterCanal" class="filter-select-compact" aria-label="Filtrar por canal">
+                    <option value="">Todos los canales</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Referido">Referido</option>
+                    <option value="Tienda">Tienda</option>
+                </select>
+            </div>
+
+            <!-- Row 2: Pill tabs for state (primary filter) -->
+            <div class="estado-filter-pills" role="group" aria-label="Filtrar por estado de producción">
+                <button class="estado-pill active" data-estado="" aria-pressed="true">Todos</button>
+                <button class="estado-pill" data-estado="Recibido" aria-pressed="false">Recibido</button>
+                <button class="estado-pill" data-estado="En Producción" aria-pressed="false">En Producción</button>
+                <button class="estado-pill" data-estado="Listo para Envío" aria-pressed="false">Listo para Envío</button>
+                <button class="estado-pill" data-estado="En Camino" aria-pressed="false">En Camino</button>
+                <button class="estado-pill" data-estado="Entregado" aria-pressed="false">Entregado</button>
+                <button class="estado-pill estado-pill-alert" data-estado="Bloqueado - Sin Dirección" aria-pressed="false">Bloqueado</button>
+                <button class="estado-pill estado-pill-muted" data-estado="Cancelado" aria-pressed="false">Cancelado</button>
+            </div>
+
+            <!-- Bulk action bar -->
+            <div class="bulk-action-bar" id="bulkActionBar" style="display:none;" role="toolbar" aria-label="Acciones masivas">
+                <span class="bulk-count" id="bulkCount">0 seleccionados</span>
+                <select id="bulkEstadoSelect" class="form-control form-control-sm" aria-label="Nuevo estado para los pedidos seleccionados">
+                    <option value="">Cambiar estado...</option>
+                    <option value="Recibido">Recibido</option>
+                    <option value="En Producción">En Producción</option>
+                    <option value="Listo para Envío">Listo para Envío</option>
+                    <option value="En Camino">En Camino</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="btnBulkApply"><i class="fas fa-check" aria-hidden="true"></i> Aplicar</button>
+                <button class="btn btn-secondary btn-sm" id="btnBulkDeselect">Deseleccionar</button>
+            </div>
+
+            <!-- Desktop: table view -->
+            <div class="table-container" id="pedidosTableContainer">
+                <table id="tabla-pedidos" aria-label="Lista de pedidos">
+                    <thead>
+                        <tr>
+                            <th class="col-urgency" aria-label="Urgencia">
+                                <label class="checkbox-touch-target"><input type="checkbox" class="order-checkbox" id="select-all-checkbox" aria-label="Seleccionar todos"></label>
+                            </th>
+                            <th data-sortable data-sort-key="id">Pedido</th>
+                            <th data-sortable data-sort-key="cliente">Cliente</th>
+                            <th>Producto</th>
+                            <th data-sortable data-sort-key="estado">Estado</th>
+                            <th><span class="sr-only">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody aria-live="polite" aria-relevant="additions removals"></tbody>
+                </table>
+                <div class="table-footer" id="tablePagination">
+                    <div id="table-result-count"></div>
+                    <div class="pagination" id="paginationControls"></div>
+                    <div class="pagination-per-page">
+                        <span>Mostrar</span>
+                        <select id="perPageSelect" aria-label="Pedidos por página">
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile: card stack view -->
+            <div class="pedido-cards-mobile" id="pedidoCardsMobile" aria-live="polite" aria-relevant="additions removals"></div>
+
+            <!-- Inline estado popover (shared, moved around in DOM) -->
+            <div class="estado-popover" id="estadoPopover" role="listbox" aria-label="Cambiar estado" style="display:none;">
+                <div class="estado-popover-header">Cambiar estado</div>
+                <button class="estado-popover-opt" data-estado-val="Recibido">Recibido</button>
+                <button class="estado-popover-opt" data-estado-val="En Producción">En Producción</button>
+                <button class="estado-popover-opt" data-estado-val="Listo para Envío">Listo para Envío</button>
+                <button class="estado-popover-opt" data-estado-val="En Camino">En Camino</button>
+                <button class="estado-popover-opt" data-estado-val="Entregado">Entregado</button>
+                <button class="estado-popover-opt" data-estado-val="Bloqueado - Sin Dirección">Bloqueado</button>
+                <button class="estado-popover-opt estado-popover-danger" data-estado-val="Cancelado">Cancelado</button>
+            </div>
+
+        </div>
+
+        <!-- DASHBOARD -->
+
+        <div id="dashboard-section" class="tab-content" role="tabpanel" aria-labelledby="tab-dashboard">
+            <div class="section-header">
+                <h2>Dashboard</h2>
+            </div>
+
+            <!-- Segmented control — Apple HIG: period selector -->
+            <div class="dash-period-bar" role="group" aria-label="Período de análisis">
+                <div class="dash-presets">
+                    <button class="preset-btn active" data-preset="7">7 días</button>
+                    <button class="preset-btn" data-preset="30">30 días</button>
+                    <button class="preset-btn" data-preset="90">90 días</button>
+                    <button class="preset-btn" data-preset="custom">Personalizado</button>
+                </div>
+                <div class="date-custom-range" id="dateCustomRange">
+                    <input type="date" id="dashFechaDesde" aria-label="Fecha desde">
+                    <span aria-hidden="true">—</span>
+                    <input type="date" id="dashFechaHasta" aria-label="Fecha hasta">
+                    <button class="btn btn-sm btn-secondary" id="btnAplicarDash" aria-label="Aplicar filtro">Aplicar</button>
+                </div>
+            </div>
+
+            <!-- ── KPI GRID — 6 cards, 3 financial + 3 operational ── -->
+            <div class="kpi-grid" role="region" aria-label="Métricas clave">
+
+                <!-- Financial group -->
+                <div class="kpi-card kpi-financial">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Ventas</span>
+                        <span class="kpi-trend" id="kpi-ventas-trend" aria-label="Tendencia ventas"></span>
+                    </div>
+                    <div class="kpi-value" id="stat-ventas">RD$0</div>
+                    <div class="kpi-sub" id="stat-ventas-sub">período seleccionado</div>
+                </div>
+
+                <div class="kpi-card kpi-financial">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Ganancia</span>
+                        <span class="kpi-trend" id="kpi-ganancia-trend" aria-label="Tendencia ganancia"></span>
+                    </div>
+                    <div class="kpi-value" id="stat-ganancia">RD$0</div>
+                    <div class="kpi-sub" id="stat-ganancia-sub">utilidad neta</div>
+                </div>
+
+                <div class="kpi-card kpi-highlight">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Margen</span>
+                        <span class="kpi-trend" id="kpi-margen-trend" aria-label="Tendencia margen"></span>
+                    </div>
+                    <div class="kpi-value" id="stat-margen">0%</div>
+                    <div class="kpi-sub">margen promedio</div>
+                </div>
+
+                <!-- Operational group -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Pedidos</span>
+                        <span class="kpi-trend" id="kpi-pedidos-trend" aria-label="Tendencia pedidos"></span>
+                    </div>
+                    <div class="kpi-value" id="stat-total">0</div>
+                    <div class="kpi-sub" id="stat-entregados-sub">en el período</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Ticket Promedio</span>
+                    </div>
+                    <div class="kpi-value" id="stat-ticket">RD$0</div>
+                    <div class="kpi-sub">por pedido</div>
+                </div>
+
+                <div class="kpi-card kpi-alert" id="kpiPendientesCard">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Pendientes</span>
+                    </div>
+                    <div class="kpi-value" id="stat-pendientes">0</div>
+                    <div class="kpi-sub">requieren atención</div>
+                </div>
+
+            </div>
+
+            <!-- ── CHARTS ROW — Timeline (2/3) + Canal donut (1/3) ── -->
+            <div class="charts-main-row">
+                <div class="chart-card chart-card-primary">
+                    <div class="chart-card-header">
+                        <h3>Ventas por Día</h3>
+                        <span class="chart-sub" id="timelineSub"></span>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="chartTimeline" aria-label="Gráfica de ventas diarias"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card chart-card-secondary">
+                    <div class="chart-card-header">
+                        <h3>Canales de Venta</h3>
+                    </div>
+                    <div class="chart-canvas-wrap chart-canvas-donut">
+                        <canvas id="chartCanal" aria-label="Distribución por canal"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TOP PRODUCTOS — ranking table ── -->
+            <div class="top-productos-card">
+                <div class="chart-card-header">
+                    <h3>Top Productos</h3>
+                    <span class="chart-sub">por ingresos en el período</span>
+                </div>
+                <div id="topProductosContainer">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- PENDIENTES -->
+        <div id="pendientes-section" class="tab-content" role="tabpanel" aria-labelledby="tab-pendientes">
+            <div class="section-header">
+                <h2>Pedidos Pendientes</h2>
+            </div>
+            <div id="lista-pendientes" aria-live="polite"></div>
+        </div>
+
+        <!-- CATÁLOGO -->
+        <div id="parametros-section" class="tab-content" role="tabpanel" aria-labelledby="tab-parametros">
+            <div class="section-header">
+                <h2>Catálogo</h2>
+            </div>
+
+            <div class="param-tabs" role="tablist" aria-label="Tipos de parametros">
+                <button class="param-tab active" data-param-tab="productos" role="tab" aria-selected="true">
+                    <i class="fas fa-box" aria-hidden="true"></i> Productos
+                </button>
+                <button class="param-tab" data-param-tab="categorias" role="tab" aria-selected="false">
+                    <i class="fas fa-tags" aria-hidden="true"></i> Categorías
+                </button>
+                <button class="param-tab" data-param-tab="personalizaciones" role="tab" aria-selected="false">
+                    <i class="fas fa-palette" aria-hidden="true"></i> Personalizaciones
+                </button>
+            </div>
+
+            <div class="param-content active" data-param-content="productos">
+                <div class="param-header-actions">
+                    <button class="btn btn-primary" id="btnNuevoProducto">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nuevo Producto
+                    </button>
+                </div>
+                <div class="param-grid" id="productos-grid" aria-live="polite"></div>
+            </div>
+
+            <div class="param-content" data-param-content="categorias">
+                <div class="param-header-actions">
+                    <button class="btn btn-primary" id="btnNuevaCategoria">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Categoría
+                    </button>
+                </div>
+                <div class="param-grid" id="categorias-grid"></div>
+            </div>
+
+            <div class="param-content" data-param-content="personalizaciones">
+                <div class="param-header-actions">
+                    <button class="btn btn-primary" id="btnNuevaPersonalizacion">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nueva Personalización
+                    </button>
+                </div>
+                <div class="param-grid" id="personalizaciones-grid"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPTS -->
+    <script src="/js/config.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/modals.js"></script>
+    <script src="/js/pedidos.js"></script>
+    <script src="/js/parametros.js"></script>
+
+    <script>
+        // INIT
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            setupKbdHint();
+            restorePersistentFilters();
+
+            // Event delegation — Apple HIG: no inline handlers
+            document.getElementById('btnNuevoPedido').addEventListener('click', nuevoPedido);
+            document.getElementById('btnExportar').addEventListener('click', exportarCSV);
+            document.getElementById('btnLogout').addEventListener('click', () => Auth.logout());
+            document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('select-all-checkbox').addEventListener('change', toggleSelectAll);
+            document.getElementById('btnAplicarDash').addEventListener('click', cargarDashboard);
+
+            // Dropdown duplicates (user dropdown + mobile menu)
+            document.getElementById('dropdownThemeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('dropdownExportar').addEventListener('click', exportarCSV);
+            document.getElementById('mobileThemeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('mobileExportar').addEventListener('click', exportarCSV);
+            document.getElementById('mobileLogout').addEventListener('click', () => Auth.logout());
+
+            // Date presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const preset = btn.dataset.preset;
+                    const customRange = document.getElementById('dateCustomRange');
+                    if (preset === 'custom') {
+                        customRange.classList.add('visible');
+                        return;
+                    }
+                    customRange.classList.remove('visible');
+                    const hasta = new Date();
+                    const desde = new Date();
+                    desde.setDate(desde.getDate() - parseInt(preset));
+                    document.getElementById('dashFechaDesde').value = desde.toISOString().split('T')[0];
+                    document.getElementById('dashFechaHasta').value = hasta.toISOString().split('T')[0];
+                    cargarDashboard();
+                });
+            });
+            // Initialize default preset (7 days)
+            const defaultPreset = document.querySelector('.preset-btn[data-preset="7"]');
+            if (defaultPreset) defaultPreset.click();
+
+            // ── User dropdown (desktop) ──
+            const userMenuTrigger = document.getElementById('userMenuTrigger');
+            const userDropdown = document.getElementById('userDropdown');
+            if (userMenuTrigger && userDropdown) {
+                userMenuTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = userDropdown.classList.toggle('active');
+                    userMenuTrigger.setAttribute('aria-expanded', isOpen);
+                });
+                // Close on click outside
+                document.addEventListener('click', (e) => {
+                    if (!userDropdown.contains(e.target) && !userMenuTrigger.contains(e.target)) {
+                        userDropdown.classList.remove('active');
+                        userMenuTrigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                // Close after action click
+                userDropdown.addEventListener('click', (e) => {
+                    if (e.target.closest('.dropdown-item')) {
+                        userDropdown.classList.remove('active');
+                        userMenuTrigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                // Keyboard: Escape to close
+                userDropdown.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        userDropdown.classList.remove('active');
+                        userMenuTrigger.setAttribute('aria-expanded', 'false');
+                        userMenuTrigger.focus();
+                    }
+                });
+            }
+
+            // ── Mobile menu (hamburger) ──
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenuToggle && mobileMenu) {
+                // Create backdrop element
+                const backdrop = document.createElement('div');
+                backdrop.className = 'mobile-menu-backdrop';
+                document.querySelector('.top-bar').appendChild(backdrop);
+
+                const closeMobileMenu = () => {
+                    mobileMenu.classList.remove('active');
+                    backdrop.classList.remove('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                };
+
+                const openMobileMenu = () => {
+                    mobileMenu.classList.add('active');
+                    backdrop.classList.add('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'true');
+                };
+
+                mobileMenuToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (mobileMenu.classList.contains('active')) {
+                        closeMobileMenu();
+                    } else {
+                        openMobileMenu();
+                    }
+                });
+
+                backdrop.addEventListener('click', closeMobileMenu);
+
+                // Close after action click
+                mobileMenu.addEventListener('click', (e) => {
+                    if (e.target.closest('.mobile-menu-item')) {
+                        closeMobileMenu();
+                    }
+                });
+
+                // Keyboard: Escape to close
+                mobileMenu.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeMobileMenu();
+                        mobileMenuToggle.focus();
+                    }
+                });
+            }
+
+            // Param buttons
+            const btnProd = document.getElementById('btnNuevoProducto');
+            const btnCat = document.getElementById('btnNuevaCategoria');
+            const btnPers = document.getElementById('btnNuevaPersonalizacion');
+            if (btnProd) btnProd.addEventListener('click', nuevoProducto);
+            if (btnCat) btnCat.addEventListener('click', nuevaCategoria);
+            if (btnPers) btnPers.addEventListener('click', nuevaPersonalizacion);
+
+            // User info — populate all user display zones
+            const user = Auth.getUser();
+            if (user) {
+                const userName = user.nombre || user.name || '';
+                const userRole = user.rol || user.role || '';
+                const userInitial = userName.charAt(0).toUpperCase() || 'U';
+
+                // Header avatar (initial letter)
+                const avatarEl = document.getElementById('userAvatar');
+                if (avatarEl) avatarEl.textContent = userInitial;
+
+                // Header trigger name
+                const nameEl = document.getElementById('userNameDisplay');
+                if (nameEl) nameEl.textContent = userName;
+
+                // Desktop dropdown info
+                const dropdownAvatar = document.querySelector('.dropdown-avatar');
+                if (dropdownAvatar) dropdownAvatar.textContent = userInitial;
+                const dropdownName = document.getElementById('dropdownUserName');
+                if (dropdownName) dropdownName.textContent = userName;
+                const dropdownRole = document.getElementById('dropdownUserRole');
+                if (dropdownRole) dropdownRole.textContent = userRole;
+
+                // Mobile menu info
+                const mobileAvatar = document.querySelector('.mobile-user-avatar');
+                if (mobileAvatar) mobileAvatar.textContent = userInitial;
+                const mobileName = document.getElementById('mobileUserName');
+                if (mobileName) mobileName.textContent = userName;
+                const mobileRole = document.getElementById('mobileUserRole');
+                if (mobileRole) mobileRole.textContent = userRole;
+            }
+
+            // Tab system — event delegation
+            document.querySelector('.nav-tabs').addEventListener('click', (e) => {
+                const btn = e.target.closest('.tab-btn');
+                if (!btn) return;
+
+                const tab = btn.dataset.tab;
+
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${tab}-section`).classList.add('active');
+
+                if (tab === 'pedidos') {
+                    cargarPedidos();
+                    cargarResumenOperativo();
+                    cargarAlertasRetraso();
+                    actualizarBadgePendientes();
+                }
+                else if (tab === 'dashboard') cargarDashboard();
+                else if (tab === 'pendientes') cargarPendientes();
+                else if (tab === 'parametros') cargarProductos();
+            });
+
+            // Param sub-tabs — event delegation
+            document.querySelector('.param-tabs')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('.param-tab');
+                if (!btn) return;
+
+                document.querySelectorAll('.param-tab').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                const tabName = btn.dataset.paramTab;
+                document.querySelectorAll('.param-content').forEach(c => c.classList.remove('active'));
+                document.querySelector(`[data-param-content="${tabName}"]`).classList.add('active');
+            });
+
+            // Column sorting
+            document.querySelectorAll('thead th[data-sortable]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const key = th.dataset.sortKey;
+                    const isAsc = th.classList.contains('sort-asc');
+
+                    document.querySelectorAll('thead th[data-sortable]').forEach(h => {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                    });
+
+                    if (isAsc) {
+                        th.classList.add('sort-desc');
+                        sortPedidos(key, 'desc');
+                    } else {
+                        th.classList.add('sort-asc');
+                        sortPedidos(key, 'asc');
+                    }
+                });
+            });
+
+            // Persistent filter listeners
+            const searchInput = document.getElementById('searchPedidos');
+            const filterEstado = document.getElementById('filterEstado');
+            const filterCanal = document.getElementById('filterCanal');
+
+            if (searchInput) {
+                const searchClearBtn = document.getElementById('searchClear');
+                const kbdHint = searchInput.parentElement.querySelector('.kbd-hint');
+
+                searchInput.addEventListener('input', debounce(() => {
+                    FilterStore.save('search', searchInput.value);
+                }, 500));
+
+                // Apple HIG: show/hide clear button and kbd hint based on input content
+                searchInput.addEventListener('input', () => {
+                    const hasText = searchInput.value.length > 0;
+                    if (searchClearBtn) searchClearBtn.style.display = hasText ? 'flex' : 'none';
+                    if (kbdHint) kbdHint.style.display = hasText ? 'none' : 'flex';
+                });
+
+                if (searchClearBtn) {
+                    searchClearBtn.addEventListener('click', () => {
+                        searchInput.value = '';
+                        searchClearBtn.style.display = 'none';
+                        if (kbdHint) kbdHint.style.display = 'flex';
+                        FilterStore.save('search', '');
+                        searchInput.focus();
+                        cargarPedidos();
+                    });
+                }
+            }
+
+            // filterEstado is now pill tabs in pedidos.js — no select element
+
+            if (filterCanal) {
+                filterCanal.addEventListener('change', () => {
+                    FilterStore.save('canal', filterCanal.value);
+                });
+            }
+
+            // Keyboard shortcut: Cmd/Ctrl+K to focus search
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    searchInput?.focus();
+                }
+            });
+
+            await cargarPedidos();
+            cargarResumenOperativo();
+            cargarAlertasRetraso();
+            actualizarBadgePendientes();
+
+            // M1: Drawer setup
+            const drawerEl = document.getElementById('quickAddDrawer');
+            document.getElementById('drawerClose').addEventListener('click', cerrarDrawer);
+            document.getElementById('drawerOverlay').addEventListener('click', cerrarDrawer);
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawerEl?.classList.contains('open')) cerrarDrawer(); });
+            window.addEventListener('message', (ev) => {
+                if (ev.data?.type === 'pedido-creado') {
+                    cerrarDrawer();
+                    cargarPedidos();
+                    showNotification('¡Pedido creado! La lista fue actualizada.', 'success');
+                }
+            });
+
+            // M10: Onboarding — show on first visit with zero orders
+            function dismissOnboarding() {
+                localStorage.setItem('shogun_ob_done', '1');
+                const p = document.getElementById('onboardingPanel');
+                if (p) p.style.display = 'none';
+            }
+            if (!localStorage.getItem('shogun_ob_done') && totalPedidos === 0) {
+                const panel = document.getElementById('onboardingPanel');
+                if (panel) panel.style.display = 'block';
+            }
+            document.getElementById('btnDismissOnboarding').addEventListener('click', dismissOnboarding);
+            document.getElementById('obGoToCatalog').addEventListener('click', () => {
+                document.querySelector('.tab-btn[data-tab="parametros"]')?.click();
+            });
+            document.getElementById('obNuevoPedido').addEventListener('click', nuevoPedido);
+
+            // Mejora 8: Alert bar listeners
+            document.getElementById('btnCerrarAlerta')?.addEventListener('click', () => {
+                document.getElementById('alertaRetrasoBar').style.display = 'none';
+            });
+            document.getElementById('btnVerAlertas')?.addEventListener('click', () => {
+                // Hide the banner for now — it will be re-evaluated
+                // when navigating back to the Pedidos tab via cargarAlertasRetraso()
+                document.getElementById('alertaRetrasoBar').style.display = 'none';
+                document.querySelector('.tab-btn[data-tab="pendientes"]')?.click();
+            });
+        });
+
+        // Restore persistent filters
+        function restorePersistentFilters() {
+            const search = FilterStore.load('search');
+            const estado = FilterStore.load('estado');
+            const canal = FilterStore.load('canal');
+
+            const searchInput = document.getElementById('searchPedidos');
+            const filterEstado = document.getElementById('filterEstado');
+            const filterCanal = document.getElementById('filterCanal');
+
+            if (searchInput && search) searchInput.value = search;
+            if (filterEstado && estado) filterEstado.value = estado;
+            if (filterCanal && canal) filterCanal.value = canal;
+        }
+
+        // Sort pedidos — sorts current page (pedidosCache) client-side
+        function sortPedidos(key, direction) {
+            if (!pedidosCache || !pedidosCache.length) return;
+
+            pedidosCache.sort((a, b) => {
+                let va = a[key] || '';
+                let vb = b[key] || '';
+
+                if (key === 'total') {
+                    va = parseFloat(a.precio_total) || 0;
+                    vb = parseFloat(b.precio_total) || 0;
+                } else if (key === 'estado') {
+                    va = a.estatus_produccion || '';
+                    vb = b.estatus_produccion || '';
+                }
+
+                if (typeof va === 'number') {
+                    return direction === 'asc' ? va - vb : vb - va;
+                }
+
+                return direction === 'asc'
+                    ? String(va).localeCompare(String(vb), 'es')
+                    : String(vb).localeCompare(String(va), 'es');
+            });
+
+            renderizarTablaPedidos({ pedidos: pedidosCache, total: totalPedidos, page: currentPage, pages: totalPages });
+        }
+
+        // Export CSV — M7: confirm dialog shows scope before download
+        async function exportarCSV() {
+            if (!totalPedidos) {
+                showNotification('No hay pedidos para exportar', 'warning');
+                return;
+            }
+            const n = totalPedidos.toLocaleString('es');
+            const ok = await showConfirm({
+                title: 'Exportar a CSV',
+                message: `Se exportarán <strong>${n} pedido${totalPedidos !== 1 ? 's' : ''}</strong> con los filtros activos.<br><small style="color:var(--text-secondary);margin-top:6px;display:block;">Columnas: ID, Cliente, Producto, Talla, Color, Total, Estado, Canal, Fecha.</small>`,
+                confirmText: 'Exportar',
+                cancelText: 'Cancelar'
+            });
+            if (!ok) return;
+            try {
+                showNotification('Preparando exportación...', 'info', 2000);
+                const result = await api.getPedidos({ ...currentFilters, limit: 5000, page: 1 });
+                const allPedidos = result.pedidos || [];
+                if (!allPedidos.length) { showNotification('No hay pedidos para exportar', 'warning'); return; }
+                const headers = ['ID', 'Cliente', 'Producto', 'Talla', 'Color', 'Total', 'Estado', 'Canal', 'Fecha'];
+                const rows = allPedidos.map(p => [
+                    p.id, p.cliente, p.producto, p.talla || '', p.color || '',
+                    p.precio_total || 0, p.estatus_produccion || '', p.canal || '', p.fecha_pago || ''
+                ]);
+                const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+                descargarArchivo(csv, 'pedidos_shogun.csv', 'text/csv;charset=utf-8;');
+                showNotification(`${allPedidos.length} pedidos exportados`, 'success');
+            } catch (e) {
+                showNotification('Error al exportar: ' + e.message, 'error');
+            }
+        }
+
+        // Navigation — M1: slide-over drawer, falls back to full navigation
+        function nuevoPedido() {
+            const drawer = document.getElementById('quickAddDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const frame = document.getElementById('drawerFrame');
+            if (!drawer) { window.location.href = '/formulario'; return; }
+            drawer.removeAttribute('hidden');
+            frame.src = '/formulario';
+            // rAF ensures display is applied before transition
+            requestAnimationFrame(() => {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            });
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cerrarDrawer() {
+            const drawer = document.getElementById('quickAddDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const frame = document.getElementById('drawerFrame');
+            drawer?.classList.remove('open');
+            overlay?.classList.remove('open');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                if (frame) frame.src = '';
+                drawer?.setAttribute('hidden', '');
+            }, 300);
+        }
+
+        // Mejora 8: Alerta de retraso proactiva
+        async function cargarAlertasRetraso() {
+            try {
+                const alertas = await api.getAlertasRetraso();
+                if (!alertas || alertas.length === 0) return;
+                const vencidos = alertas.filter(a => a.urgencia === 'vencido').length;
+                const hoy = alertas.filter(a => a.urgencia === 'hoy').length;
+                const proximos = alertas.filter(a => a.urgencia === 'proximo').length;
+                let partes = [];
+                if (vencidos > 0) partes.push(`${vencidos} vencido${vencidos > 1 ? 's' : ''}`);
+                if (hoy > 0) partes.push(`${hoy} para hoy`);
+                if (proximos > 0) partes.push(`${proximos} próximo${proximos > 1 ? 's' : ''}`);
+                const textEl = document.getElementById('alertaRetrasoText');
+                const bar = document.getElementById('alertaRetrasoBar');
+                if (textEl) textEl.textContent = partes.join(', ') + ' — pedidos en riesgo de retraso';
+                if (bar) bar.style.display = 'flex';
+            } catch (e) { /* silencioso */ }
+        }
+
+        // DASHBOARD
+        let chartCanal, chartTimeline;
+
+        // ── Trend badge helper ──
+        function setTrend(elId, value, isPercent = false) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (value === null || value === undefined) { el.textContent = ''; el.className = 'kpi-trend'; return; }
+            const sign = value > 0 ? '↑' : value < 0 ? '↓' : '→';
+            const abs = Math.abs(isPercent ? value : value).toFixed(0);
+            el.textContent = `${sign} ${abs}${isPercent ? 'pp' : '%'}`;
+            el.className = 'kpi-trend ' + (value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral');
+        }
+
+        async function cargarDashboard() {
+            // Show skeleton in KPI cards
+            document.querySelectorAll('.kpi-value').forEach(el => {
+                el.innerHTML = '<span class="skeleton-bar skeleton-bar-lg" style="width:70%;height:20px;display:block;border-radius:6px;"></span>';
+            });
+
+            try {
+                const desde = document.getElementById('dashFechaDesde')?.value;
+                const hasta = document.getElementById('dashFechaHasta')?.value;
+
+                // Fire all 4 requests in parallel
+                const [stats, canales, timeline, topProds] = await Promise.all([
+                    api.getEstadisticas(desde, hasta),
+                    api.getVentasPorCanal(desde, hasta),
+                    api.getTimeline(desde, hasta),
+                    api.getTopProductos(desde, hasta)
+                ]);
+
+                if (!stats) throw new Error('No se recibieron datos del servidor');
+
+                // ── KPI: Ventas ──
+                animateValue('stat-ventas', 0, stats.ventas_totales || 0, 800, true);
+
+                // ── KPI: Ganancia ──
+                animateValue('stat-ganancia', 0, stats.ganancia_neta || 0, 800, true);
+
+                // ── KPI: Margen ──
+                const margen = stats.margen_promedio || 0;
+                const margenEl = document.getElementById('stat-margen');
+                if (margenEl) {
+                    setTimeout(() => {
+                        margenEl.textContent = margen.toFixed(1) + '%';
+                        margenEl.style.color = margen >= 20 ? 'var(--success)' : margen >= 10 ? 'var(--warning)' : 'var(--danger)';
+                    }, 400);
+                }
+
+                // ── KPI: Pedidos ──
+                const totalPedidosStats = stats.total_pedidos || 0;
+                animateValue('stat-total', 0, totalPedidosStats, 800, false);
+                const entregadosSub = document.getElementById('stat-entregados-sub');
+                if (entregadosSub) entregadosSub.textContent = (stats.pedidos_entregados || 0) + ' entregados';
+
+                // ── KPI: Ticket Promedio ──
+                const ticket = totalPedidosStats > 0 ? (stats.ventas_totales || 0) / totalPedidosStats : 0;
+                animateValue('stat-ticket', 0, ticket, 800, true);
+
+                // ── KPI: Pendientes ──
+                const pendientes = stats.pedidos_pendientes || 0;
+                animateValue('stat-pendientes', 0, pendientes, 800, false);
+                const pendientesCard = document.getElementById('kpiPendientesCard');
+                if (pendientesCard) {
+                    pendientesCard.classList.toggle('has-pending', pendientes > 0);
+                }
+
+                // ── Charts ──
+                renderCharts({ ventas_por_canal: (canales || []).map(c => ({ canal: c.canal, total_pedidos: c.total, ventas: c.ventas })) }, timeline || []);
+
+                // ── Top Productos ──
+                renderTopProductos(topProds || []);
+
+                // ── Timeline subtitle ──
+                const sub = document.getElementById('timelineSub');
+                if (sub && timeline && timeline.length > 0) {
+                    const total = timeline.reduce((s, d) => s + d.ventas, 0);
+                    sub.textContent = formatearMoneda(total) + ' total';
+                } else if (sub) {
+                    sub.textContent = '';
+                }
+
+            } catch (e) {
+                console.error('Error dashboard:', e);
+                showNotification('Error cargando estadísticas: ' + e.message, 'error');
+                ['stat-ventas', 'stat-ganancia', 'stat-ticket'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = 'RD$0';
+                });
+                ['stat-total', 'stat-pendientes'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = '0';
+                });
+                const margenEl = document.getElementById('stat-margen');
+                if (margenEl) margenEl.textContent = '0%';
+            }
+        }
+
+        function animateValue(id, start, end, duration, isCurrency) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const startTime = performance.now();
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const current = start + (end - start) * easeProgress;
+                el.textContent = isCurrency ? formatearMoneda(current) : Math.round(current).toLocaleString();
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        function renderCharts(stats, timeline) {
+            const style = getComputedStyle(document.documentElement);
+            const accent = style.getPropertyValue('--accent').trim() || '#0071E3';
+            const success = style.getPropertyValue('--success').trim() || '#34C759';
+            const warning = style.getPropertyValue('--warning').trim() || '#FF9F0A';
+            const danger = style.getPropertyValue('--danger').trim() || '#FF3B30';
+            const surfaceSecondary = style.getPropertyValue('--surface-secondary').trim() || '#F5F5F7';
+            const textTertiary = style.getPropertyValue('--text-tertiary').trim() || '#86868B';
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const labelColor = isDark ? '#D1D1D6' : textTertiary;
+            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
+            const canalColors = {
+                'WhatsApp':  '#25D366E6',
+                'Instagram': '#C13584E6',
+                'Facebook':  '#1877F2E6',
+                'Referido':  '#8E8E93E6',
+                'Tienda':    accent + 'E6'
+            };
+
+            Chart.defaults.font.family = "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif";
+            Chart.defaults.font.size = 12;
+            Chart.defaults.color = labelColor;
+            Chart.defaults.plugins.legend.labels.usePointStyle = true;
+            Chart.defaults.plugins.legend.labels.padding = 14;
+            Chart.defaults.plugins.legend.labels.boxWidth = 8;
+            Chart.defaults.plugins.legend.labels.boxHeight = 8;
+            Chart.defaults.elements.arc.borderWidth = 0;
+
+            const tooltipDefaults = {
+                backgroundColor: 'rgba(28,28,30,0.95)',
+                titleColor: '#F5F5F7',
+                bodyColor: '#F5F5F7',
+                padding: 12,
+                cornerRadius: 10,
+                displayColors: true,
+                boxPadding: 6,
+                usePointStyle: true
+            };
+
+            // ── Timeline Line Chart ──
+            const timelineCtx = document.getElementById('chartTimeline');
+            if (timelineCtx) {
+                if (chartTimeline) chartTimeline.destroy();
+
+                if (!timeline || timeline.length === 0) {
+                    const ctx = timelineCtx.getContext('2d');
+                    ctx.clearRect(0, 0, timelineCtx.width, timelineCtx.height);
+                    ctx.font = '500 13px DM Sans, -apple-system, sans-serif';
+                    ctx.fillStyle = labelColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Sin datos para este período', timelineCtx.width / 2, timelineCtx.height / 2);
+                } else {
+                    const labels = timeline.map(d => {
+                        const [y, m, day] = d.fecha.split('-');
+                        return `${parseInt(day)}/${parseInt(m)}`;
+                    });
+                    const ventas = timeline.map(d => d.ventas);
+
+                    // Gradient fill
+                    const gradientCtx = timelineCtx.getContext('2d');
+                    const gradient = gradientCtx.createLinearGradient(0, 0, 0, 220);
+                    gradient.addColorStop(0, accent + '33');
+                    gradient.addColorStop(1, accent + '00');
+
+                    chartTimeline = new Chart(timelineCtx, {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Ventas',
+                                data: ventas,
+                                borderColor: accent,
+                                borderWidth: 2,
+                                backgroundColor: gradient,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: timeline.length > 20 ? 0 : 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: accent,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    ...tooltipDefaults,
+                                    callbacks: {
+                                        label: ctx => ' ' + formatearMoneda(ctx.parsed.y)
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: labelColor, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+                                    border: { display: false }
+                                },
+                                y: {
+                                    grid: { color: gridColor },
+                                    ticks: {
+                                        color: labelColor,
+                                        callback: v => {
+                                            if (v >= 1000) return 'RD$' + (v / 1000).toFixed(0) + 'k';
+                                            return 'RD$' + v;
+                                        }
+                                    },
+                                    border: { display: false }
+                                }
+                            },
+                            animation: { duration: 800, easing: 'easeOutQuart' }
+                        }
+                    });
+                }
+            }
+
+            // ── Canal Donut Chart ──
+            const canalCtx = document.getElementById('chartCanal');
+            if (canalCtx) {
+                if (chartCanal) chartCanal.destroy();
+                const canales = stats.ventas_por_canal || [];
+
+                if (canales.length === 0) {
+                    const ctx = canalCtx.getContext('2d');
+                    ctx.clearRect(0, 0, canalCtx.width, canalCtx.height);
+                    ctx.font = '500 13px DM Sans, -apple-system, sans-serif';
+                    ctx.fillStyle = labelColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Sin datos', canalCtx.width / 2, canalCtx.height / 2);
+                } else {
+                    chartCanal = new Chart(canalCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: canales.map(c => c.canal || 'Otro'),
+                            datasets: [{
+                                data: canales.map(c => c.total_pedidos || 0),
+                                backgroundColor: canales.map(c => canalColors[c.canal] || (accent + 'E6')),
+                                borderWidth: 0,
+                                spacing: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 12,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: { size: 12, weight: '500' },
+                                        color: labelColor,
+                                        boxWidth: 8, boxHeight: 8,
+                                        generateLabels: chart => chart.data.labels.map((label, i) => ({
+                                            text: label, fontColor: labelColor,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            hidden: false, index: i,
+                                            strokeStyle: 'transparent', lineWidth: 0
+                                        }))
+                                    }
+                                },
+                                tooltip: {
+                                    ...tooltipDefaults,
+                                    callbacks: {
+                                        label: ctx => {
+                                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                            const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                            return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            cutout: '70%',
+                            animation: { animateRotate: true, animateScale: false, duration: 800, easing: 'easeOutQuart' }
+                        }
+                    });
+                }
+            }
+        }
+
+        function renderTopProductos(productos) {
+            const container = document.getElementById('topProductosContainer');
+            if (!container) return;
+
+            if (!productos || productos.length === 0) {
+                container.innerHTML = '<p class="top-productos-empty">Sin datos para este período</p>';
+                return;
+            }
+
+            const rows = productos.map((p, i) => `
+                <tr>
+                    <td class="tp-rank">${i + 1}</td>
+                    <td><span class="tp-name" title="${p.producto || '—'}">${p.producto || '—'}</span></td>
+                    <td class="tp-units">${p.total_vendidos} uds.</td>
+                    <td class="tp-ingresos">${formatearMoneda(p.ingresos)}</td>
+                    <td class="tp-bar-cell">
+                        <div class="tp-bar-wrap">
+                            <div class="tp-bar-fill" style="width:${p.pct}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table class="top-productos-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th style="text-align:right">Unidades</th>
+                            <th style="text-align:right">Ingresos</th>
+                            <th>% del total</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        }
+
+        function updateChartsTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const style = getComputedStyle(document.documentElement);
+            const textTertiary = style.getPropertyValue('--text-tertiary').trim() || '#86868B';
+            const newColor = isDark ? '#D1D1D6' : textTertiary;
+            Chart.defaults.color = newColor;
+            [chartCanal, chartTimeline].forEach(chart => {
+                if (!chart) return;
+                if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = newColor;
+                if (chart.options.scales?.y?.ticks) chart.options.scales.y.ticks.color = newColor;
+                if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = newColor;
+                chart.update();
+            });
+        }
+
+        // Actualizar badge de pendientes en el tab — counts both alertas + structural pendientes
+        async function actualizarBadgePendientes() {
+            try {
+                const [alertas, pendientes] = await Promise.all([
+                    api.getAlertasRetraso().catch(() => []),
+                    api.getPedidosPendientes().catch(() => [])
+                ]);
+                const badge = document.getElementById('tabPendientesBadge');
+                if (!badge) return;
+                // Deduplicate by ID
+                const ids = new Set();
+                (alertas || []).forEach(a => ids.add(String(a.id)));
+                (pendientes || []).forEach(p => ids.add(String(p.id)));
+                const count = ids.size;
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) {
+                // Silently fail — badge is non-critical
+            }
+        }
+
+        // PENDIENTES — unified view: alertas de retraso + pendientes estructurales
+        async function cargarPendientes() {
+            const container = document.getElementById('lista-pendientes');
+            if (!container) return;
+
+            showCardsSkeleton('lista-pendientes', 3);
+
+            try {
+                // Fetch both sources in parallel
+                const [alertas, pendientes] = await Promise.all([
+                    api.getAlertasRetraso().catch(() => []),
+                    api.getPedidosPendientes().catch(() => [])
+                ]);
+
+                const safeAlertas = alertas || [];
+                const safePendientes = pendientes || [];
+
+                // If both empty, show empty state
+                if (!safeAlertas.length && !safePendientes.length) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            ${emptyStateSVG()}
+                            <h3>Todo al día</h3>
+                            <p>No hay pedidos pendientes ni en riesgo de retraso</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build a set of IDs from alertas to deduplicate
+                const alertaIds = new Set(safeAlertas.map(a => String(a.id)));
+
+                // Filter out pendientes that already appear in alertas
+                const pendientesSinDuplicar = safePendientes.filter(p => !alertaIds.has(String(p.id)));
+
+                let html = '';
+
+                // ── Section 1: Alertas de retraso ──
+                if (safeAlertas.length > 0) {
+                    const urgenciaLabel = { vencido: 'Vencido', hoy: 'Vence hoy', proximo: 'Próximo' };
+                    const urgenciaClass = { vencido: 'urgencia-vencido', hoy: 'urgencia-hoy', proximo: 'urgencia-proximo' };
+
+                    html += `<div class="pendientes-section">
+                        <div class="pendientes-section-header">
+                            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                            <h3>En riesgo de retraso</h3>
+                            <span class="pendientes-section-count">${safeAlertas.length}</span>
+                        </div>`;
+
+                    html += safeAlertas.map(a => `
+                        <div class="pendiente-card pendiente-card-alerta ${urgenciaClass[a.urgencia] || ''}">
+                            <div>
+                                <div class="pendiente-title">
+                                    ${a.id} — ${a.cliente}
+                                    <span class="urgencia-badge ${urgenciaClass[a.urgencia] || ''}">${urgenciaLabel[a.urgencia] || a.urgencia}</span>
+                                </div>
+                                <div class="pendiente-detail">
+                                    ${a.producto || ''} · ${a.talla || ''}
+                                </div>
+                                <div class="pendiente-meta">
+                                    <span><i class="far fa-calendar" aria-hidden="true"></i> Compromiso: ${a.fecha_compromiso || 'N/A'}</span>
+                                    <span>${getEstadoBadge(a.estatus_produccion)}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" data-action="resolver" data-pedido-id="${a.id}" aria-label="Ver pedido ${a.id}">
+                                Ver
+                            </button>
+                        </div>
+                    `).join('');
+
+                    html += `</div>`;
+                }
+
+                // ── Section 2: Pendientes estructurales ──
+                if (pendientesSinDuplicar.length > 0) {
+                    html += `<div class="pendientes-section">
+                        <div class="pendientes-section-header">
+                            <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+                            <h3>Acción requerida</h3>
+                            <span class="pendientes-section-count">${pendientesSinDuplicar.length}</span>
+                        </div>`;
+
+                    html += pendientesSinDuplicar.map(p => `
+                        <div class="pendiente-card">
+                            <div>
+                                <div class="pendiente-title">
+                                    ${p.id || p.numero_pedido} — ${p.cliente || p.cliente_nombre}
+                                </div>
+                                <div class="pendiente-detail">
+                                    ${p.producto || p.producto_nombre} · ${p.talla || p.talla_seleccionada || ''}
+                                </div>
+                                <div class="pendiente-reason">
+                                    ${p.motivo_pendiente || p.motivo || 'Revisión pendiente'}
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" data-action="resolver" data-pedido-id="${p.id || p.numero_pedido}" aria-label="Resolver pedido ${p.id || p.numero_pedido}">
+                                Resolver
+                            </button>
+                        </div>
+                    `).join('');
+
+                    html += `</div>`;
+                }
+
+                container.innerHTML = html;
+
+                // Event delegation for all action buttons (once on the container)
+                // Remove old listener by cloning
+                const newContainer = container.cloneNode(true);
+                container.parentNode.replaceChild(newContainer, container);
+                newContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-action="resolver"]');
+                    if (btn) {
+                        e.stopPropagation();
+                        editarPedido(btn.dataset.pedidoId);
+                    }
+                });
+
+            } catch (e) {
+                console.error('Error pendientes:', e);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="color:var(--danger);">Error al cargar pendientes</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+
+    <!-- M1: Quick-Add Drawer -->
+    <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
+    <aside id="quickAddDrawer" class="quick-add-drawer" role="dialog" aria-modal="true" aria-label="Nuevo pedido" hidden>
+        <div class="drawer-header">
+            <span class="drawer-title"><i class="fas fa-plus" aria-hidden="true"></i> Nuevo Pedido</span>
+            <button class="drawer-close" id="drawerClose" aria-label="Cerrar panel">
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+        <iframe id="drawerFrame" class="drawer-frame" src="" allow="clipboard-write" title="Formulario de nuevo pedido"></iframe>
+    </aside>
+</body>
+</html>
