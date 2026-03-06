@@ -3,7 +3,8 @@ Routes - Pedido Comentarios y Adjuntos
 """
 import traceback
 from flask import Blueprint, request, jsonify
-from app.models.database import ComentariosRepository, AdjuntosRepository, HistorialRepository
+from app.models.extras import ComentariosRepository, AdjuntosRepository
+from app.models.historial import HistorialRepository
 from app.auth.decorators import require_auth
 from app.auth import storage as supabase_storage
 

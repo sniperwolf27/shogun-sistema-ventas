@@ -16,7 +16,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Chart.js is lazy-loaded only when Dashboard tab is first opened -->
+    <!-- see: loadChartJs() in the inline script below -->
     <script>
         // Apply theme immediately to prevent flash (respects OS preference on first visit)
         (function(){var t=localStorage.getItem('theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
@@ -192,25 +193,6 @@
                 <button class="onboarding-dismiss" id="btnDismissOnboarding">Ya lo entendí, no mostrar de nuevo</button>
             </div>
 
-            <!-- ── CONTEXT BAR — 4 live operative KPIs ── -->
-            <div class="pedidos-context-bar" id="pedidosContextBar" role="region" aria-label="Resumen operativo">
-                <button class="context-kpi-card" data-urgencia="activos" aria-label="Ver pedidos activos">
-                    <span class="ck-value" id="ck-activos">—</span>
-                    <span class="ck-label">Activos</span>
-                </button>
-                <button class="context-kpi-card ck-success" data-urgencia="listos" aria-label="Ver pedidos listos para envío">
-                    <span class="ck-value" id="ck-listos">—</span>
-                    <span class="ck-label">Listos para Envío</span>
-                </button>
-                <button class="context-kpi-card ck-danger" data-urgencia="atrasados" aria-label="Ver pedidos atrasados">
-                    <span class="ck-value" id="ck-atrasados">—</span>
-                    <span class="ck-label">Atrasados</span>
-                </button>
-                <button class="context-kpi-card ck-warning" data-urgencia="sin-cobrar" aria-label="Ver pedidos sin cobrar">
-                    <span class="ck-value" id="ck-sin-cobrar">—</span>
-                    <span class="ck-label">Sin cobrar</span>
-                </button>
-            </div>
 
             <!-- ── FILTER AREA ── -->
             <!-- Row 1: Search -->
@@ -231,17 +213,6 @@
                 </select>
             </div>
 
-            <!-- Row 2: Pill tabs for state (primary filter) -->
-            <div class="estado-filter-pills" role="group" aria-label="Filtrar por estado de producción">
-                <button class="estado-pill active" data-estado="" aria-pressed="true">Todos</button>
-                <button class="estado-pill" data-estado="Recibido" aria-pressed="false">Recibido</button>
-                <button class="estado-pill" data-estado="En Producción" aria-pressed="false">En Producción</button>
-                <button class="estado-pill" data-estado="Listo para Envío" aria-pressed="false">Listo para Envío</button>
-                <button class="estado-pill" data-estado="En Camino" aria-pressed="false">En Camino</button>
-                <button class="estado-pill" data-estado="Entregado" aria-pressed="false">Entregado</button>
-                <button class="estado-pill estado-pill-alert" data-estado="Bloqueado - Sin Dirección" aria-pressed="false">Bloqueado</button>
-                <button class="estado-pill estado-pill-muted" data-estado="Cancelado" aria-pressed="false">Cancelado</button>
-            </div>
 
             <!-- Bulk action bar -->
             <div class="bulk-action-bar" id="bulkActionBar" style="display:none;" role="toolbar" aria-label="Acciones masivas">
@@ -267,11 +238,12 @@
                             <th class="col-urgency" aria-label="Urgencia">
                                 <label class="checkbox-touch-target"><input type="checkbox" class="order-checkbox" id="select-all-checkbox" aria-label="Seleccionar todos"></label>
                             </th>
-                            <th data-sortable data-sort-key="id">Pedido</th>
-                            <th data-sortable data-sort-key="cliente">Cliente</th>
-                            <th>Producto</th>
-                            <th data-sortable data-sort-key="estado">Estado</th>
-                            <th><span class="sr-only">Acciones</span></th>
+                            <th class="col-pedido" data-sortable data-sort-key="id">Pedido</th>
+                            <th class="col-cliente" data-sortable data-sort-key="cliente">Cliente</th>
+                            <th class="col-producto">Producto</th>
+                            <th class="col-estado" data-sortable data-sort-key="estado">Estado</th>
+                            <th class="col-total" data-sortable data-sort-key="total">Total</th>
+                            <th class="col-actions"><span class="sr-only">Acciones</span></th>
                         </tr>
                     </thead>
                     <tbody aria-live="polite" aria-relevant="additions removals"></tbody>
@@ -674,7 +646,6 @@
 
                 if (tab === 'pedidos') {
                     cargarPedidos();
-                    cargarResumenOperativo();
                     cargarAlertasRetraso();
                     actualizarBadgePendientes();
                 }
@@ -769,7 +740,6 @@
             });
 
             await cargarPedidos();
-            cargarResumenOperativo();
             cargarAlertasRetraso();
             actualizarBadgePendientes();
 
@@ -952,6 +922,9 @@
         }
 
         async function cargarDashboard() {
+            // Lazy-load Chart.js only when dashboard is first opened (saves 247 KB on initial load)
+            await loadChartJs();
+
             // Show skeleton in KPI cards
             document.querySelectorAll('.kpi-value').forEach(el => {
                 el.innerHTML = '<span class="skeleton-bar skeleton-bar-lg" style="width:70%;height:20px;display:block;border-radius:6px;"></span>';
@@ -961,21 +934,19 @@
                 const desde = document.getElementById('dashFechaDesde')?.value;
                 const hasta = document.getElementById('dashFechaHasta')?.value;
 
-                // Fire all 4 requests in parallel
-                const [stats, canales, timeline, topProds] = await Promise.all([
-                    api.getEstadisticas(desde, hasta),
-                    api.getVentasPorCanal(desde, hasta),
-                    api.getTimeline(desde, hasta),
-                    api.getTopProductos(desde, hasta)
-                ]);
-
-                if (!stats) throw new Error('No se recibieron datos del servidor');
+                // Single consolidated API call — replaces 4 separate requests
+                const dashData = await api.getDashboard(desde, hasta);
+                if (!dashData) throw new Error('No se recibieron datos del servidor');
+                const stats = dashData.generales;
+                const canales = dashData.canales;
+                const timeline = dashData.timeline;
+                const topProds = dashData.top_productos;
 
                 // ── KPI: Ventas ──
-                animateValue('stat-ventas', 0, stats.ventas_totales || 0, 800, true);
+                animateValue('stat-ventas', 0, stats.total_ventas || 0, 800, true);
 
                 // ── KPI: Ganancia ──
-                animateValue('stat-ganancia', 0, stats.ganancia_neta || 0, 800, true);
+                animateValue('stat-ganancia', 0, stats.total_ganancia || 0, 800, true);
 
                 // ── KPI: Margen ──
                 const margen = stats.margen_promedio || 0;
@@ -994,7 +965,7 @@
                 if (entregadosSub) entregadosSub.textContent = (stats.pedidos_entregados || 0) + ' entregados';
 
                 // ── KPI: Ticket Promedio ──
-                const ticket = totalPedidosStats > 0 ? (stats.ventas_totales || 0) / totalPedidosStats : 0;
+                const ticket = totalPedidosStats > 0 ? (stats.total_ventas || 0) / totalPedidosStats : 0;
                 animateValue('stat-ticket', 0, ticket, 800, true);
 
                 // ── KPI: Pendientes ──
@@ -1006,7 +977,7 @@
                 }
 
                 // ── Charts ──
-                renderCharts({ ventas_por_canal: (canales || []).map(c => ({ canal: c.canal, total_pedidos: c.total, ventas: c.ventas })) }, timeline || []);
+                renderCharts({ ventas_por_canal: canales || [] }, timeline || []);
 
                 // ── Top Productos ──
                 renderTopProductos(topProds || []);
@@ -1445,7 +1416,209 @@
                 `;
             }
         }
+
+        // ── URL Hash Routing: persist active tab in URL ──────────────────────
+        (function() {
+            const tabOrder = ['pedidos', 'dashboard', 'pendientes', 'parametros'];
+
+            function activateTabByHash() {
+                const hash = window.location.hash.replace('#', '') || 'pedidos';
+                const valid = tabOrder.includes(hash) ? hash : 'pedidos';
+                const btn = document.querySelector(`.tab-btn[data-tab="${valid}"]`);
+                if (btn && !btn.classList.contains('active')) btn.click();
+            }
+
+            // Intercept tab clicks to update URL hash
+            document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    history.replaceState(null, '', '#' + btn.dataset.tab);
+                }, true); // capture phase — fires before the existing click handler
+            });
+
+            // Restore tab on load
+            window.addEventListener('DOMContentLoaded', activateTabByHash, { once: true });
+            window.addEventListener('hashchange', activateTabByHash);
+        })();
+
+        // ── Keyboard Shortcuts ───────────────────────────────────────────────
+        document.addEventListener('keydown', function(e) {
+            // Don't fire shortcuts when typing in inputs
+            const tag = document.activeElement?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+            if (e.metaKey || e.ctrlKey) {
+                if (e.key === 'k' || e.key === 'K') {
+                    e.preventDefault();
+                    document.getElementById('cmdPaletteInput')?.focus();
+                    document.getElementById('commandPalette')?.classList.add('active');
+                    document.getElementById('cmdPaletteOverlay')?.classList.add('active');
+                    return;
+                }
+                if (e.key === 'n' || e.key === 'N') {
+                    e.preventDefault();
+                    document.getElementById('btnNuevoPedido')?.click();
+                    return;
+                }
+            }
+            // Tab shortcuts: 1=Pedidos, 2=Dashboard, 3=Pendientes, 4=Catalogo
+            const tabMap = { '1': 'pedidos', '2': 'dashboard', '3': 'pendientes', '4': 'parametros' };
+            if (tabMap[e.key] && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                const btn = document.querySelector(`.tab-btn[data-tab="${tabMap[e.key]}"]`);
+                if (btn) { e.preventDefault(); btn.click(); }
+            }
+            // ? = show shortcut hints
+            if (e.key === '?') {
+                showNotification('Atajos: N=Nuevo pedido · 1-4=Pestañas · ⌘K=Buscar', 'info', 5000);
+            }
+        });
+
+        // ── Command Palette Logic ─────────────────────────────────────────────
+        (function() {
+            const palette = document.getElementById('commandPalette');
+            const overlay = document.getElementById('cmdPaletteOverlay');
+            const input = document.getElementById('cmdPaletteInput');
+            const results = document.getElementById('cmdPaletteResults');
+
+            if (!palette) return;
+
+            const STATIC_COMMANDS = [
+                { icon: 'fa-plus', label: 'Nuevo Pedido', desc: '⌘N', action: () => document.getElementById('btnNuevoPedido')?.click() },
+                { icon: 'fa-rectangle-list', label: 'Ir a Pedidos', desc: 'Tecla 1', action: () => document.querySelector('.tab-btn[data-tab="pedidos"]')?.click() },
+                { icon: 'fa-chart-bar', label: 'Ir a Dashboard', desc: 'Tecla 2', action: () => document.querySelector('.tab-btn[data-tab="dashboard"]')?.click() },
+                { icon: 'fa-clock', label: 'Ir a Pendientes', desc: 'Tecla 3', action: () => document.querySelector('.tab-btn[data-tab="pendientes"]')?.click() },
+                { icon: 'fa-sliders', label: 'Ir al Catálogo', desc: 'Tecla 4', action: () => document.querySelector('.tab-btn[data-tab="parametros"]')?.click() },
+                { icon: 'fa-arrow-up-from-bracket', label: 'Exportar pedidos CSV', action: () => exportarCSV?.() },
+                { icon: 'fa-moon', label: 'Cambiar tema (Dark/Light)', action: () => toggleDarkMode() },
+                { icon: 'fa-arrow-right-from-bracket', label: 'Cerrar sesión', action: () => Auth.logout() },
+            ];
+
+            let currentIndex = -1;
+            let filteredCommands = [];
+
+            function closePalette() {
+                palette.classList.remove('active');
+                overlay.classList.remove('active');
+                input.value = '';
+                results.innerHTML = '';
+                currentIndex = -1;
+            }
+
+            function renderCommands(cmds) {
+                filteredCommands = cmds;
+                currentIndex = cmds.length > 0 ? 0 : -1;
+                results.innerHTML = cmds.map((cmd, i) => `
+                    <button class="cmd-result ${i === 0 ? 'active' : ''}" data-idx="${i}">
+                        <i class="fas ${cmd.icon} cmd-result-icon"></i>
+                        <span class="cmd-result-label">${cmd.label}</span>
+                        ${cmd.desc ? `<span class="cmd-result-desc">${cmd.desc}</span>` : ''}
+                    </button>
+                `).join('');
+            }
+
+            function highlightItem(idx) {
+                results.querySelectorAll('.cmd-result').forEach((el, i) => {
+                    el.classList.toggle('active', i === idx);
+                });
+                currentIndex = idx;
+                results.querySelectorAll('.cmd-result')[idx]?.scrollIntoView({ block: 'nearest' });
+            }
+
+            function executeActive() {
+                if (currentIndex >= 0 && filteredCommands[currentIndex]) {
+                    closePalette();
+                    filteredCommands[currentIndex].action();
+                }
+            }
+
+            input.addEventListener('input', async () => {
+                const q = input.value.trim().toLowerCase();
+                let cmds = STATIC_COMMANDS.filter(c =>
+                    c.label.toLowerCase().includes(q) || (c.desc || '').toLowerCase().includes(q)
+                );
+
+                // Dynamic: search orders if query looks like a search
+                if (q.length >= 3) {
+                    try {
+                        const res = await api.getPedidos({ q, limit: 5 });
+                        const pedidos = res?.pedidos || [];
+                        const pedidoCmds = pedidos.map(p => ({
+                            icon: 'fa-file-lines',
+                            label: `${p.id} — ${p.cliente}`,
+                            desc: p.estatus_produccion,
+                            action: () => window.verPedidoModal?.open(p.id)
+                        }));
+                        cmds = [...pedidoCmds, ...cmds];
+                    } catch {}
+                }
+                renderCommands(cmds.slice(0, 8));
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { closePalette(); return; }
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    highlightItem(Math.min(currentIndex + 1, filteredCommands.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    highlightItem(Math.max(currentIndex - 1, 0));
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    executeActive();
+                }
+            });
+
+            results.addEventListener('click', (e) => {
+                const btn = e.target.closest('.cmd-result');
+                if (btn) { currentIndex = parseInt(btn.dataset.idx); executeActive(); }
+            });
+
+            overlay.addEventListener('click', closePalette);
+
+            // Open on Cmd+K
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+                    e.preventDefault();
+                    if (palette.classList.contains('active')) { closePalette(); return; }
+                    palette.classList.add('active');
+                    overlay.classList.add('active');
+                    input.value = '';
+                    renderCommands(STATIC_COMMANDS.slice(0, 8));
+                    requestAnimationFrame(() => input.focus());
+                }
+            });
+        })();
+
+        // ── Lazy Chart.js loader ──────────────────────────────────────────────
+        window.loadChartJs = function() {
+            return new Promise((resolve) => {
+                if (window.Chart) { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+                s.onload = resolve;
+                s.onerror = resolve; // Don't block on CDN failures
+                document.head.appendChild(s);
+            });
+        };
+
     </script>
+
+    <!-- Command Palette -->
+    <div class="cmd-palette-overlay" id="cmdPaletteOverlay" aria-hidden="true"></div>
+    <div class="cmd-palette" id="commandPalette" role="dialog" aria-label="Command Palette" aria-modal="true">
+        <div class="cmd-palette-inner">
+            <div class="cmd-search-bar">
+                <i class="fas fa-magnifying-glass cmd-search-icon" aria-hidden="true"></i>
+                <input type="text" id="cmdPaletteInput" placeholder="Buscar pedidos, acciones..." autocomplete="off" spellcheck="false" aria-label="Buscar en command palette">
+                <kbd class="cmd-esc-hint">ESC</kbd>
+            </div>
+            <div class="cmd-results" id="cmdPaletteResults" role="listbox"></div>
+            <div class="cmd-footer" aria-hidden="true">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+                <span><kbd>↵</kbd> seleccionar</span>
+                <span><kbd>ESC</kbd> cerrar</span>
+                <span class="cmd-footer-hint">? para ver todos los atajos</span>
+            </div>
+        </div>
+    </div>
 
     <!-- M1: Quick-Add Drawer -->
     <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>

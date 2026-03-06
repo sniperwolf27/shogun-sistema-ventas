@@ -1,6 +1,6 @@
 """Routes - Pedidos"""
 from flask import Blueprint, request, jsonify
-from app.models.database import PedidosRepository
+from app.models.pedidos import PedidosRepository
 from app.auth.decorators import require_auth, admin_only
 
 pedidos_bp = Blueprint('pedidos', __name__)
@@ -158,6 +158,7 @@ def actualizar_pedido(user, pedido_id):
                     'precio_envio': 'precio_envio',
                     'costos_adicionales': 'costos_adicionales',
                     'fecha_entrega_real': 'fecha_entrega_real',
+                    'puntadas': 'puntadas',
                 }
                 for field_key, pedido_key in field_map.items():
                     if field_key in data:
@@ -175,7 +176,12 @@ def actualizar_pedido(user, pedido_id):
             except Exception as hist_err:
                 print(f"[HISTORIAL] Warning: {hist_err}")
 
-        return jsonify({'success': True, 'updated_by': user['email']}), 200
+        # Return updated totals if available (puntadas recalc sends them back)
+        response = {'success': True, 'updated_by': user['email']}
+        if isinstance(actualizado, dict):
+            response['precio_total'] = actualizado.get('precio_total')
+            response['ganancia'] = actualizado.get('ganancia')
+        return jsonify(response), 200
     except Exception as e:
         print(f"[PUT /pedidos/{pedido_id}] ERROR: {e}")
         import traceback

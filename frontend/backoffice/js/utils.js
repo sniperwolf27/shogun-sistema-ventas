@@ -192,6 +192,25 @@ function validarTelefono(telefono) {
 }
 
 /**
+ * Formatear teléfono dominicano → xxx-xxx-xxxx
+ * Handles bare digits, dashes, spaces, or +1 prefix.
+ * Returns '—' for empty/null values.
+ */
+function formatTelefono(raw) {
+    if (!raw) return '—';
+    const digits = String(raw).replace(/\D/g, '');
+    if (digits.length === 10) {
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    if (digits.length === 11 && digits[0] === '1') {
+        // +1 country code
+        return `${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+    }
+    // Non-standard length — return as-is without mangling
+    return raw;
+}
+
+/**
  * Sanitizar texto (prevenir XSS)
  */
 function sanitizarTexto(texto) {

@@ -2101,7 +2101,7 @@ thead th[data-sort-key="total"] {
     background: #FFD60A;
 }
 
-/* ── Row meta (secondary text) ── */
+/* ── Row meta (secondary text under primary content) ── */
 .row-meta {
     font-size: var(--text-caption);
     color: var(--text-tertiary);
@@ -2109,6 +2109,154 @@ thead th[data-sort-key="total"] {
     align-items: center;
     gap: 4px;
     margin-top: 2px;
+    white-space: nowrap;
+}
+
+.row-phone {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+}
+
+/* ── Column width assignments ── */
+/* These ch/px values lock the grid so columns don't jitter as data changes */
+.col-urgency {
+    width: 36px;
+    min-width: 36px;
+}
+
+.col-pedido {
+    width: 88px;
+    min-width: 80px;
+}
+
+.col-cliente {
+    width: 180px;
+    min-width: 160px;
+}
+
+.col-producto {
+    width: 160px;
+    /* grows to fill remaining space */
+    min-width: 140px;
+}
+
+.col-estado {
+    width: 160px;
+    min-width: 140px;
+}
+
+.col-total {
+    width: 110px;
+    min-width: 100px;
+    text-align: right;
+}
+
+.col-actions {
+    width: 1px;
+    white-space: nowrap;
+}
+
+/* shrinks to content */
+
+/* ── Row ID — monospaced, subtle ── */
+.row-id {
+    font-family: var(--font-mono, ui-monospace, 'SF Mono', monospace);
+    font-size: var(--text-subhead);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ── Product name ── */
+.row-producto-nombre {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* ── Color chip — subtle secondary tag ── */
+.row-color-chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    background: var(--surface-tertiary);
+    border-radius: var(--radius-full);
+    padding: 1px 6px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Total amount — right-aligned tabular ── */
+.row-total-amount {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    font-weight: 600;
+    font-size: var(--text-subhead);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* ── Estado cell: badge on top, footer below in one line ── */
+.col-estado {
+    vertical-align: middle;
+}
+
+/* Footer row below the estado badge: dias + pago badges */
+.row-estado-footer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: nowrap;
+    min-height: 20px;
+    /* prevents height jitter when empty */
+}
+
+/* ── Actions: compact flex group ── */
+.row-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: nowrap;
+}
+
+/* ── Neutral icon button for edit (replaces btn-warning visually) ── */
+.btn-secondary-icon {
+    width: var(--touch-min);
+    height: var(--touch-min);
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-spring);
+    font-size: var(--text-subhead);
+}
+
+.btn-secondary-icon:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.btn-secondary-icon:active {
+    transform: scale(0.92);
+}
+
+/* ── Mobile card: advance button row ── */
+.pedido-card-advance {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.pedido-card-num {
+    font-family: var(--font-mono, ui-monospace, 'SF Mono', monospace);
+    font-weight: 700;
+    font-size: var(--text-subhead);
 }
 
 /* ── Estado column: two-state separation ── */
@@ -3643,5 +3791,93 @@ thead th[data-sort-key="total"] {
 
     .pedido-cards-mobile {
         display: none !important;
+    }
+}
+
+/* ============================================================================
+   NEXT STATE QUICK-ADVANCE BUTTON
+   Shown in each table row for non-terminal orders.
+   Clicking advances the order to the next logical state without opening a modal.
+   ============================================================================ */
+
+.btn-next-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--success);
+    border-radius: var(--radius-full);
+    background: var(--success-soft);
+    color: #248A3D;
+    font-family: var(--font-body);
+    font-size: var(--text-micro);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-spring);
+    white-space: nowrap;
+    min-height: 28px;
+}
+
+.btn-next-state:hover {
+    background: var(--success);
+    color: var(--text-inverted);
+    transform: translateX(1px);
+    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+}
+
+.btn-next-state:active {
+    transform: scale(0.96) translateX(0);
+}
+
+.btn-next-state i {
+    font-size: 10px;
+}
+
+[data-theme="dark"] .btn-next-state {
+    color: #30D158;
+}
+
+[data-theme="dark"] .btn-next-state:hover {
+    color: var(--text-primary);
+}
+
+/* Mobile: only show icon, hide label */
+@media (max-width: 768px) {
+    .next-state-label {
+        display: none;
+    }
+
+    .btn-next-state {
+        padding: 4px 6px;
+        min-height: var(--touch-min);
+    }
+}
+
+/* ============================================================================
+   CMD+K SHORTCUT HINT in header search
+   ============================================================================ */
+.search-cmd-hint {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--text-placeholder);
+    font-size: var(--text-micro);
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.search-cmd-hint kbd {
+    background: var(--surface-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: var(--text-micro);
+    font-family: var(--font-body);
+    color: var(--text-tertiary);
+}
+
+@media (max-width: 768px) {
+    .search-cmd-hint {
+        display: none;
     }
 }

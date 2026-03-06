@@ -78,6 +78,9 @@
             this.overlay.classList.add('active');
             modal.classList.add('active');
             document.body.classList.add('modal-open');
+            // Close on click outside modal content
+            this._backdropHandler = (e) => { if (e.target === modal) this.closeActive(); };
+            modal.addEventListener('click', this._backdropHandler);
             // Focus trap
             this._focusTrapHandler = (e) => {
                 if (e.key !== 'Tab') return;
@@ -105,6 +108,10 @@
             if (this._focusTrapHandler) {
                 document.removeEventListener('keydown', this._focusTrapHandler);
                 this._focusTrapHandler = null;
+            }
+            if (this._backdropHandler) {
+                modal.removeEventListener('click', this._backdropHandler);
+                this._backdropHandler = null;
             }
             const onEnd = () => {
                 modal.classList.remove('active', 'closing');
@@ -363,8 +370,12 @@
                     const status = document.getElementById('adjuntoStatus');
                     for (const file of files) {
                         status.textContent = `Subiendo ${file.name}...`;
-                        try { await api.subirAdjunto(id, file); }
-                        catch (err) { showNotification(`Error subiendo ${file.name}: ${err.message}`, 'error'); }
+                        try {
+                            const res = await api.subirAdjunto(id, file);
+                            if (res && !res.success) throw new Error(res.error || 'Error al subir archivo');
+                        } catch (err) {
+                            showNotification(`Error subiendo ${file.name}: ${err.message}`, 'error');
+                        }
                     }
                     status.textContent = '';
                     e.target.value = '';
@@ -442,12 +453,12 @@
 
                 // Mejora 7: Transiciones de estado válidas
                 const VALID_TRANSITIONS = {
-                    'En Producción':          ['En Producción', 'Listo para Envío', 'Bloqueado - Sin Dirección', 'Cancelado'],
-                    'Listo para Envío':       ['Listo para Envío', 'En Camino', 'En Producción', 'Cancelado'],
-                    'En Camino':              ['En Camino', 'Entregado', 'Listo para Envío', 'Cancelado'],
-                    'Entregado':              ['Entregado', 'En Camino'],
+                    'En Producción': ['En Producción', 'Listo para Envío', 'Bloqueado - Sin Dirección', 'Cancelado'],
+                    'Listo para Envío': ['Listo para Envío', 'En Camino', 'En Producción', 'Cancelado'],
+                    'En Camino': ['En Camino', 'Entregado', 'Listo para Envío', 'Cancelado'],
+                    'Entregado': ['Entregado', 'En Camino'],
                     'Bloqueado - Sin Dirección': ['Bloqueado - Sin Dirección', 'En Producción', 'Cancelado'],
-                    'Cancelado':              ['Cancelado', 'En Producción']
+                    'Cancelado': ['Cancelado', 'En Producción']
                 };
                 const allEstados = ['En Producción', 'Listo para Envío', 'En Camino', 'Entregado', 'Bloqueado - Sin Dirección', 'Cancelado'];
                 const estadosProd = VALID_TRANSITIONS[p.estatus_produccion] || allEstados;
@@ -483,6 +494,18 @@
                             </div>
                             <div class="edit-row"><label class="edit-label">Dirección</label><textarea name="direccion" class="form-control" rows="2">${esc(p.direccion || '')}</textarea></div>
                             <div class="edit-row"><label class="edit-label">Detalles Personalización</label><textarea name="personalizacion" class="form-control" rows="2" placeholder="Detalles del bordado/diseño...">${esc(p.personalizacion || '')}</textarea></div>
+                            ${p.personalizacion_codigo ? `
+                            <div class="edit-row" id="puntadasEditRow">
+                                <label class="edit-label">
+                                    ✦ Puntadas de bordado
+                                    <span class="edit-label-hint">${p.puntadas ? Number(p.puntadas).toLocaleString() + ' puntadas originales' : '—'}</span>
+                                </label>
+                                <div class="puntadas-edit-wrap">
+                                    <input name="puntadas" id="editPuntadas" type="number" min="0" step="100"
+                                        class="form-control" value="${p.puntadas || 0}" placeholder="Ej: 12000">
+                                    <p class="puntadas-calc-preview" id="puntadasPreview"></p>
+                                </div>
+                            </div>` : ''}
                             <div class="edit-grid-3">
                                 <div><label class="edit-label">Precio Venta (RD$)</label><input name="precio_producto" type="number" step="0.01" class="form-control" value="${p.precio_producto || 0}"></div>
                                 <div><label class="edit-label">Costos Adicionales</label><input name="costos_adicionales" type="number" step="0.01" class="form-control" value="${p.costos_adicionales || 0}"></div>
@@ -536,6 +559,33 @@
                 this._loadComentarios(id);
                 this._loadAdjuntos(id);
 
+                // ── Live puntadas preview ────────────────────────────────────
+                const puntadasInput = document.getElementById('editPuntadas');
+                const puntadasPreview = document.getElementById('puntadasPreview');
+                if (puntadasInput && puntadasPreview) {
+                    // costo_mano_obra / puntadas → rate per 1K
+                    const costoMil = p.puntadas > 0 && p.costo_mano_obra > 0
+                        ? (p.costo_mano_obra / p.puntadas) * 1000
+                        : 0;
+
+                    const updatePreview = () => {
+                        const pts = parseInt(puntadasInput.value) || 0;
+                        if (costoMil > 0 && pts > 0) {
+                            const nuevoCosto = (pts / 1000) * costoMil;
+                            puntadasPreview.textContent =
+                                `${(pts / 1000).toFixed(1)}K × ${money(costoMil)}/1K = ${money(nuevoCosto)} mano de obra`;
+                            puntadasPreview.style.color = 'var(--accent)';
+                        } else if (pts === 0) {
+                            puntadasPreview.textContent = 'Sin costo de mano de obra';
+                            puntadasPreview.style.color = 'var(--text-tertiary)';
+                        } else {
+                            puntadasPreview.textContent = '';
+                        }
+                    };
+                    puntadasInput.addEventListener('input', updatePreview);
+                    updatePreview(); // initial render
+                }
+
                 document.getElementById('btnEditAddComment').onclick = async () => {
                     const input = document.getElementById('editNuevoComentario');
                     const texto = input.value.trim();
@@ -556,7 +606,10 @@
                     const status = document.getElementById('editAdjuntoStatus');
                     for (const file of files) {
                         status.textContent = `Subiendo ${file.name}...`;
-                        try { await api.subirAdjunto(id, file); } catch (err) { showNotification(`Error: ${err.message}`, 'error'); }
+                        try {
+                            const res = await api.subirAdjunto(id, file);
+                            if (res && !res.success) throw new Error(res.error || 'Error al subir archivo');
+                        } catch (err) { showNotification(`Error: ${err.message}`, 'error'); }
                     }
                     status.textContent = '';
                     e.target.value = '';
@@ -575,6 +628,10 @@
                     const obj = {};
                     for (const [k, v] of fd.entries()) { obj[k] = v.trim(); }
                     if (obj.fecha_entrega_real) { obj.fecha_entrega_real = isoToDdmm(obj.fecha_entrega_real); }
+                    // Only send puntadas if the field exists AND value changed
+                    if (obj.puntadas !== undefined && parseInt(obj.puntadas) === (p.puntadas || 0)) {
+                        delete obj.puntadas; // unchanged — skip server round-trip
+                    }
 
                     try {
                         // M4: Validar y registrar motivo de devolución
@@ -763,8 +820,8 @@
                             <div class="section-title"><i class="far fa-rectangle-list"></i> Últimos pedidos</div>
                             <div class="cliente-pedidos-lista">
                                 ${(perfil.pedidos_recientes || []).length === 0
-                                    ? '<p class="comment-empty">Sin pedidos registrados</p>'
-                                    : (perfil.pedidos_recientes || []).map(p => `
+                        ? '<p class="comment-empty">Sin pedidos registrados</p>'
+                        : (perfil.pedidos_recientes || []).map(p => `
                                         <div class="grupo-pedido-item">
                                             <div class="grupo-pedido-info">
                                                 <strong>${esc(p.id)}</strong>

@@ -15,6 +15,7 @@ let _popoverPedidoId = null; // which pedido the popover belongs to
 // ─── Urgency helpers ──────────────────────────────────────────────────────────
 
 function getUrgencyLevel(pedido) {
+    if (['Entregado', 'Cancelado'].includes(pedido.estatus_produccion)) return 'none';
     const retraso = parseInt(pedido.dias_retraso) || 0;
     // dias_retraso is stored as positive int in DB when late
     if (retraso > 0) return 'red';
@@ -62,6 +63,59 @@ function getCanalIcon(canal) {
         'Tienda': '<i class="fas fa-store" title="Tienda" style="color:var(--accent)"></i>',
     };
     return icons[canal] || `<i class="fas fa-circle-dot" title="${canal || '—'}" style="color:var(--text-quaternary)"></i>`;
+}
+
+// ── Next State helper ─────────────────────────────────────────
+//
+// Maps each state to the next logical production state.
+// Terminal states (Entregado, Cancelado) return null.
+
+const ESTADO_FLOW = {
+    'Recibido': 'En Producción',
+    'En Producción': 'Listo para Envío',
+    'Listo para Envío': 'En Camino',
+    'En Camino': 'Entregado',
+    'Bloqueado - Sin Dirección': 'En Producción',
+};
+
+function getNextState(currentState) {
+    return ESTADO_FLOW[currentState] || null;
+}
+
+async function avanzarEstado(pedidoId, currentState) {
+    const nextState = getNextState(currentState);
+    if (!nextState) return;
+    try {
+        const ok = await api.updatePedido(pedidoId, { estatus_produccion: nextState });
+        if (ok) {
+            // Optimistic update without full table reload
+            const pedido = pedidosCache.find(p => String(p.id) === String(pedidoId));
+            if (pedido) {
+                pedido.estatus_produccion = nextState;
+                const row = document.querySelector(`tr[data-pedido-id="${pedidoId}"]`);
+                if (row) {
+                    const estadoCell = row.querySelector('.estado-badge-btn');
+                    if (estadoCell) estadoCell.innerHTML = getEstadoBadge(nextState);
+                    const nextBtn = row.querySelector('[data-action="nextState"]');
+                    if (nextBtn) {
+                        const nn = getNextState(nextState);
+                        if (nn) {
+                            nextBtn.dataset.nextState = nextState;
+                            nextBtn.title = `Avanzar a: ${nn}`;
+                            nextBtn.innerHTML = `<i class="fas fa-arrow-right"></i><span class="next-state-label">${nn}</span>`;
+                        } else {
+                            nextBtn.style.display = 'none';
+                        }
+                    }
+                }
+            }
+            if (typeof showNotification === 'function') {
+                showNotification(`→ ${nextState}`, 'success', 2000);
+            }
+        }
+    } catch (e) {
+        if (typeof showNotification === 'function') showNotification('Error al cambiar estado', 'error');
+    }
 }
 
 // ─── Empty states ─────────────────────────────────────────────────────────────
@@ -113,30 +167,6 @@ function showTableSkeleton() {
     }
 }
 
-// ─── Load resumen operativo ───────────────────────────────────────────────────
-
-async function cargarResumenOperativo() {
-    try {
-        const data = await api.getResumenOperativo();
-        const el = {
-            activos: document.getElementById('ck-activos'),
-            listos: document.getElementById('ck-listos'),
-            atrasados: document.getElementById('ck-atrasados'),
-            sinCobrar: document.getElementById('ck-sin-cobrar'),
-        };
-        if (el.activos) el.activos.textContent = data.activos ?? 0;
-        if (el.listos) el.listos.textContent = data.listos_envio ?? 0;
-        if (el.atrasados) {
-            el.atrasados.textContent = data.atrasados ?? 0;
-            // Visually pulse if there are delayed orders
-            const card = el.atrasados.closest('.context-kpi-card');
-            if (card) card.classList.toggle('ck-pulsing', (data.atrasados || 0) > 0);
-        }
-        if (el.sinCobrar) el.sinCobrar.textContent = data.sin_cobrar ?? 0;
-    } catch (e) {
-        console.warn('[resumen-operativo]', e);
-    }
-}
 
 // ─── Load pedidos ─────────────────────────────────────────────────────────────
 
@@ -232,62 +262,92 @@ function renderizarTablaPedidos(data) {
 function crearFilaPedido(pedido, isAdmin) {
     const urgency = getUrgencyLevel(pedido);
     const urgencyDot = urgency !== 'none'
-        ? `<span class="urgency-dot urgency-${urgency}" title="Urgencia: ${urgency}"></span>`
+        ? `<span class="urgency-dot urgency-${urgency}" title="${urgency === 'red' ? 'Atrasado' : urgency === 'orange' ? 'Vence mañana' : 'Próximo a vencer'}"></span>`
         : '';
 
     const alerta = (!pedido.direccion || pedido.direccion === 'Pendiente') ? 'row-alert' : '';
     const deleteBtn = isAdmin
-        ? `<button class="btn-icon btn-danger" data-action="delete" data-id="${pedido.id}" title="Eliminar pedido" aria-label="Eliminar pedido ${pedido.id}"><i class="far fa-trash-can" aria-hidden="true"></i></button>`
+        ? `<button class="btn-icon btn-danger" data-action="delete" data-id="${pedido.id}" title="Eliminar" aria-label="Eliminar pedido ${pedido.id}"><i class="far fa-trash-can" aria-hidden="true"></i></button>`
         : '';
 
     const canalIcon = getCanalIcon(pedido.canal);
     const fechaStr = pedido.fecha_pago ? formatearFechaCorta(pedido.fecha_pago) : '—';
     const grupoIcon = pedido.grupo_pedido
-        ? `<span class="grupo-badge" title="Grupo: ${pedido.grupo_pedido}"><i class="fas fa-layer-group"></i></span> `
+        ? `<span class="grupo-badge" title="Grupo: ${pedido.grupo_pedido}"><i class="fas fa-layer-group"></i></span>`
         : '';
 
     const diasBadge = getDiasBadgeHTML(pedido);
+    const nextState = getNextState(pedido.estatus_produccion);
+    const telefonoFmt = formatTelefono(pedido.telefono);
 
-    // Payment badge — with explicit 'Pago:' label so it's not confused with production state
-    // NOTE: 'Recibido' is the paid state in estado_pago enum (no 'Pagado' value exists)
-    const pagoEstado = pedido.estatus_pago || '';
-    const pagoBadge = pagoEstado === 'Recibido'
-        ? ''
-        : `<span class="row-pago-label">Pago:</span><span class="badge-pago badge-pago-pendiente" title="Estado de pago: ${pagoEstado}">${pagoEstado}</span>`;
 
     return `
         <tr class="${alerta}" data-pedido-id="${pedido.id}" tabindex="0">
+
+            <!-- Col 1: Checkbox + urgency dot -->
             <td class="col-urgency" data-label="">
-                <label class="checkbox-touch-target"><input type="checkbox" class="order-checkbox" value="${pedido.id}"></label>
+                <label class="checkbox-touch-target">
+                    <input type="checkbox" class="order-checkbox" value="${pedido.id}">
+                </label>
                 ${urgencyDot}
             </td>
-            <td data-label="Pedido">
-                <strong>${pedido.id}</strong>
-                <div class="row-meta">${canalIcon} ${fechaStr}</div>
+
+            <!-- Col 2: Order ID + channel + date -->
+            <td class="col-pedido" data-label="Pedido">
+                <span class="row-id">#${pedido.id}</span>${grupoIcon}
+                <div class="row-meta">${canalIcon}<span>${fechaStr}</span></div>
             </td>
-            <td data-label="Cliente">
-                <button class="btn-cliente-link" data-action="verClientePerfil" data-telefono="${pedido.telefono || ''}" title="Ver perfil del cliente">${pedido.cliente || ''}</button>
-                ${pedido.telefono ? `<div class="row-meta">${pedido.telefono}</div>` : ''}
+
+            <!-- Col 3: Client name + formatted phone -->
+            <td class="col-cliente" data-label="Cliente">
+                <button class="btn-cliente-link" data-action="verClientePerfil"
+                    data-telefono="${pedido.telefono || ''}" title="Ver perfil">
+                    ${pedido.cliente || '—'}
+                </button>
+                ${pedido.telefono
+            ? `<div class="row-meta row-phone">
+                            <i class="fas fa-phone" style="font-size:9px;opacity:.6"></i>
+                            <span>${telefonoFmt}</span>
+                       </div>`
+            : ''}
             </td>
-            <td data-label="Producto">
-                ${grupoIcon}${pedido.producto || ''}${pedido.color ? ' · ' + pedido.color : ''}
-                <div class="row-meta"><span class="badge badge-secondary">${pedido.talla || ''}</span></div>
-            </td>
-            <td data-label="Estado">
-                <div class="estado-produccion-cell">
-                    <span class="row-state-label">Producción</span>
-                    <button class="estado-badge-btn" data-action="toggleEstado" data-id="${pedido.id}" title="Click para cambiar estado de producción" aria-haspopup="listbox">
-                        ${getEstadoBadge(pedido.estatus_produccion)}
-                    </button>
+
+            <!-- Col 4: Product + size + color -->
+            <td class="col-producto" data-label="Producto">
+                <span class="row-producto-nombre">${pedido.producto || '—'}</span>
+                <div class="row-meta">
+                    <span class="badge badge-secondary">${pedido.talla || '—'}</span>
+                    ${pedido.color ? `<span class="row-color-chip" title="${pedido.color}">${pedido.color}</span>` : ''}
                 </div>
-                ${pagoBadge ? `<div class="estado-pago-cell">${pagoBadge}</div>` : ''}
-                ${diasBadge}
             </td>
-            <td class="actions td-actions">
-                <button class="btn-icon btn-info" data-action="view" data-id="${pedido.id}" title="Ver pedido" aria-label="Ver pedido ${pedido.id}"><i class="far fa-eye" aria-hidden="true"></i></button>
-                <button class="btn-icon btn-warning" data-action="edit" data-id="${pedido.id}" title="Editar pedido" aria-label="Editar pedido ${pedido.id}"><i class="far fa-pen-to-square" aria-hidden="true"></i></button>
-                ${deleteBtn}
+
+            <!-- Col 5: Estado produccion + pago badge + days -->
+            <td class="col-estado" data-label="Estado">
+                <button class="estado-badge-btn" data-action="toggleEstado" data-id="${pedido.id}"
+                    title="Cambiar estado" aria-haspopup="listbox">
+                    ${getEstadoBadge(pedido.estatus_produccion)}
+                </button>
+                <div class="row-estado-footer">
+                    ${diasBadge}
+                </div>
             </td>
+
+            <!-- Col 6: Total -->
+            <td class="col-total" data-label="Total">
+                <span class="row-total-amount">${formatearMoneda(pedido.precio_total)}</span>
+            </td>
+
+            <!-- Col 7: Actions -->
+            <td class="col-actions td-actions">
+                <div class="row-actions-group">
+                    <button class="btn-icon btn-secondary-icon" data-action="edit" data-id="${pedido.id}"
+                        title="Editar" aria-label="Editar pedido ${pedido.id}">
+                        <i class="far fa-pen-to-square" aria-hidden="true"></i>
+                    </button>
+                    ${deleteBtn}
+                </div>
+            </td>
+
         </tr>`;
 }
 
@@ -299,31 +359,35 @@ function crearCardMobile(pedido, isAdmin) {
     const diasBadge = getDiasBadgeHTML(pedido);
     const canalIcon = getCanalIcon(pedido.canal);
     const fechaStr = pedido.fecha_pago ? formatearFechaCorta(pedido.fecha_pago) : '';
+    const telefonoFmt = formatTelefono(pedido.telefono);
+    const nextState = getNextState(pedido.estatus_produccion);
 
     return `
         <div class="pedido-card ${urgencyBar}" data-pedido-id="${pedido.id}">
             <div class="pedido-card-header">
                 <div class="pedido-card-id">
-                    <strong>#${pedido.id}</strong>
-                    <span class="pedido-card-meta">${canalIcon} ${fechaStr}</span>
+                    <span class="pedido-card-num">#${pedido.id}</span>
+                    <span class="pedido-card-meta">${canalIcon}<span>${fechaStr}</span></span>
                 </div>
                 <div class="pedido-card-actions">
-                    <button class="btn-icon btn-info btn-sm" data-action="view" data-id="${pedido.id}" aria-label="Ver pedido"><i class="far fa-eye"></i></button>
-                    <button class="btn-icon btn-warning btn-sm" data-action="edit" data-id="${pedido.id}" aria-label="Editar pedido"><i class="far fa-pen-to-square"></i></button>
+                    <button class="btn-icon btn-secondary-icon btn-sm" data-action="edit" data-id="${pedido.id}" aria-label="Editar pedido"><i class="far fa-pen-to-square"></i></button>
                 </div>
             </div>
             <div class="pedido-card-body">
-                <div class="pedido-card-cliente">
-                    <button class="btn-cliente-link" data-action="verClientePerfil" data-telefono="${pedido.telefono || ''}">${pedido.cliente || '—'}</button>
+                <button class="btn-cliente-link" data-action="verClientePerfil" data-telefono="${pedido.telefono || ''}">${pedido.cliente || '—'}</button>
+                ${pedido.telefono ? `<div class="row-meta row-phone"><i class="fas fa-phone" style="font-size:9px;opacity:.5"></i><span>${telefonoFmt}</span></div>` : ''}
+                <div class="pedido-card-producto">
+                    ${pedido.producto || '—'}
+                    ${pedido.color ? `· <span style="opacity:.7">${pedido.color}</span>` : ''}
+                    <span class="badge badge-secondary">${pedido.talla || ''}</span>
                 </div>
-                <div class="pedido-card-producto">${pedido.producto || '—'}${pedido.color ? ' · ' + pedido.color : ''} <span class="badge badge-secondary">${pedido.talla || ''}</span></div>
             </div>
             <div class="pedido-card-footer">
-                <button class="estado-badge-btn" data-action="toggleEstado" data-id="${pedido.id}" title="Click para cambiar estado">
+                <button class="estado-badge-btn" data-action="toggleEstado" data-id="${pedido.id}" title="Cambiar estado">
                     ${getEstadoBadge(pedido.estatus_produccion)}
                 </button>
                 ${diasBadge}
-                <strong class="pedido-card-total">${formatearMoneda(pedido.precio_total)}</strong>
+                <span class="pedido-card-total">${formatearMoneda(pedido.precio_total)}</span>
             </div>
         </div>`;
 }
@@ -437,9 +501,6 @@ async function actualizarEstadoInline(pedidoId, nuevoEstado) {
             document.querySelectorAll(`[data-pedido-id="${pedidoId}"] .estado-badge-btn`).forEach(btn => {
                 btn.innerHTML = getEstadoBadge(nuevoEstado);
             });
-
-            // Refresh context bar counts
-            cargarResumenOperativo();
 
             if (typeof showNotification === 'function')
                 showNotification(`Pedido ${pedidoId} → <strong>${nuevoEstado}</strong>`, 'success', 3000);
@@ -613,47 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterCanal = document.getElementById('filterCanal');
     if (filterCanal) filterCanal.addEventListener('change', aplicarFiltros);
 
-    // Pill tabs — state filter
-    document.querySelectorAll('.estado-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.estado-pill').forEach(b => {
-                b.classList.remove('active');
-                b.setAttribute('aria-pressed', 'false');
-            });
-            btn.classList.add('active');
-            btn.setAttribute('aria-pressed', 'true');
-            currentFilters.estado = btn.dataset.estado || '';
-            cargarPedidos(1);
-        });
-    });
 
-    // Context bar KPI click — jump to filter
-    document.querySelectorAll('.context-kpi-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const urgencia = card.dataset.urgencia;
-            // Map urgencia to an estado filter
-            const map = {
-                'activos': '',         // show all non-terminal (rely on pill "Todos" then sort)
-                'listos': 'Listo para Envío',
-                'atrasados': '',       // custom: set q to flag; handled below
-                'sin-cobrar': '',      // no direct estado filter, just reload
-            };
-            // For now set state filter to matching pill
-            if (urgencia === 'listos') {
-                const pill = document.querySelector('.estado-pill[data-estado="Listo para Envío"]');
-                if (pill) pill.click();
-            } else if (urgencia === 'atrasados') {
-                // Filter "Todos" but indicate atrasados context
-                const pill = document.querySelector('.estado-pill[data-estado=""]');
-                if (pill) pill.click();
-                if (typeof showNotification === 'function')
-                    showNotification('Mostrando todos los pedidos — ordena por urgencia con el punto rojo', 'info', 3000);
-            } else {
-                const pill = document.querySelector('.estado-pill[data-estado=""]');
-                if (pill) pill.click();
-            }
-        });
-    });
 
     // Per-page selector
     const perPageSelect = document.getElementById('perPageSelect');
@@ -689,7 +710,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelectorAll('#tabla-pedidos .order-checkbox').forEach(cb => { cb.checked = false; });
                     updateBulkSelection();
                     cargarPedidos(currentPage);
-                    cargarResumenOperativo();
                 } else {
                     if (typeof showNotification === 'function') showNotification(res?.error || 'Error al actualizar', 'error');
                 }
@@ -736,20 +756,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') cerrarEstadoPopover();
     });
 
-    // Table event delegation
+    // Table event delegation — TR itself is now the click target for 'view'
     const tabla = document.querySelector('#tabla-pedidos');
     if (tabla) {
         tabla.addEventListener('click', (e) => {
+            // If a specific [data-action] button was clicked, handle it and stop
             const btn = e.target.closest('[data-action]');
-            if (!btn) return;
-            const action = btn.dataset.action;
-            const id = btn.dataset.id;
-            e.stopPropagation();
-            if (action === 'view') verPedido(id);
-            else if (action === 'edit') editarPedido(id);
-            else if (action === 'delete') eliminarPedido(id);
-            else if (action === 'verClientePerfil') verClientePerfil(btn.dataset.telefono);
-            else if (action === 'toggleEstado') toggleEstadoPopover(id, btn);
+            if (btn) {
+                const action = btn.dataset.action;
+                const id = btn.dataset.id;
+                e.stopPropagation();
+
+                if (action === 'edit') editarPedido(id);
+                else if (action === 'delete') eliminarPedido(id);
+                else if (action === 'verClientePerfil') verClientePerfil(btn.dataset.telefono);
+                else if (action === 'toggleEstado') toggleEstadoPopover(id, btn);
+                return; // don't fall through to TR handler
+            }
+
+            // Skip if the click was on an interactive child that should not bubble to view
+            const interactive = e.target.closest(
+                'input, button, select, textarea, label, [data-no-row-click]'
+            );
+            if (interactive) return;
+
+            // Click landed on the row itself or a passive cell — open detail
+            const row = e.target.closest('tr[data-pedido-id]');
+            if (row) verPedido(row.dataset.pedidoId);
         });
 
         tabla.addEventListener('change', (e) => {
@@ -769,15 +802,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileContainer = document.getElementById('pedidoCardsMobile');
     if (mobileContainer) {
         mobileContainer.addEventListener('click', (e) => {
+            // Specific button actions take priority
             const btn = e.target.closest('[data-action]');
-            if (!btn) return;
-            const action = btn.dataset.action;
-            const id = btn.dataset.id;
-            e.stopPropagation();
-            if (action === 'view') verPedido(id);
-            else if (action === 'edit') editarPedido(id);
-            else if (action === 'verClientePerfil') verClientePerfil(btn.dataset.telefono);
-            else if (action === 'toggleEstado') toggleEstadoPopover(id, btn);
+            if (btn) {
+                const action = btn.dataset.action;
+                const id = btn.dataset.id;
+                e.stopPropagation();
+                if (action === 'edit') editarPedido(id);
+                else if (action === 'verClientePerfil') verClientePerfil(btn.dataset.telefono);
+                else if (action === 'toggleEstado') toggleEstadoPopover(id, btn);
+                else if (action === 'nextState') avanzarEstado(id, btn.dataset.nextState);
+                return;
+            }
+
+            // Skip any other interactive elements
+            const interactive = e.target.closest('input, button, select, textarea, label, [data-no-row-click]');
+            if (interactive) return;
+
+            // Tap anywhere on the card opens detail
+            const card = e.target.closest('.pedido-card[data-pedido-id]');
+            if (card) verPedido(card.dataset.pedidoId);
         });
     }
 });

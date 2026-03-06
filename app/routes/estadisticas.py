@@ -1,7 +1,7 @@
 """Routes - Estadisticas"""
 import traceback
 from flask import Blueprint, request, jsonify
-from app.models.database import EstadisticasRepository
+from app.models.estadisticas import EstadisticasRepository
 from app.auth.decorators import require_auth
 
 estadisticas_bp = Blueprint('estadisticas', __name__)
@@ -73,6 +73,25 @@ def resumen_operativo(user):
     """Live operative counts for the Pedidos context bar."""
     try:
         data = EstadisticasRepository.get_resumen_operativo()
+        return jsonify(data), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@estadisticas_bp.route('/estadisticas/dashboard', methods=['GET'])
+@require_auth
+def dashboard_consolidado(user):
+    """
+    Consolidated dashboard endpoint.
+    Returns generales + canales + estados + timeline + top_productos in one call.
+    Replaces the 5 separate API calls the frontend was making on Dashboard load.
+    """
+    try:
+        data = EstadisticasRepository.get_dashboard(
+            request.args.get('desde'),
+            request.args.get('hasta')
+        )
         return jsonify(data), 200
     except Exception as e:
         traceback.print_exc()

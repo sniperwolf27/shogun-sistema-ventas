@@ -258,10 +258,15 @@ function nuevoProducto() {
     abrirModalProducto(null);
 }
 
-function abrirModalProducto(producto) {
+async function abrirModalProducto(producto) {
     const isEdit = !!producto;
     const modal = document.createElement('div');
     modal.className = 'modal';
+
+    const categorias = await api.getCategorias(true).catch(() => []) || [];
+    const categoriasOptions = categorias
+        .map(c => `<option value="${esc(c.nombre)}" ${producto?.categoria === c.nombre ? 'selected' : ''}>${esc(c.nombre)}</option>`)
+        .join('');
 
     modal.innerHTML = `
         <div class="modal-content modal-md">
@@ -278,8 +283,20 @@ function abrirModalProducto(producto) {
                             <input type="text" name="nombre" class="form-control" value="${esc(producto?.nombre || '')}" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">SKU <span class="required">*</span></label>
-                            <input type="text" name="sku" class="form-control" value="${esc(producto?.sku || '')}" required ${isEdit ? 'readonly' : ''}>
+                            <label class="form-label">Categoría <span class="required">*</span></label>
+                            <select name="categoria" class="form-control" required>
+                                <option value="">Seleccionar...</option>
+                                ${categoriasOptions}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">SKU</label>
+                            <div style="display:flex;gap:6px;align-items:center">
+                                <input type="text" name="sku" id="skuInput" class="form-control" value="${esc(producto?.sku || '')}" readonly style="font-family:monospace;letter-spacing:.05em;color:var(--text-secondary)">
+                                ${!isEdit ? `<button type="button" id="btnRegenerarSku" title="Regenerar SKU" style="flex-shrink:0;padding:0 10px;height:38px;border:1px solid var(--border-primary);border-radius:var(--radius-md);background:var(--surface-secondary);cursor:pointer"><i class="fas fa-rotate-right"></i></button>` : ''}
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
@@ -320,6 +337,40 @@ function abrirModalProducto(producto) {
     document.body.appendChild(modal);
     paramOpenModal(modal);
 
+    // SKU auto-generation (only on create)
+    if (!isEdit) {
+        const nombreInput = modal.querySelector('[name="nombre"]');
+        const skuInput = modal.querySelector('#skuInput');
+        const btnRegen = modal.querySelector('#btnRegenerarSku');
+
+        function generarSKU(nombre) {
+            const STOP = new Set(['de','la','el','los','las','un','una','y','e','o','con','del','al','para','por','en','a','su','sus']);
+            const clean = nombre.normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toUpperCase()
+                .replace(/[^A-Z0-9\s]/g, '')
+                .trim();
+            const words = clean.split(/\s+/).filter(w => w.length > 1 && !STOP.has(w.toLowerCase()));
+            if (!words.length) return '';
+            // Take up to 3 words; longer words contribute more chars (3), short ones 2
+            const prefix = words.slice(0, 3).map(w => w.slice(0, w.length >= 5 ? 3 : 2)).join('-');
+            // Short unique suffix: last 4 chars of base-36 timestamp
+            const suffix = Date.now().toString(36).slice(-4).toUpperCase();
+            return `${prefix}-${suffix}`;
+        }
+
+        function actualizarSku() {
+            const nombre = nombreInput.value.trim();
+            if (nombre) skuInput.value = generarSKU(nombre);
+        }
+
+        nombreInput.addEventListener('input', actualizarSku);
+        if (btnRegen) btnRegen.addEventListener('click', actualizarSku);
+
+        // Generate immediately if name already has value
+        if (nombreInput.value.trim()) actualizarSku();
+    }
+
     // Close handlers
     modal.querySelectorAll('[data-close]').forEach(b => b.onclick = () => paramCloseModal(modal));
 
@@ -338,6 +389,7 @@ function abrirModalProducto(producto) {
         const data = {
             nombre: formData.get('nombre').trim(),
             sku: formData.get('sku').trim(),
+            categoria: formData.get('categoria'),
             precio_base: parseFloat(formData.get('precio_base')) || 0,
             costo_material: parseFloat(formData.get('costo_material')) || 0,
             tiempo_produccion_dias: parseInt(formData.get('tiempo_produccion_dias')) || 7,
@@ -346,13 +398,18 @@ function abrirModalProducto(producto) {
         };
 
         try {
+            let res;
             if (isEdit) {
-                await api.updateProducto(producto.id, data);
-                showNotification('Producto actualizado', 'success');
+                res = await api.updateProducto(producto.id, data);
             } else {
-                await api.createProducto(data);
-                showNotification('Producto creado', 'success');
+                res = await api.createProducto(data);
             }
+            if (!res || !res.success) {
+                errorDiv.textContent = res?.error || 'Error al guardar el producto';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+            showNotification(isEdit ? 'Producto actualizado' : 'Producto creado', 'success');
             paramCloseModal(modal);
             cargarProductos();
         } catch (error) {
