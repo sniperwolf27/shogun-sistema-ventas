@@ -338,12 +338,41 @@
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" data-close>Cerrar</button>
+                        <button class="btn btn-secondary" id="btnEnviarTracking" title="Enviar link de seguimiento por WhatsApp">
+                            <i class="fab fa-whatsapp"></i> Enviar tracking
+                        </button>
                         <button class="btn btn-primary" data-edit><i class="far fa-pen-to-square"></i> Editar</button>
                     </div>
                 </div>`;
 
                 this.modal.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeModal(this.modal));
                 this.modal.querySelector('[data-edit]').onclick = () => { closeModal(this.modal); editarPedidoModal.open(id); };
+
+                document.getElementById('btnEnviarTracking').onclick = async () => {
+                    const btn = document.getElementById('btnEnviarTracking');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fab fa-whatsapp"></i> Enviando...';
+                    try {
+                        const res = await fetch(`${window.API_BASE}/whatsapp/send-tracking`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pedido_id: id, telefono: p.telefono }),
+                        });
+                        const json = await res.json();
+                        if (res.ok) {
+                            showNotification('Link de tracking enviado por WhatsApp ✓', 'success');
+                            btn.innerHTML = '<i class="fab fa-whatsapp"></i> ✓ Enviado';
+                        } else {
+                            showNotification(json.error || 'Error al enviar', 'error');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fab fa-whatsapp"></i> Enviar tracking';
+                        }
+                    } catch {
+                        showNotification('Error de conexión', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fab fa-whatsapp"></i> Enviar tracking';
+                    }
+                };
 
                 this._loadComentarios(id);
                 this._loadAdjuntos(id);

@@ -227,12 +227,18 @@ def send_tracking_link():
         return jsonify({'error': 'No autenticado'}), 401
 
     data = request.get_json(silent=True) or {}
-    phone_number_id = data.get('phone_number_id', '').strip()
-    pedido_id       = data.get('pedido_id', '').strip()
-    telefono        = data.get('telefono', '').strip()
+    pedido_id = data.get('pedido_id', '').strip()
+    telefono  = data.get('telefono', '').strip()
+
+    # phone_number_id viene del env (no del frontend)
+    phone_number_id = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '').strip()
 
     if not all([phone_number_id, pedido_id, telefono]):
-        return jsonify({'error': 'phone_number_id, pedido_id y telefono son requeridos'}), 400
+        missing = []
+        if not phone_number_id: missing.append('WHATSAPP_PHONE_NUMBER_ID (env)')
+        if not pedido_id:       missing.append('pedido_id')
+        if not telefono:        missing.append('telefono')
+        return jsonify({'error': f'Faltan campos: {", ".join(missing)}'}), 400
 
     base_url = os.environ.get('APP_BASE_URL', 'https://shogun-sistema-ventas-production.up.railway.app')
     tracking_url = f'{base_url}/tracking/{pedido_id}'
