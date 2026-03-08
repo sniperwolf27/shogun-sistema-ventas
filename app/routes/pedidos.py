@@ -53,6 +53,37 @@ def obtener_pendientes(user):
         return jsonify({'error': str(e)}), 500
 
 
+@pedidos_bp.route('/tracking/<pedido_id>', methods=['GET'])
+def tracking_publico(pedido_id):
+    """
+    Endpoint público (sin auth) — devuelve solo los campos necesarios
+    para que el cliente vea el estado de su pedido.
+    """
+    try:
+        pedido = PedidosRepository.get_by_id(pedido_id)
+        if not pedido:
+            return jsonify({'error': 'Pedido no encontrado'}), 404
+
+        # Solo exponer campos no sensibles
+        publico = {
+            'id':                 pedido.get('id'),
+            'cliente':            pedido.get('cliente'),
+            'producto':           pedido.get('producto'),
+            'talla':              pedido.get('talla'),
+            'color':              pedido.get('color'),
+            'personalizacion':    pedido.get('personalizacion'),
+            'fecha_compromiso':   pedido.get('fecha_compromiso'),
+            'fecha_entrega_real': pedido.get('fecha_entrega_real'),
+            'direccion':          pedido.get('direccion'),
+            'estatus_produccion': pedido.get('estatus_produccion'),
+            'estatus_pago':       pedido.get('estatus_pago'),
+            'telefono':           pedido.get('telefono'),
+        }
+        return jsonify(publico), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @pedidos_bp.route('/pedidos/buscar', methods=['GET'])
 @require_auth
 def buscar_pedidos(user):

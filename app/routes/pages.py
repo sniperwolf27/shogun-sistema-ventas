@@ -31,6 +31,11 @@ def formulario():
     return send_from_directory(os.path.join(FRONTEND_DIR, 'formulario'), 'index.html')
 
 
+@pages_bp.route('/tracking/<pedido_id>')
+def tracking(pedido_id):
+    return send_from_directory(os.path.join(FRONTEND_DIR, 'tracking'), 'index.html')
+
+
 # --- Static assets ---
 
 @pages_bp.route('/css/<path:filename>')

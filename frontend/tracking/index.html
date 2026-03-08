@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Pedido — Shogun</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0f0f0f;
+            --surface:   #1a1a1a;
+            --border:    #2a2a2a;
+            --text:      #f0f0f0;
+            --text-sub:  #888;
+            --accent:    #e8c97a;
+            --accent-dim:#a88a4a;
+            --green:     #4ade80;
+            --red:       #f87171;
+            --blue:      #60a5fa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px 16px 48px;
+        }
+
+        /* ── Header ─────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 520px;
+            margin: 0 auto 32px;
+        }
+        .header img { width: 36px; height: 36px; }
+        .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+        .header h1 span { color: var(--accent); }
+
+        /* ── Card ───────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 520px;
+            margin: 0 auto 16px;
+        }
+
+        /* ── Order ID ───────────────────────────────── */
+        .order-id {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .order-id-label { font-size: 12px; color: var(--text-sub); text-transform: uppercase; letter-spacing: .08em; }
+        .order-id-value { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -.3px; }
+        .order-id-customer { font-size: 14px; color: var(--text-sub); margin-top: 2px; }
+
+        /* ── Timeline ───────────────────────────────── */
+        .timeline { display: flex; flex-direction: column; gap: 0; }
+        .tl-step {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+        .tl-step:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            bottom: -4px;
+            width: 2px;
+            background: var(--border);
+        }
+        .tl-step.done::before    { background: var(--accent-dim); }
+        .tl-step.current::before { background: var(--border); }
+
+        .tl-dot {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .tl-step.done    .tl-dot { border-color: var(--accent); background: var(--accent); color: #000; }
+        .tl-step.current .tl-dot { border-color: var(--accent); background: transparent; color: var(--accent); }
+        .tl-step.cancelled .tl-dot { border-color: var(--red); background: var(--red); color: #fff; }
+
+        .tl-body { padding: 4px 0 24px; }
+        .tl-name { font-size: 15px; font-weight: 600; }
+        .tl-step.pending .tl-name { color: var(--text-sub); }
+        .tl-desc { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+
+        /* ── Details grid ───────────────────────────── */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .detail-item { display: flex; flex-direction: column; gap: 4px; }
+        .detail-item.full { grid-column: 1 / -1; }
+        .detail-label { font-size: 11px; color: var(--text-sub); text-transform: uppercase; letter-spacing: .08em; }
+        .detail-value { font-size: 15px; font-weight: 500; }
+
+        /* ── Badges ─────────────────────────────────── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-green { background: #052e16; color: var(--green); }
+        .badge-yellow { background: #2d1f00; color: var(--accent); }
+        .badge-red { background: #2d0a0a; color: var(--red); }
+        .badge-blue { background: #0c1d38; color: var(--blue); }
+
+        /* ── Divider ────────────────────────────────── */
+        .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+        /* ── Footer ─────────────────────────────────── */
+        .footer {
+            max-width: 520px;
+            margin: 0 auto;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        /* ── States ─────────────────────────────────── */
+        #loading { text-align: center; max-width: 520px; margin: 80px auto; color: var(--text-sub); }
+        #error   { display: none; text-align: center; max-width: 520px; margin: 80px auto; }
+        #error h2 { color: var(--red); margin-bottom: 8px; }
+        #content { display: none; }
+
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <img src="/white-shogun-logo.svg" alt="Shogun">
+    <h1>Shogun <span>Bordados</span></h1>
+</div>
+
+<!-- Loading -->
+<div id="loading">
+    <div class="spinner"></div>
+    <p>Cargando tu pedido...</p>
+</div>
+
+<!-- Error -->
+<div id="error">
+    <h2>Pedido no encontrado</h2>
+    <p>Verifica el enlace o contacta con nosotros.</p>
+</div>
+
+<!-- Content -->
+<div id="content">
+    <!-- Status card -->
+    <div class="card">
+        <div class="order-id">
+            <div>
+                <div class="order-id-label">Pedido</div>
+                <div class="order-id-value" id="orderId">—</div>
+                <div class="order-id-customer" id="customerName"></div>
+            </div>
+            <div id="estadoBadge"></div>
+        </div>
+
+        <div class="timeline" id="timeline"></div>
+    </div>
+
+    <!-- Details card -->
+    <div class="card">
+        <div class="details-grid">
+            <div class="detail-item full">
+                <div class="detail-label">Producto</div>
+                <div class="detail-value" id="producto">—</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Talla</div>
+                <div class="detail-value" id="talla">—</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Color</div>
+                <div class="detail-value" id="color">—</div>
+            </div>
+            <div class="detail-item" id="persRow" style="display:none">
+                <div class="detail-label">Personalización</div>
+                <div class="detail-value" id="personalizacion">—</div>
+            </div>
+            <hr class="divider" style="grid-column:1/-1">
+            <div class="detail-item">
+                <div class="detail-label">Fecha estimada</div>
+                <div class="detail-value" id="fechaCompromiso">—</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Pago</div>
+                <div class="detail-value" id="estadoPago">—</div>
+            </div>
+            <div class="detail-item full">
+                <div class="detail-label">Dirección de envío</div>
+                <div class="detail-value" id="direccion" style="font-size:13px; color: var(--text-sub)">—</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>¿Tienes alguna pregunta? Escríbenos por <a href="#" id="waLink">WhatsApp</a>.</p>
+    </div>
+</div>
+
+<script>
+// ── State definitions ────────────────────────────────────────────────────────
+const STATES = [
+    { key: 'Recibido',           icon: '📥', desc: 'Pedido registrado en el sistema' },
+    { key: 'En Producción',      icon: '🧵', desc: 'Tu pedido está siendo confeccionado' },
+    { key: 'Listo para Envío',   icon: '📦', desc: 'Listo, pendiente de despacho' },
+    { key: 'En Camino',          icon: '🚚', desc: 'En camino a tu dirección' },
+    { key: 'Entregado',          icon: '✅', desc: '¡Pedido entregado!' },
+];
+
+const PAGO_BADGE = {
+    'Recibido':  ['badge-green', '✓ Pagado'],
+    'Pendiente': ['badge-yellow', '⏳ Pendiente'],
+    'Parcial':   ['badge-blue', '◑ Parcial'],
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function getPedidoId() {
+    const parts = window.location.pathname.split('/');
+    return parts[parts.length - 1] || parts[parts.length - 2];
+}
+
+function buildTimeline(estadoActual) {
+    if (estadoActual === 'Cancelado') {
+        return `<div class="tl-step cancelled">
+            <div class="tl-dot">✕</div>
+            <div class="tl-body">
+                <div class="tl-name">Pedido Cancelado</div>
+                <div class="tl-desc">Este pedido fue cancelado</div>
+            </div>
+        </div>`;
+    }
+
+    const currentIdx = STATES.findIndex(s => s.key === estadoActual);
+
+    return STATES.map((s, i) => {
+        let cls, dotContent;
+        if (i < currentIdx)      { cls = 'done';    dotContent = '✓'; }
+        else if (i === currentIdx){ cls = 'current'; dotContent = s.icon; }
+        else                     { cls = 'pending'; dotContent = s.icon; }
+
+        return `<div class="tl-step ${cls}">
+            <div class="tl-dot">${dotContent}</div>
+            <div class="tl-body">
+                <div class="tl-name">${s.key}</div>
+                <div class="tl-desc">${i === currentIdx ? `<strong>${s.desc}</strong>` : s.desc}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function estadoBadgeHtml(estado) {
+    const map = {
+        'Recibido':         ['badge-blue',   '📥 Recibido'],
+        'En Producción':    ['badge-yellow',  '🧵 En Producción'],
+        'Listo para Envío': ['badge-green',   '📦 Listo'],
+        'En Camino':        ['badge-blue',    '🚚 En Camino'],
+        'Entregado':        ['badge-green',   '✅ Entregado'],
+        'Cancelado':        ['badge-red',     '✕ Cancelado'],
+        'Bloqueado - Sin Dirección': ['badge-red', '⚠ Bloqueado'],
+    };
+    const [cls, label] = map[estado] || ['badge-blue', estado];
+    return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ── Fetch & render ────────────────────────────────────────────────────────────
+async function load() {
+    const id = getPedidoId();
+    if (!id) { showError(); return; }
+
+    try {
+        const res = await fetch(`/api/tracking/${encodeURIComponent(id)}`);
+        if (!res.ok) { showError(); return; }
+        const p = await res.json();
+        render(p);
+    } catch {
+        showError();
+    }
+}
+
+function render(p) {
+    document.getElementById('orderId').textContent      = p.id;
+    document.getElementById('customerName').textContent = p.cliente;
+    document.getElementById('estadoBadge').innerHTML    = estadoBadgeHtml(p.estatus_produccion);
+    document.getElementById('timeline').innerHTML       = buildTimeline(p.estatus_produccion);
+
+    document.getElementById('producto').textContent     = p.producto || '—';
+    document.getElementById('talla').textContent        = p.talla    || '—';
+    document.getElementById('color').textContent        = p.color    || '—';
+
+    if (p.personalizacion) {
+        document.getElementById('personalizacion').textContent = p.personalizacion;
+        document.getElementById('persRow').style.display = '';
+    }
+
+    // Fecha: si ya fue entregado mostrar fecha real, sino la estimada
+    const fecha = p.fecha_entrega_real || p.fecha_compromiso || '—';
+    const fechaLabel = p.fecha_entrega_real ? 'Entregado el' : 'Entrega estimada';
+    document.getElementById('fechaCompromiso').textContent = fecha;
+    document.querySelector('[for-fecha]')?.remove();
+    document.querySelector('.detail-label[data-ref="fecha"]');
+
+    // Pago badge
+    const [pagoCls, pagoLabel] = PAGO_BADGE[p.estatus_pago] || ['badge-blue', p.estatus_pago];
+    document.getElementById('estadoPago').innerHTML = `<span class="badge ${pagoCls}">${pagoLabel}</span>`;
+
+    document.getElementById('direccion').textContent = p.direccion || '—';
+
+    // WhatsApp link
+    const tel = (p.telefono || '').replace(/\D/g, '');
+    if (tel) {
+        document.getElementById('waLink').href = `https://wa.me/1${tel}`;
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = '';
+}
+
+function showError() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display   = '';
+}
+
+load();
+</script>
+</body>
+</html>

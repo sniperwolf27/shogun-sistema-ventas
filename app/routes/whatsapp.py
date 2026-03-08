@@ -209,6 +209,47 @@ def _process_statuses(value: dict):
             )
 
 
+# ─── Endpoint: enviar link de tracking ───────────────────────────────────────
+
+@whatsapp_bp.route('/api/whatsapp/send-tracking', methods=['POST'])
+def send_tracking_link():
+    """
+    Envía al cliente el link de seguimiento de su pedido por WhatsApp.
+
+    Body JSON:
+      phone_number_id  — ID del número de WhatsApp Business (de Meta)
+      pedido_id        — número de pedido (ej: SH2026001)
+      telefono         — número del cliente con código de país (ej: 18095550000)
+    """
+    from app.auth.supabase_helper import SupabaseHelper
+    user = SupabaseHelper.get_current_user()
+    if not user or not user.get('activo'):
+        return jsonify({'error': 'No autenticado'}), 401
+
+    data = request.get_json(silent=True) or {}
+    phone_number_id = data.get('phone_number_id', '').strip()
+    pedido_id       = data.get('pedido_id', '').strip()
+    telefono        = data.get('telefono', '').strip()
+
+    if not all([phone_number_id, pedido_id, telefono]):
+        return jsonify({'error': 'phone_number_id, pedido_id y telefono son requeridos'}), 400
+
+    base_url = os.environ.get('APP_BASE_URL', 'https://shogun-sistema-ventas-production.up.railway.app')
+    tracking_url = f'{base_url}/tracking/{pedido_id}'
+
+    mensaje = (
+        f'¡Hola! 👋 Tu pedido *{pedido_id}* de Shogun Bordados está en camino. '
+        f'Puedes seguir el estado en tiempo real aquí:\n\n'
+        f'🔗 {tracking_url}\n\n'
+        f'¿Tienes alguna duda? Escríbenos con gusto. 🧵'
+    )
+
+    result = _send_text(phone_number_id, telefono, mensaje)
+    if result:
+        return jsonify({'success': True, 'tracking_url': tracking_url}), 200
+    return jsonify({'error': 'No se pudo enviar el mensaje. Verifica WHATSAPP_TOKEN.'}), 500
+
+
 # ─── Envío de mensajes (util) ─────────────────────────────────────────────────
 
 def _send_text(phone_number_id: str, to: str, body: str) -> Optional[dict]:
