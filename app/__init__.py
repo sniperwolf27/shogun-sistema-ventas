@@ -36,6 +36,7 @@ def create_app(config_name=None):
     from app.routes.estadisticas import estadisticas_bp
     from app.routes.pedido_extras import pedido_extras_bp
     from app.routes.pages import pages_bp
+    from app.routes.whatsapp import whatsapp_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(pedidos_bp, url_prefix='/api')
@@ -44,6 +45,7 @@ def create_app(config_name=None):
     app.register_blueprint(estadisticas_bp, url_prefix='/api')
     app.register_blueprint(pedido_extras_bp, url_prefix='/api')
     app.register_blueprint(pages_bp)
+    app.register_blueprint(whatsapp_bp)
 
     # Error handlers
     from app.routes.errors import register_error_handlers

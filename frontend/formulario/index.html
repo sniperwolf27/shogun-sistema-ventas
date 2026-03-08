@@ -164,7 +164,7 @@
             <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
                 <i class="far fa-moon" aria-hidden="true"></i>
             </button>
-            <a href="/backoffice" class="back-link">
+            <a href="/backoffice" class="back-link" target="_top">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al Backoffice
             </a>
         </div>
@@ -175,7 +175,7 @@
         <i class="fas fa-lock" aria-hidden="true"></i>
         <h2>Acceso Denegado</h2>
         <p>Solo administradores pueden crear pedidos.</p>
-        <a href="/backoffice" class="back-link">Ir al Backoffice</a>
+        <a href="/backoffice" class="back-link" target="_top">Ir al Backoffice</a>
     </div>
 
     <!-- Form Container -->
@@ -339,7 +339,7 @@
             </div>
             <div id="postPedidosList"></div>
             <div class="post-creation-actions">
-                <a href="/backoffice" class="btn btn-primary">
+                <a href="/backoffice" class="btn btn-primary" target="_top">
                     <i class="fas fa-arrow-left" aria-hidden="true"></i> Ver en Backoffice
                 </a>
                 <button type="button" class="btn btn-secondary" id="btnCopiarMensaje">
@@ -939,7 +939,7 @@
             document.getElementById('postPedidosList').innerHTML = pedidos.map(p =>
                 `<div class="post-pedido-card">
                     <span><strong>${p.id}</strong> — ${p.producto || ''}</span>
-                    <a href="/backoffice" aria-label="Ver pedido ${p.id} en backoffice">Ver →</a>
+                    <a href="/backoffice" target="_top" aria-label="Ver pedido ${p.id} en backoffice">Ver →</a>
                 </div>`
             ).join('');
             const section = document.getElementById('postCreationSection');
