@@ -11,7 +11,8 @@ import os
 import hmac
 import hashlib
 import logging
-from flask import Blueprint, request, jsonify, current_app
+from typing import Optional
+from flask import Blueprint, request, jsonify
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ whatsapp_bp = Blueprint('whatsapp', __name__)
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
-def _verify_signature(payload: bytes, signature_header: str | None) -> bool:
+def _verify_signature(payload: bytes, signature_header: Optional[str]) -> bool:
     """
     Valida la firma X-Hub-Signature-256 que Meta incluye en cada POST.
     Si WHATSAPP_APP_SECRET no está configurado se omite la verificación (solo dev).
@@ -210,7 +211,7 @@ def _process_statuses(value: dict):
 
 # ─── Envío de mensajes (util) ─────────────────────────────────────────────────
 
-def _send_text(phone_number_id: str, to: str, body: str) -> dict | None:
+def _send_text(phone_number_id: str, to: str, body: str) -> Optional[dict]:
     """
     Envía un mensaje de texto simple usando la API de WhatsApp Cloud.
     Requiere WHATSAPP_TOKEN en las variables de entorno.
