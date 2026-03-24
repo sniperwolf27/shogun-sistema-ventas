@@ -314,6 +314,22 @@ class PedidosRepository:
         # garantiza que ningún item quede persistido parcialmente.
         resultados = []
         with DatabaseManager.get_connection() as conn:
+            # Crear cabecera en grupos_pedido antes de insertar los pedidos (FK)
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO grupos_pedido (id, canal, metodo_pago, estado_pago,
+                                              precio_envio, costo_envio)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO NOTHING
+                """, (
+                    grupo_id,
+                    shared_data.get('canal'),
+                    shared_data.get('banco'),
+                    shared_data.get('estatus_pago'),
+                    envio_total,
+                    envio_total,
+                ))
+
             for item, producto, pedido_data in all_pedido_data:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                     cursor.execute(query, pedido_data)
