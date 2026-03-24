@@ -106,7 +106,7 @@ def validar_sku(user):
 def crear_producto(user):
     try:
         data = request.json
-        for campo in ['sku', 'nombre', 'categoria', 'precio_base']:
+        for campo in ['sku', 'nombre', 'categoria_id', 'precio_base']:
             if not data.get(campo) and data.get(campo) != 0:
                 return jsonify({'success': False, 'error': f'Campo requerido: {campo}'}), 400
         return jsonify({'success': True, 'producto': ProductosRepository.create(data)}), 201

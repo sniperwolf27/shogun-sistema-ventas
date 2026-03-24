@@ -2,6 +2,7 @@
 Repository — Clientes
 """
 from app.models.db_manager import DatabaseManager
+from app.models.configuracion import ConfiguracionRepository as Cfg
 
 
 class ClientesRepository:
@@ -29,7 +30,6 @@ class ClientesRepository:
                 cliente_telefono as telefono,
                 cliente_nombre as nombre,
                 cliente_email as email,
-                cliente_email as email,
                 direccion_envio as direccion
             FROM pedidos
             WHERE cliente_telefono ILIKE %(q)s OR cliente_nombre ILIKE %(q)s
@@ -43,6 +43,7 @@ class ClientesRepository:
     @staticmethod
     def get_profile(telefono):
         """Retrieve a client profile with aggregated stats and recent orders."""
+        # Los umbrales de segmentación son parámetros configurables, no magic numbers.
         profile_query = """
             SELECT
                 MAX(cliente_nombre) as nombre,
@@ -50,12 +51,7 @@ class ClientesRepository:
                 MAX(cliente_telefono) as telefono,
                 COUNT(*) as pedidos,
                 COALESCE(SUM(CASE WHEN estado_produccion NOT IN ('Cancelado') THEN precio_total ELSE 0 END), 0) as total_gastado,
-                MAX(fecha_pago::text) as ultimo_pedido,
-                CASE
-                    WHEN COUNT(*) >= 10 THEN 'VIP'
-                    WHEN COUNT(*) >= 5  THEN 'Frecuente'
-                    ELSE 'Regular'
-                END as tipo
+                MAX(fecha_pago::text) as ultimo_pedido
             FROM pedidos
             WHERE cliente_telefono = %s
         """
@@ -75,6 +71,17 @@ class ClientesRepository:
             if not profile or not profile.get('nombre'):
                 return None
             profile['total_gastado'] = float(profile['total_gastado'])
+
+            # Clasificación de cliente según umbrales configurables
+            vip_min      = Cfg.get('cliente_vip_min_pedidos',       int)
+            frecuente_min = Cfg.get('cliente_frecuente_min_pedidos', int)
+            pedidos_count = profile.get('pedidos', 0)
+            if pedidos_count >= vip_min:
+                profile['tipo'] = 'VIP'
+            elif pedidos_count >= frecuente_min:
+                profile['tipo'] = 'Frecuente'
+            else:
+                profile['tipo'] = 'Regular'
 
             cursor.execute(recents_query, (telefono,))
             pedidos_recientes = []

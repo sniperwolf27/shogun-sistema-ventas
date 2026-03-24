@@ -4,6 +4,7 @@ Database Module — Compatibility Re-exports
 This file has been refactored. All repositories now live in their own modules:
 
     app.models.db_manager          → DatabaseManager
+    app.models.configuracion       → ConfiguracionRepository
     app.models.categorias          → CategoriasRepository
     app.models.productos           → ProductosRepository
     app.models.personalizaciones   → PersonalizacionesRepository
@@ -18,6 +19,7 @@ import statements in routes still work unchanged.
 """
 
 from app.models.db_manager import DatabaseManager
+from app.models.configuracion import ConfiguracionRepository
 from app.models.categorias import CategoriasRepository
 from app.models.productos import ProductosRepository
 from app.models.personalizaciones import PersonalizacionesRepository
@@ -29,6 +31,7 @@ from app.models.historial import HistorialRepository
 
 __all__ = [
     'DatabaseManager',
+    'ConfiguracionRepository',
     'CategoriasRepository',
     'ProductosRepository',
     'PersonalizacionesRepository',

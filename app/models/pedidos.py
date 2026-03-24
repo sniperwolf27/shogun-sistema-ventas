@@ -4,9 +4,11 @@ Shared helper _build_item_data() eliminates duplicate logic between
 create() and create_multi() (previously copied verbatim).
 """
 from datetime import datetime, date, timedelta
+from psycopg2.extras import RealDictCursor
 from app.models.db_manager import DatabaseManager
 from app.models.productos import ProductosRepository
 from app.models.personalizaciones import PersonalizacionesRepository
+from app.models.configuracion import ConfiguracionRepository as Cfg
 
 
 # ── Shared field projection used in every SELECT ────────────────────────────
@@ -32,6 +34,7 @@ _SELECT_FIELDS = """
     costo_personalizacion as costo_person,
     costo_mano_obra,
     COALESCE(costos_adicionales, 0) as costos_adicionales,
+    COALESCE(costo_envio, 0) as costo_envio,
     costo_total, ganancia,
     canal::text,
     metodo_pago::text as banco,
@@ -49,7 +52,7 @@ _INSERT_FIELDS = """
         personalizacion_puntadas,
         fecha_pago, fecha_compromiso,
         precio_producto, precio_personalizacion, precio_envio,
-        costo_producto, costo_personalizacion, costo_mano_obra, costos_adicionales,
+        costo_producto, costo_personalizacion, costo_mano_obra, costos_adicionales, costo_envio,
         canal, metodo_pago, estado_pago
         {extra_cols}
     ) VALUES (
@@ -59,7 +62,7 @@ _INSERT_FIELDS = """
         %(personalizacion_puntadas)s,
         %(fecha_pago)s, %(fecha_compromiso)s,
         %(precio_producto)s, %(precio_personalizacion)s, %(precio_envio)s,
-        %(costo_producto)s, %(costo_personalizacion)s, %(costo_mano_obra)s, %(costos_adicionales)s,
+        %(costo_producto)s, %(costo_personalizacion)s, %(costo_mano_obra)s, %(costos_adicionales)s, %(costo_envio)s,
         %(canal)s::canal_venta, %(metodo_pago)s::metodo_pago, %(estado_pago)s::estado_pago
         {extra_vals}
     )
@@ -78,7 +81,7 @@ def _format_pedido(row):
     for field in ['precio_producto', 'precio_personalizacion', 'precio_envio',
                   'precio_total', 'costo_producto', 'costo_personalizacion',
                   'costo_total', 'ganancia', 'precio_person', 'costo_person',
-                  'costo_mano_obra', 'costos_adicionales']:
+                  'costo_mano_obra', 'costos_adicionales', 'costo_envio']:
         if pedido.get(field) is not None:
             pedido[field] = float(pedido[field])
     return pedido
@@ -99,6 +102,7 @@ def _build_item_data(item_data, shared_data, producto, pers_cache=None, precio_e
     personalizacion_id = None
     precio_personalizacion = 0
     costo_personalizacion = 0
+    costo_mano_obra = 0  # Siempre 0 — el costo de personalización va en costo_personalizacion
 
     tipo_pers = item_data.get('personalizacion_tipo')
     if tipo_pers and tipo_pers != 'ninguna':
@@ -110,14 +114,18 @@ def _build_item_data(item_data, shared_data, producto, pers_cache=None, precio_e
         if pers:
             personalizacion_id = pers['id']
             if pers.get('metodo_calculo') == 'puntadas':
+                # Bordado: el costo se calcula a partir de puntadas × costo por mil
+                # Se usa el valor del catálogo (no el enviado por el form) para integridad
+                costo_por_mil = float(pers.get('costo_por_mil_puntadas', 0) or 0)
                 precio_personalizacion = 0
-                costo_personalizacion = 0
+                costo_personalizacion = (puntadas / 1000) * costo_por_mil if puntadas > 0 and costo_por_mil > 0 else 0
             else:
+                # Precio fijo (DTF, serigrafía, etc.)
+                # El margen de costo se lee de configuracion para poder cambiarlo sin deploy.
                 precio_personalizacion = float(pers['precio'])
-                costo_personalizacion = precio_personalizacion * 0.5
+                margen = Cfg.get('personalizacion_margen_fijo', float)
+                costo_personalizacion = precio_personalizacion * margen
 
-    costo_por_mil = float(item_data.get('costo_por_mil_puntadas', 0) or 0)
-    costo_mano_obra = (puntadas / 1000) * costo_por_mil if puntadas > 0 and costo_por_mil > 0 else 0
     costos_adicionales = float(item_data.get('costos_adicionales', 0) or 0)
 
     precio_venta = float(item_data.get('precio_venta', 0) or 0)
@@ -130,7 +138,15 @@ def _build_item_data(item_data, shared_data, producto, pers_cache=None, precio_e
     fecha_compromiso = fecha_pago + timedelta(days=dias)
 
     if precio_envio is None:
-        precio_envio = float(item_data.get('costo_envio', shared_data.get('costo_envio', 200)) or 200)
+        _envio_default = Cfg.get('envio_costo_default', float)
+        precio_envio = float(
+            item_data.get('costo_envio', shared_data.get('costo_envio', _envio_default))
+            or _envio_default
+        )
+
+    # costo_envio = costo real de logística que paga la empresa al courier
+    # Por ahora igual al precio cobrado al cliente (se puede separar en el futuro)
+    costo_envio = precio_envio
 
     return {
         'cliente_nombre': shared_data['nombre_cliente'],
@@ -155,6 +171,7 @@ def _build_item_data(item_data, shared_data, producto, pers_cache=None, precio_e
         'costo_personalizacion': costo_personalizacion,
         'costo_mano_obra': costo_mano_obra,
         'costos_adicionales': costos_adicionales,
+        'costo_envio': costo_envio,
         'canal': shared_data['canal'],
         'metodo_pago': shared_data['banco'],
         'estado_pago': shared_data['estatus_pago'],
@@ -264,21 +281,25 @@ class PedidosRepository:
         }
         pers_map = PersonalizacionesRepository.get_by_codigos(codigos)
 
-        resultados = []
-        envio_total = float(shared_data.get('costo_envio', 200) or 200)
+        _envio_default = Cfg.get('envio_costo_default', float)
+        envio_total = float(shared_data.get('costo_envio', _envio_default) or _envio_default)
 
         query = _INSERT_FIELDS.format(
             extra_cols=', grupo_pedido',
             extra_vals=', %(grupo_pedido)s'
         )
 
+        # ── Construir todos los datos antes de abrir la transacción ──────────
+        # Esto garantiza que si un SKU no existe, el error se lanza ANTES
+        # de escribir cualquier fila, sin dejar items huérfanos en la DB.
+        all_pedido_data = []
         for idx, item in enumerate(items):
             sku = item['producto_sku']
             producto = productos_map.get(sku)
             if not producto:
                 raise ValueError(f"Producto no encontrado: {sku}")
 
-            # Only the first item gets the shipping cost
+            # Solo el primer item carga el costo de envío del grupo
             precio_envio = envio_total if idx == 0 else 0
             pedido_data = _build_item_data(
                 item, shared_data, producto,
@@ -286,16 +307,23 @@ class PedidosRepository:
                 precio_envio=precio_envio
             )
             pedido_data['grupo_pedido'] = grupo_id
+            all_pedido_data.append((item, producto, pedido_data))
 
-            with DatabaseManager.get_cursor() as cursor:
-                cursor.execute(query, pedido_data)
-                result = cursor.fetchone()
-                resultados.append({
-                    'id': result['numero_pedido'],
-                    'producto': item.get('producto_nombre', producto['nombre']),
-                    'total': float(result['precio_total']),
-                    'ganancia': float(result['ganancia'])
-                })
+        # ── Insertar todos los items en UNA SOLA transacción ─────────────────
+        # Si cualquier insert falla, el rollback automático de get_connection()
+        # garantiza que ningún item quede persistido parcialmente.
+        resultados = []
+        with DatabaseManager.get_connection() as conn:
+            for item, producto, pedido_data in all_pedido_data:
+                with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                    cursor.execute(query, pedido_data)
+                    result = dict(cursor.fetchone())
+                    resultados.append({
+                        'id': result['numero_pedido'],
+                        'producto': item.get('producto_nombre', producto['nombre']),
+                        'total': float(result['precio_total']),
+                        'ganancia': float(result['ganancia'])
+                    })
 
         return {
             'grupo_pedido': grupo_id,
@@ -356,7 +384,9 @@ class PedidosRepository:
             'costo_mano_obra': 'costo_mano_obra',
             'costos_adicionales': 'costos_adicionales',
             'precio_envio': 'precio_envio',
+            'costo_envio': 'costo_envio',
             'costo_producto': 'costo_producto',
+            'costo_personalizacion': 'costo_personalizacion',
         }
         for key, col in numeric_fields.items():
             if key in data and data[key] is not None and data[key] != '':
@@ -388,9 +418,11 @@ class PedidosRepository:
                         )
                         row = cursor.fetchone()
                     costo_mil = float(row['costo_por_mil_puntadas']) if row else 0
-                    nuevo_costo_mo = (nuevas_puntadas / 1000) * costo_mil if costo_mil > 0 else 0
-                    campos.append('costo_mano_obra = %(costo_mano_obra_calc)s')
-                    params['costo_mano_obra_calc'] = nuevo_costo_mo
+                    nuevo_costo_pers = (nuevas_puntadas / 1000) * costo_mil if costo_mil > 0 else 0
+                    # El costo de bordado va en costo_personalizacion; costo_mano_obra queda en 0
+                    campos.append('costo_personalizacion = %(costo_pers_recalc)s')
+                    campos.append('costo_mano_obra = 0')
+                    params['costo_pers_recalc'] = nuevo_costo_pers
             except (ValueError, TypeError):
                 pass
 

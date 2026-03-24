@@ -581,9 +581,9 @@
                         <div class="form-group ipg" data-id="${id}" style="display:none;">
                             <label class="form-label">Puntadas</label>
                             <input type="number" class="form-control ipu" data-id="${id}" placeholder="36000" min="0">
-                            <div class="ipc field-hint" data-id="${id}"></div>
                         </div>
                     </div>
+                    <div class="ipc field-hint" data-id="${id}" style="margin-top:-8px;margin-bottom:4px;"></div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Costos Adicionales</label>
@@ -635,14 +635,31 @@
             const punt = parseInt(card.querySelector('.ipu')?.value) || 0;
             const costoMat = parseFloat(prodOpt?.dataset?.costo || 0);
             const costoMil = parseFloat(persOpt?.dataset?.costoMil || 0);
+            const persPrice = parseFloat(persOpt?.dataset?.precio || 0);
             const met = persOpt?.dataset?.metodo || 'fijo';
-            const mo = (met === 'puntadas' && punt > 0 && costoMil > 0) ? (punt / 1000) * costoMil : 0;
+            const persVal = card.querySelector('.ipe').value;
+
+            // Costo de personalización según método
+            // Bordado (puntadas): costo = puntadas / 1000 × costo_por_mil
+            // Fijo (DTF, serigrafía, etc.): costo = 50% del precio
+            const costoPersonalizacion = met === 'puntadas'
+                ? ((punt > 0 && costoMil > 0) ? (punt / 1000) * costoMil : 0)
+                : (persVal !== 'ninguna' && persPrice > 0 ? persPrice * 0.5 : 0);
 
             const calcEl = card.querySelector(`.ipc[data-id="${id}"]`);
-            if (calcEl) calcEl.textContent = (met === 'puntadas' && punt > 0) ? `${(punt/1000).toFixed(1)}K × RD$${costoMil.toLocaleString()} = RD$${mo.toLocaleString()}` : '';
+            if (calcEl) {
+                if (met === 'puntadas' && punt > 0) {
+                    calcEl.textContent = `${(punt/1000).toFixed(1)}K × RD$${costoMil.toLocaleString()} = RD$${costoPersonalizacion.toLocaleString()}`;
+                } else if (met === 'fijo' && persVal !== 'ninguna' && persPrice > 0) {
+                    calcEl.textContent = `Costo pers.: RD$${costoPersonalizacion.toLocaleString()} (50% de RD$${persPrice.toLocaleString()})`;
+                } else {
+                    calcEl.textContent = '';
+                }
+            }
 
+            // Costo de envío prorrateado entre artículos
             const envioProItem = (parseInt(document.getElementById('costoEnvio')?.value) || 0) / Math.max(items.length, 1);
-            const costo = costoMat + mo + costosAd + envioProItem;
+            const costo = costoMat + costoPersonalizacion + costosAd + envioProItem;
             const gan = precio - costo;
             const mar = precio > 0 ? (gan / precio * 100) : 0;
 

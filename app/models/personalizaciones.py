@@ -97,10 +97,10 @@ class PersonalizacionesRepository:
             RETURNING id, codigo, tipo
         """
         data['id'] = pid
-        if 'metodo_calculo' not in data:
-            data['metodo_calculo'] = 'fijo'
-        if 'costo_por_mil_puntadas' not in data:
-            data['costo_por_mil_puntadas'] = 0
+        data.setdefault('metodo_calculo', 'fijo')
+        data.setdefault('costo_por_mil_puntadas', 0)
+        data.setdefault('descripcion', None)
+        data.setdefault('tiempo_adicional_dias', 0)
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, data)
             row = cursor.fetchone()

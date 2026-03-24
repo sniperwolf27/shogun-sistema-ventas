@@ -9,7 +9,11 @@ class CategoriasRepository:
     @staticmethod
     def get_all(include_inactive=False):
         where = "" if include_inactive else "WHERE activo = true"
-        query = f"SELECT id, nombre, descripcion, activo FROM categorias_producto_tabla {where} ORDER BY nombre"
+        query = f"""
+            SELECT id, nombre, codigo, descripcion, activo
+            FROM categorias_producto {where}
+            ORDER BY nombre
+        """
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query)
             results = []
@@ -23,12 +27,17 @@ class CategoriasRepository:
     @staticmethod
     def create(data):
         query = """
-            INSERT INTO categorias_producto_tabla (nombre, descripcion)
-            VALUES (%(nombre)s, %(descripcion)s)
-            RETURNING id, nombre
+            INSERT INTO categorias_producto (nombre, codigo, descripcion)
+            VALUES (%(nombre)s, %(codigo)s, %(descripcion)s)
+            RETURNING id, nombre, codigo
         """
+        params = {
+            'nombre': data.get('nombre'),
+            'codigo': data.get('codigo') or None,
+            'descripcion': data.get('descripcion') or None,
+        }
         with DatabaseManager.get_cursor() as cursor:
-            cursor.execute(query, data)
+            cursor.execute(query, params)
             r = dict(cursor.fetchone())
             if r.get('id'):
                 r['id'] = str(r['id'])
@@ -37,14 +46,19 @@ class CategoriasRepository:
     @staticmethod
     def update(cat_id, data):
         query = """
-            UPDATE categorias_producto_tabla
-            SET nombre = %(nombre)s, descripcion = %(descripcion)s
+            UPDATE categorias_producto
+            SET nombre = %(nombre)s, codigo = %(codigo)s, descripcion = %(descripcion)s
             WHERE id = %(id)s
-            RETURNING id, nombre
+            RETURNING id, nombre, codigo
         """
-        data['id'] = cat_id
+        params = {
+            'id': cat_id,
+            'nombre': data.get('nombre'),
+            'codigo': data.get('codigo') or None,
+            'descripcion': data.get('descripcion') or None,
+        }
         with DatabaseManager.get_cursor() as cursor:
-            cursor.execute(query, data)
+            cursor.execute(query, params)
             row = cursor.fetchone()
             if row:
                 r = dict(row)
@@ -55,7 +69,7 @@ class CategoriasRepository:
 
     @staticmethod
     def toggle_active(cat_id, activo):
-        query = "UPDATE categorias_producto_tabla SET activo = %s WHERE id = %s RETURNING id"
+        query = "UPDATE categorias_producto SET activo = %s WHERE id = %s RETURNING id"
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, (activo, cat_id))
             return cursor.fetchone() is not None

@@ -265,7 +265,7 @@ async function abrirModalProducto(producto) {
 
     const categorias = await api.getCategorias(true).catch(() => []) || [];
     const categoriasOptions = categorias
-        .map(c => `<option value="${esc(c.nombre)}" ${producto?.categoria === c.nombre ? 'selected' : ''}>${esc(c.nombre)}</option>`)
+        .map(c => `<option value="${c.id}" ${producto?.categoria_id == c.id ? 'selected' : ''}>${esc(c.nombre)}</option>`)
         .join('');
 
     modal.innerHTML = `
@@ -389,7 +389,7 @@ async function abrirModalProducto(producto) {
         const data = {
             nombre: formData.get('nombre').trim(),
             sku: formData.get('sku').trim(),
-            categoria: formData.get('categoria'),
+            categoria_id: formData.get('categoria') || null,
             precio_base: parseFloat(formData.get('precio_base')) || 0,
             costo_material: parseFloat(formData.get('costo_material')) || 0,
             tiempo_produccion_dias: parseInt(formData.get('tiempo_produccion_dias')) || 7,
@@ -454,7 +454,7 @@ function renderCategorias(categorias) {
         <div class="param-card ${c.activo === false ? 'inactive' : ''}" data-categoria-id="${c.id}" tabindex="0">
             <div class="param-name">${esc(c.nombre)}</div>
             <div class="param-meta">
-                <div><strong>Código:</strong> ${esc(c.codigo)}</div>
+                ${c.codigo ? `<div><strong>Código:</strong> ${esc(c.codigo)}</div>` : ''}
                 <div>${c.descripcion || 'Sin descripción'}</div>
             </div>
             <div class="param-actions">
@@ -733,13 +733,18 @@ function abrirModalPersonalizacion(personalizacion) {
         };
 
         try {
+            let res;
             if (isEdit) {
-                await api.updatePersonalizacion(personalizacion.id, data);
-                showNotification('Personalización actualizada', 'success');
+                res = await api.updatePersonalizacion(personalizacion.id, data);
             } else {
-                await api.createPersonalizacion(data);
-                showNotification('Personalización creada', 'success');
+                res = await api.createPersonalizacion(data);
             }
+            if (!res || !res.success) {
+                errorDiv.textContent = res?.error || 'Error al guardar';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+            showNotification(isEdit ? 'Personalización actualizada' : 'Personalización creada', 'success');
             paramCloseModal(modal);
             cargarPersonalizaciones();
         } catch (error) {

@@ -3,6 +3,17 @@ Repository — Productos
 """
 from app.models.db_manager import DatabaseManager
 
+# Campos comunes a todos los SELECT (con JOIN a categorías)
+_PRODUCTO_FIELDS = """
+    p.id, p.sku, p.nombre,
+    p.categoria_id, c.nombre AS categoria,
+    p.precio_base, p.costo_material, p.costo_mano_obra,
+    p.costo_total, p.margen_dinero, p.margen_porcentaje,
+    p.tiempo_produccion_dias, p.activo, p.created_at, p.updated_at
+"""
+
+_PRODUCTO_JOIN = "LEFT JOIN categorias_producto c ON c.id = p.categoria_id"
+
 
 class ProductosRepository:
 
@@ -13,6 +24,8 @@ class ProductosRepository:
         p = dict(row)
         if p.get('id'):
             p['id'] = str(p['id'])
+        if p.get('categoria_id') is not None:
+            p['categoria_id'] = str(p['categoria_id'])
         for f in ['precio_base', 'costo_material', 'costo_mano_obra',
                   'costo_total', 'margen_dinero', 'margen_porcentaje']:
             if p.get(f) is not None:
@@ -24,13 +37,13 @@ class ProductosRepository:
 
     @staticmethod
     def get_all(include_inactive=False):
-        where = "" if include_inactive else "WHERE activo = true"
+        where = "" if include_inactive else "WHERE p.activo = true"
         query = f"""
-            SELECT id, sku, nombre, categoria::text, precio_base, costo_material, costo_mano_obra,
-                   costo_total, margen_dinero, margen_porcentaje, tiempo_produccion_dias, activo,
-                   created_at, updated_at
-            FROM productos {where}
-            ORDER BY nombre
+            SELECT {_PRODUCTO_FIELDS}
+            FROM productos p
+            {_PRODUCTO_JOIN}
+            {where}
+            ORDER BY p.nombre
         """
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query)
@@ -38,7 +51,12 @@ class ProductosRepository:
 
     @staticmethod
     def get_by_sku(sku):
-        query = "SELECT * FROM productos WHERE sku = %s AND activo = true"
+        query = f"""
+            SELECT {_PRODUCTO_FIELDS}
+            FROM productos p
+            {_PRODUCTO_JOIN}
+            WHERE p.sku = %s AND p.activo = true
+        """
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, (sku,))
             return ProductosRepository._format(cursor.fetchone())
@@ -49,7 +67,12 @@ class ProductosRepository:
         if not skus:
             return {}
         placeholders = ','.join(['%s'] * len(skus))
-        query = f"SELECT * FROM productos WHERE sku IN ({placeholders}) AND activo = true"
+        query = f"""
+            SELECT {_PRODUCTO_FIELDS}
+            FROM productos p
+            {_PRODUCTO_JOIN}
+            WHERE p.sku IN ({placeholders}) AND p.activo = true
+        """
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, list(skus))
             return {
@@ -59,7 +82,12 @@ class ProductosRepository:
 
     @staticmethod
     def get_by_id(product_id):
-        query = "SELECT * FROM productos WHERE id = %s"
+        query = f"""
+            SELECT {_PRODUCTO_FIELDS}
+            FROM productos p
+            {_PRODUCTO_JOIN}
+            WHERE p.id = %s
+        """
         with DatabaseManager.get_cursor() as cursor:
             cursor.execute(query, (product_id,))
             return ProductosRepository._format(cursor.fetchone())
@@ -75,7 +103,7 @@ class ProductosRepository:
         params = {
             'sku': data['sku'],
             'nombre': data['nombre'],
-            'categoria': data['categoria'],
+            'categoria_id': data.get('categoria_id') or None,
             'precio_base': data.get('precio_base', 0),
             'costo_material': data.get('costo_material', 0),
             'costo_mano_obra': data.get('costo_mano_obra', 0),
@@ -83,9 +111,9 @@ class ProductosRepository:
         }
 
         query = """
-            INSERT INTO productos (sku, nombre, categoria, precio_base, costo_material,
+            INSERT INTO productos (sku, nombre, categoria_id, precio_base, costo_material,
                                    costo_mano_obra, tiempo_produccion_dias)
-            VALUES (%(sku)s, %(nombre)s, %(categoria)s, %(precio_base)s, %(costo_material)s,
+            VALUES (%(sku)s, %(nombre)s, %(categoria_id)s, %(precio_base)s, %(costo_material)s,
                     %(costo_mano_obra)s, %(tiempo_produccion_dias)s)
             RETURNING id, sku, nombre
         """
@@ -113,7 +141,7 @@ class ProductosRepository:
             'id': product_id,
             'sku': data.get('sku'),
             'nombre': data.get('nombre'),
-            'categoria': data.get('categoria'),
+            'categoria_id': data.get('categoria_id') or None,
             'precio_base': data.get('precio_base', 0),
             'costo_material': data.get('costo_material', 0),
             'costo_mano_obra': data.get('costo_mano_obra', 0),
@@ -122,7 +150,7 @@ class ProductosRepository:
 
         query = """
             UPDATE productos SET
-                sku = %(sku)s, nombre = %(nombre)s, categoria = %(categoria)s,
+                sku = %(sku)s, nombre = %(nombre)s, categoria_id = %(categoria_id)s,
                 precio_base = %(precio_base)s, costo_material = %(costo_material)s,
                 costo_mano_obra = %(costo_mano_obra)s,
                 tiempo_produccion_dias = %(tiempo_produccion_dias)s
