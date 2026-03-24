@@ -133,7 +133,7 @@ def _build_item_data(item_data, shared_data, producto, pers_cache=None, precio_e
         precio_venta = float(producto['precio_base'])
 
     tiempo_str = item_data.get('tiempo_estimado', shared_data.get('tiempo_estimado', '7'))
-    dias = int(str(tiempo_str).split()[0])
+    dias = max(1, int(str(tiempo_str).split()[0]) or 1)
     fecha_pago = datetime.now().date()
     fecha_compromiso = fecha_pago + timedelta(days=dias)
 

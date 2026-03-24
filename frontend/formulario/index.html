@@ -830,7 +830,7 @@
                     costo_por_mil_puntadas: parseFloat(persOpt?.dataset?.costoMil || 0),
                     precio_venta: pv,
                     costos_adicionales: parseFloat(card.querySelector('.ica').value) || 0,
-                    tiempo_estimado: (prodOpt.dataset.dias || '7') + ' días'
+                    tiempo_estimado: (parseInt(prodOpt.dataset.dias) || 7) + ' días'
                 });
             }
 
