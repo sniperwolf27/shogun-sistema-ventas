@@ -22,14 +22,8 @@ from datetime import datetime
 import bcrypt
 
 # -- Configuracion -----------------------------------------------------------
-SOURCE_URL = os.environ.get(
-    'SOURCE_DATABASE_URL',
-    '[SUPABASE_URL_REMOVED]'
-)
-DEST_URL = os.environ.get(
-    'DEST_DATABASE_URL',
-    '[RAILWAY_URL_REMOVED]'
-)
+SOURCE_URL = os.environ.get('SOURCE_DATABASE_URL', '')
+DEST_URL = os.environ.get('DEST_DATABASE_URL', '')
 TEMP_PASSWORD = os.environ.get('TEMP_PASSWORD', 'Shogun2026!')
 
 
