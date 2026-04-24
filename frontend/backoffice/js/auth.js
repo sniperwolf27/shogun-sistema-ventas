@@ -1,11 +1,10 @@
 /**
  * AUTH MODULE
- * Session management for Supabase Auth
+ * Session management with our own JWT (no Supabase)
  */
 
 class Auth {
     static TOKEN_KEY = 'sb_access_token';
-    static REFRESH_KEY = 'sb_refresh_token';
     static USER_KEY = 'user';
 
     static isAuthenticated() { return !!this.getToken(); }
@@ -17,15 +16,13 @@ class Auth {
         catch { return null; }
     }
 
-    static saveSession(accessToken, refreshToken, user) {
+    static saveSession(accessToken, user) {
         localStorage.setItem(this.TOKEN_KEY, accessToken);
-        if (refreshToken) localStorage.setItem(this.REFRESH_KEY, refreshToken);
         localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     }
 
     static clearSession() {
         localStorage.removeItem(this.TOKEN_KEY);
-        localStorage.removeItem(this.REFRESH_KEY);
         localStorage.removeItem(this.USER_KEY);
     }
 
@@ -44,9 +41,12 @@ class Auth {
     static async logout() {
         try {
             const token = this.getToken();
-            if (token) await fetch(`${window.API_BASE}/logout`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }).catch(() => {});
-            const sb = window.getSupabase ? window.getSupabase() : null;
-            if (sb) await sb.auth.signOut().catch(() => {});
+            if (token) {
+                await fetch(`${window.API_BASE}/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).catch(() => {});
+            }
         } catch {}
         this.clearSession();
         window.location.href = '/login';

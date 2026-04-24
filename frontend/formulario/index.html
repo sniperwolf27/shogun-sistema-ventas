@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/config.js"></script>
     <script>
         // Apply theme immediately to prevent flash (respects OS preference on first visit)
@@ -377,20 +376,6 @@
             return;
         }
 
-        try {
-            const sb = window.initSupabase();
-            if (sb) {
-                const rt = localStorage.getItem('sb_refresh_token');
-                if (rt) {
-                    const { data } = await sb.auth.setSession({ access_token: currentToken, refresh_token: rt });
-                    if (data && data.session) {
-                        currentToken = data.session.access_token;
-                        localStorage.setItem('sb_access_token', data.session.access_token);
-                        if (data.session.refresh_token) localStorage.setItem('sb_refresh_token', data.session.refresh_token);
-                    }
-                }
-            }
-        } catch(e) { console.warn('Token refresh:', e); }
 
         function getToken() { return localStorage.getItem('sb_access_token') || currentToken; }
 

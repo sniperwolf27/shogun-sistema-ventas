@@ -13,9 +13,6 @@ class Config:
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
-    # Supabase
-    SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://namjhrpumgywarhjxjxx.supabase.co')
-
     # Server
     HOST = os.environ.get('HOST', '0.0.0.0')
     PORT = int(os.environ.get('PORT', 5000))
@@ -28,7 +25,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     DATABASE_URL = os.environ.get('DATABASE_URL') or \
-        '[SUPABASE_URL_REMOVED]'
+        '[RAILWAY_URL_REMOVED]'
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 

@@ -1,100 +1,78 @@
 """
-Supabase Storage Helper
-Upload/download files via Supabase Storage REST API
-Uses service_role key to bypass RLS
+Tigris S3-Compatible Storage Helper
+Upload/download/delete files via boto3 S3 API pointing to Tigris endpoint
 """
 import os
-import requests
 import uuid
 from pathlib import Path
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
 
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://namjhrpumgywarhjxjxx.supabase.co')
-SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
-BUCKET_NAME = 'pedido-adjuntos'
+TIGRIS_ENDPOINT = os.environ.get('TIGRIS_ENDPOINT', 'https://t3.storageapi.dev')
+TIGRIS_ACCESS_KEY_ID = os.environ.get('TIGRIS_ACCESS_KEY_ID', '')
+TIGRIS_SECRET_ACCESS_KEY = os.environ.get('TIGRIS_SECRET_ACCESS_KEY', '')
+BUCKET_NAME = os.environ.get('TIGRIS_BUCKET_NAME', 'shogun-sistema-de-ventas-do9svn')
 
-STORAGE_BASE = f"{SUPABASE_URL}/storage/v1"
 
-
-def _headers(content_type=None):
-    """Headers for Supabase Storage API using service_role key"""
-    h = {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
-    }
-    if content_type:
-        h['Content-Type'] = content_type
-    return h
+def _s3_client():
+    return boto3.client(
+        's3',
+        endpoint_url=TIGRIS_ENDPOINT,
+        aws_access_key_id=TIGRIS_ACCESS_KEY_ID,
+        aws_secret_access_key=TIGRIS_SECRET_ACCESS_KEY,
+        region_name='auto',
+        config=Config(signature_version='s3v4'),
+    )
 
 
 def upload_file(pedido_numero, file_obj, filename, content_type='application/octet-stream'):
     """
-    Upload a file to Supabase Storage.
-    Returns storage_path on success, raises on error.
+    Upload a file to Tigris storage.
+    Returns storage_path (S3 object key) on success, raises on error.
     """
-    if not SUPABASE_SERVICE_KEY:
-        raise ValueError("SUPABASE_SERVICE_ROLE_KEY not configured")
+    if not TIGRIS_ACCESS_KEY_ID or not TIGRIS_SECRET_ACCESS_KEY:
+        raise ValueError("TIGRIS_ACCESS_KEY_ID / TIGRIS_SECRET_ACCESS_KEY not configured")
 
-    # Sanitize and build unique path: pedidos/{pedido_numero}/{uuid}_{filename}
-    safe_name = Path(filename).name  # strip any directory traversal
+    safe_name = Path(filename).name
     unique_name = f"{uuid.uuid4().hex[:8]}_{safe_name}"
     storage_path = f"pedidos/{pedido_numero}/{unique_name}"
 
-    url = f"{STORAGE_BASE}/object/{BUCKET_NAME}/{storage_path}"
-
     file_data = file_obj.read()
 
-    response = requests.post(
-        url,
-        headers=_headers(content_type),
-        data=file_data
+    _s3_client().put_object(
+        Bucket=BUCKET_NAME,
+        Key=storage_path,
+        Body=file_data,
+        ContentType=content_type,
     )
-
-    if response.status_code not in (200, 201):
-        error_detail = response.text
-        raise Exception(f"Storage upload failed ({response.status_code}): {error_detail}")
 
     return storage_path
 
 
 def get_signed_url(storage_path, expires_in=3600):
     """
-    Generate a signed URL for downloading a private file.
+    Generate a presigned URL for downloading a private file.
     expires_in: seconds (default 1 hour)
     """
-    if not SUPABASE_SERVICE_KEY:
-        raise ValueError("SUPABASE_SERVICE_ROLE_KEY not configured")
+    if not TIGRIS_ACCESS_KEY_ID or not TIGRIS_SECRET_ACCESS_KEY:
+        raise ValueError("TIGRIS_ACCESS_KEY_ID / TIGRIS_SECRET_ACCESS_KEY not configured")
 
-    url = f"{STORAGE_BASE}/object/sign/{BUCKET_NAME}/{storage_path}"
-
-    response = requests.post(
-        url,
-        headers={**_headers('application/json')},
-        json={'expiresIn': expires_in}
+    url = _s3_client().generate_presigned_url(
+        'get_object',
+        Params={'Bucket': BUCKET_NAME, 'Key': storage_path},
+        ExpiresIn=expires_in,
     )
-
-    if response.status_code != 200:
-        raise Exception(f"Signed URL failed ({response.status_code}): {response.text}")
-
-    data = response.json()
-    signed_path = data.get('signedURL', '')
-
-    # Build full URL
-    if signed_path.startswith('/'):
-        return f"{SUPABASE_URL}/storage/v1{signed_path}"
-    return signed_path
+    return url
 
 
 def delete_file(storage_path):
-    """Delete a file from storage"""
-    if not SUPABASE_SERVICE_KEY:
-        raise ValueError("SUPABASE_SERVICE_ROLE_KEY not configured")
+    """Delete a file from Tigris storage. Returns True on success."""
+    if not TIGRIS_ACCESS_KEY_ID or not TIGRIS_SECRET_ACCESS_KEY:
+        raise ValueError("TIGRIS_ACCESS_KEY_ID / TIGRIS_SECRET_ACCESS_KEY not configured")
 
-    url = f"{STORAGE_BASE}/object/{BUCKET_NAME}"
-
-    response = requests.delete(
-        url,
-        headers={**_headers('application/json')},
-        json={'prefixes': [storage_path]}
-    )
-
-    return response.status_code in (200, 201)
+    try:
+        _s3_client().delete_object(Bucket=BUCKET_NAME, Key=storage_path)
+        return True
+    except ClientError:
+        return False

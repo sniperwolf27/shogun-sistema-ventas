@@ -26,7 +26,14 @@ _SELECT_FIELDS = """
     personalizacion_detalles as personalizacion,
     personalizacion_puntadas as puntadas,
     fecha_pago, fecha_compromiso, fecha_entrega_real,
-    dias_produccion, dias_retraso,
+    dias_produccion,
+    CASE
+        WHEN fecha_compromiso IS NOT NULL
+             AND CURRENT_DATE > fecha_compromiso
+             AND fecha_entrega_real IS NULL
+        THEN (CURRENT_DATE - fecha_compromiso)
+        ELSE 0
+    END AS dias_retraso,
     precio_producto,
     precio_personalizacion as precio_person,
     precio_envio, precio_total,

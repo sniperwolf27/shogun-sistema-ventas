@@ -13,8 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/config.js"></script>
     <script>
         // Apply theme immediately to prevent flash (respects OS preference on first visit)
         (function(){var t=localStorage.getItem('theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
@@ -100,17 +98,25 @@
     <script>
     (function() {
         const API_BASE = window.location.origin + '/api';
-        const supabase = window.initSupabase();
 
         const alertBox = document.getElementById('alert');
         const alertMsg = document.getElementById('alertMessage');
         const btn = document.getElementById('btnLogin');
         const form = document.getElementById('loginForm');
 
+        // Si ya hay sesión válida, redirigir
+        const existingToken = localStorage.getItem('sb_access_token');
+        if (existingToken) {
+            fetch(`${API_BASE}/verify`, { headers: { 'Authorization': `Bearer ${existingToken}` } })
+                .then(r => r.json())
+                .then(d => { if (d.success) window.location.href = '/backoffice'; })
+                .catch(() => {});
+        }
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const email = document.getElementById('email').value.trim();
+            const email = document.getElementById('email').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
 
             btn.disabled = true;
@@ -118,29 +124,18 @@
             alertBox.classList.remove('show');
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-
-                if (error) throw new Error('Credenciales incorrectas');
-
                 const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${data.session.access_token}`
-                    }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
                 });
 
                 const result = await response.json();
-                if (!response.ok) {
-                    throw new Error(result.error || 'No autorizado');
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Credenciales incorrectas');
                 }
 
-                localStorage.setItem('sb_access_token', data.session.access_token);
-                if (data.session.refresh_token) {
-                    localStorage.setItem('sb_refresh_token', data.session.refresh_token);
-                }
+                localStorage.setItem('sb_access_token', result.access_token);
                 localStorage.setItem('user', JSON.stringify(result.user));
 
                 window.location.href = '/backoffice';

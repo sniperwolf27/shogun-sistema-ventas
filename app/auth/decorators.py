@@ -3,13 +3,13 @@ Authorization Decorators
 """
 from functools import wraps
 from flask import jsonify
-from app.auth.supabase_helper import SupabaseHelper
+from app.auth.jwt_helper import get_current_user
 
 
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        user = SupabaseHelper.get_current_user()
+        user = get_current_user()
         if not user:
             return jsonify({'error': 'No autenticado', 'code': 'AUTH_REQUIRED'}), 401
         if not user.get('activo'):
@@ -21,7 +21,7 @@ def require_auth(f):
 def admin_only(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        user = SupabaseHelper.get_current_user()
+        user = get_current_user()
         if not user:
             return jsonify({'error': 'No autenticado', 'code': 'AUTH_REQUIRED'}), 401
         if not user.get('activo'):
